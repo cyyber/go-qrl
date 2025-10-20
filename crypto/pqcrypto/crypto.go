@@ -115,3 +115,13 @@ func HexToWallet(hexSeedStr string) (*walletmldsa87.Wallet, error) {
 func PKToAddress(pk []byte, d descriptor.Descriptor) (common.Address, error) {
 	return wallet.GetAddressFromPKAndDescriptor(pk, d)
 }
+
+func Verify(msg []byte, sig []byte, pk []byte, desc [3]byte) (bool, error) {
+	pk87, err := walletmldsa87.BytesToPK(pk)
+	if err != nil {
+		return false, err
+	}
+
+	// TODO(rgeraldes24)
+	return walletmldsa87.Verify(msg, sig, &pk87, desc), nil
+}
