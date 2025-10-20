@@ -250,8 +250,6 @@ func (args *t9nInput) get(base string) []string {
 }
 
 func TestT9n(t *testing.T) {
-	// TODO(rgeraldes24)
-	t.Skip()
 	tt := new(testT8n)
 	tt.TestCmd = cmdtest.NewTestCmd(t, tt)
 	for i, tc := range []struct {
@@ -260,13 +258,16 @@ func TestT9n(t *testing.T) {
 		expExitCode int
 		expOut      string
 	}{
-		{ // txs on Shanghai
-			base: "./testdata/15",
-			input: t9nInput{
-				inTxs: "signed_txs.rlp",
+		// TODO(rgeraldes24)
+		/*
+			{ // txs on Shanghai
+				base: "./testdata/15",
+				input: t9nInput{
+					inTxs: "signed_txs.rlp",
+				},
+				expOut: "exp2.json",
 			},
-			expOut: "exp2.json",
-		},
+		*/
 		{ // An RLP list (a blockheader really)
 			base: "./testdata/15",
 			input: t9nInput{
@@ -274,20 +275,23 @@ func TestT9n(t *testing.T) {
 			},
 			expOut: "exp3.json",
 		},
-		{ // Transactions with too low gas
-			base: "./testdata/16",
-			input: t9nInput{
-				inTxs: "signed_txs.rlp",
+		/*
+			{ // Transactions with too low gas
+				base: "./testdata/16",
+				input: t9nInput{
+					inTxs: "signed_txs.rlp",
+				},
+				expOut: "exp.json",
 			},
-			expOut: "exp.json",
-		},
-		{ // Transactions with value exceeding 256 bits
-			base: "./testdata/17",
-			input: t9nInput{
-				inTxs: "signed_txs.rlp",
+
+			{ // Transactions with value exceeding 256 bits
+				base: "./testdata/17",
+				input: t9nInput{
+					inTxs: "signed_txs.rlp",
+				},
+				expOut: "exp.json",
 			},
-			expOut: "exp.json",
-		},
+		*/
 		{ // Invalid RLP
 			base: "./testdata/18",
 			input: t9nInput{
