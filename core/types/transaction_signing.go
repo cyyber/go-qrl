@@ -28,10 +28,7 @@ import (
 	"github.com/theQRL/go-zond/params"
 )
 
-var (
-	ErrInvalidChainId = errors.New("invalid chain id for signer")
-	ErrBadSignature   = errors.New("invalid signature")
-)
+var ErrInvalidChainId = errors.New("invalid chain id for signer")
 
 // sigCache is used to cache the derived sender and contains
 // the signer used to derive it.
@@ -187,7 +184,7 @@ func (s ShanghaiSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, err
 	}
 	if !ok {
-		return common.Address{}, ErrBadSignature
+		return common.Address{}, pqcrypto.ErrBadSignature
 	}
 
 	d, err := descriptor.FromBytes(tx.RawDescriptorValue())
