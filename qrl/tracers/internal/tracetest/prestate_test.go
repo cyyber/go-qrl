@@ -53,8 +53,6 @@ type testcase struct {
 }
 
 func TestPrestateTracer(t *testing.T) {
-	// TODO(rgeraldes24)
-	t.Skip()
 	testPrestateDiffTracer("prestateTracer", "prestate_tracer", t)
 }
 
