@@ -179,7 +179,10 @@ func (s ShanghaiSigner) Sender(tx *Transaction) (common.Address, error) {
 	sig, pk, desc := tx.RawSignatureValue(), tx.RawPublicKeyValue(), tx.RawDescriptorValue()
 	msg := s.Hash(tx, desc)
 
-	ok, err := pqcrypto.Verify(msg.Bytes(), sig, pk, [3]byte(desc))
+	var descArr [3]byte
+	copy(descArr[:], desc)
+
+	ok, err := pqcrypto.Verify(msg.Bytes(), sig, pk, descArr)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -187,7 +190,7 @@ func (s ShanghaiSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, pqcrypto.ErrBadSignature
 	}
 
-	d, err := descriptor.FromBytes(tx.RawDescriptorValue())
+	d, err := descriptor.FromBytes(desc)
 	if err != nil {
 		return common.Address{}, err
 	}
