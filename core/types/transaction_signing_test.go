@@ -138,7 +138,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		tx := mkTx(big.NewInt(7))
 		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
 
-		// Flip one bit int the descriptor and re-wrap
+		// Flip one bit in the descriptor and re-wrap.
 		desc[len(desc)-1] ^= 0x01
 		tampered, err := signed.WithSignaturePublicKeyAndDescriptor(signer, sig, pk, desc)
 		if err != nil {
@@ -161,11 +161,11 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		tx := mkTx(big.NewInt(7))
 		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
 
-		// Flip one bit int the descriptor and re-wrap
+		// Tweak the signature bytes and re-wrap.
 		sig[len(sig)-1] ^= 0x80
 		tampered, err := signed.WithSignaturePublicKeyAndDescriptor(signer, sig, pk, desc)
 		if err != nil {
-			t.Fatalf("re-wrap with bad descriptor: %v", err)
+			t.Fatalf("re-wrap with bad signature: %v", err)
 		}
 		_, err = signer.Sender(tampered)
 		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
