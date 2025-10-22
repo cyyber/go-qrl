@@ -344,6 +344,10 @@ func TestFilters(t *testing.T) {
 			err: "safe header not found",
 		},
 		{
+			f:   sys.NewRangeFilter(int64(rpc.SafeBlockNumber), int64(rpc.SafeBlockNumber), nil, nil),
+			err: "safe header not found",
+		},
+		{
 			f:   sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.SafeBlockNumber), nil, nil),
 			err: "safe header not found",
 		},

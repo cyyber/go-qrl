@@ -1258,18 +1258,16 @@ func TestRPCGetTransactionReceipt(t *testing.T) {
 			txHash: txHashes[4],
 			file:   "create-contract-with-access-list",
 		},
-		/*
-			// 5. txhash empty
-			{
-				txHash: common.Hash{},
-				file:   "txhash-empty",
-			},
-			// 6. txhash not found
-			{
-				txHash: common.HexToHash("deadbeef"),
-				file:   "txhash-notfound",
-			},
-		*/
+		// 5. txhash empty
+		{
+			txHash: common.Hash{},
+			file:   "txhash-empty",
+		},
+		// 6. txhash not found
+		{
+			txHash: common.HexToHash("deadbeef"),
+			file:   "txhash-notfound",
+		},
 	}
 
 	for i, tt := range testSuite {
