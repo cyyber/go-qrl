@@ -25,7 +25,7 @@ const (
 	DigestLength = 32
 )
 
-var ErrBadSignature = errors.New("invalid ML-DSA-87 signature length")
+var ErrBadSignature = errors.New("invalid ML-DSA-87 signature")
 
 // LoadWallet loads ML-DSA-87 or SPHINCS+-256s Wallet from the given file having hex seed (not extended hex seed).
 func LoadWallet(file string) (*walletmldsa87.Wallet, error) {
@@ -121,7 +121,7 @@ func PKToAddress(pk []byte, d descriptor.Descriptor) (common.Address, error) {
 func Verify(msg []byte, sig []byte, pk []byte, desc [3]byte) (bool, error) {
 	// walletmldsa87.Verify would panic on bad length
 	if l := len(sig); l != cryptomldsa87.CryptoBytes {
-		return false, ErrBadSignature
+		return false, fmt.Errorf("%v: bad length", ErrBadSignature)
 	}
 
 	pk87, err := walletmldsa87.BytesToPK(pk)
