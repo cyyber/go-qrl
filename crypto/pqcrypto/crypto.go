@@ -121,7 +121,7 @@ func PKToAddress(pk []byte, d descriptor.Descriptor) (common.Address, error) {
 func Verify(msg []byte, sig []byte, pk []byte, desc [3]byte) (bool, error) {
 	// walletmldsa87.Verify would panic on bad length
 	if l := len(sig); l != cryptomldsa87.CryptoBytes {
-		return false, fmt.Errorf("%v: bad length", ErrBadSignature)
+		return false, fmt.Errorf("%w: bad length", ErrBadSignature)
 	}
 
 	pk87, err := walletmldsa87.BytesToPK(pk)

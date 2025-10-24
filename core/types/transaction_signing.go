@@ -187,7 +187,7 @@ func (s ShanghaiSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, err
 	}
 	if !ok {
-		return common.Address{}, fmt.Errorf("%v: verification failed", pqcrypto.ErrBadSignature)
+		return common.Address{}, fmt.Errorf("%w: verification failed", pqcrypto.ErrBadSignature)
 	}
 
 	d, err := descriptor.FromBytes(desc)
