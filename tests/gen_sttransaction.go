@@ -60,7 +60,7 @@ func (s *stTransaction) UnmarshalJSON(input []byte) error {
 		AccessLists          []*types.AccessList   `json:"accessLists,omitempty"`
 		GasLimit             []math.HexOrDecimal64 `json:"gasLimit"`
 		Value                []string              `json:"value"`
-		Seed                 *string        `json:"seed"`
+		Seed                 *string               `json:"seed"`
 		Sender               *common.Address       `json:"sender"`
 	}
 	var dec stTransaction

@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/rlp"
 	"github.com/theQRL/go-zond/trie"
 )
@@ -144,11 +144,11 @@ func TestDerivableList(t *testing.T) {
 }
 
 func genTxs(num uint64) (types.Transactions, error) {
-	key, err := pqcrypto.HexToWallet("deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+	wallet, err := wallet.Generate(wallet.ML_DSA_87)
 	if err != nil {
 		return nil, err
 	}
-	var addr = common.Address(key.GetAddress())
+	var addr = common.Address(wallet.GetAddress())
 	newTx := func(i uint64) (*types.Transaction, error) {
 		signer := types.NewShanghaiSigner(big.NewInt(18))
 		utx := types.NewTx(&types.DynamicFeeTx{
@@ -159,7 +159,7 @@ func genTxs(num uint64) (types.Transactions, error) {
 			GasFeeCap: new(big.Int).SetUint64(10000000),
 			Data:      nil,
 		})
-		tx, err := types.SignTx(utx, signer, key)
+		tx, err := types.SignTx(utx, signer, wallet)
 		return tx, err
 	}
 	var txs types.Transactions

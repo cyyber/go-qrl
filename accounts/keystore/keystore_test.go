@@ -29,7 +29,7 @@ import (
 
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 )
 
@@ -339,25 +339,23 @@ func TestWalletNotifications(t *testing.T) {
 	checkEvents(t, wantEvents, events)
 }
 
-// TestImportExport tests the import functionality of a keystore.
-func TestImportECDSA(t *testing.T) {
+func TestImportWallet(t *testing.T) {
 	_, ks := tmpKeyStore(t)
-	key, err := pqcrypto.GenerateWalletKey()
+	wallet, err := wallet.Generate(wallet.ML_DSA_87)
 	if err != nil {
-		t.Fatalf("failed to generate key: %v", key)
+		t.Fatalf("failed to generate wallet: %v", wallet)
 	}
-	if _, err = ks.ImportMLDSA87(key, "old"); err != nil {
+	if _, err = ks.ImportWallet(wallet, "old"); err != nil {
 		t.Errorf("importing failed: %v", err)
 	}
-	if _, err = ks.ImportMLDSA87(key, "old"); err == nil {
-		t.Errorf("importing same key twice succeeded")
+	if _, err = ks.ImportWallet(wallet, "old"); err == nil {
+		t.Errorf("importing same wallet twice succeeded")
 	}
-	if _, err = ks.ImportMLDSA87(key, "new"); err == nil {
-		t.Errorf("importing same key twice succeeded")
+	if _, err = ks.ImportWallet(wallet, "new"); err == nil {
+		t.Errorf("importing same wallet twice succeeded")
 	}
 }
 
-// TestImportECDSA tests the import and export functionality of a keystore.
 func TestImportExport(t *testing.T) {
 	_, ks := tmpKeyStore(t)
 	acc, err := ks.NewAccount("old")

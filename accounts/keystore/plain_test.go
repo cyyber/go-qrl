@@ -50,7 +50,7 @@ func TestKeyStorePlain(t *testing.T) {
 	if !reflect.DeepEqual(k1.Address, k2.Address) {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(k1.Wallet.GetSeed(), k2.Wallet.GetSeed()) {
+	if !reflect.DeepEqual(k1.Wallet.GetExtendedSeed(), k2.Wallet.GetExtendedSeed()) {
 		t.Fatal(err)
 	}
 }
@@ -70,7 +70,7 @@ func TestKeyStorePassphrase(t *testing.T) {
 	if !reflect.DeepEqual(k1.Address, k2.Address) {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(k1.Wallet.GetSeed(), k2.Wallet.GetSeed()) {
+	if !reflect.DeepEqual(k1.Wallet.GetExtendedSeed(), k2.Wallet.GetExtendedSeed()) {
 		t.Fatal(err)
 	}
 }

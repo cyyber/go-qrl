@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	qrl "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
@@ -43,8 +42,7 @@ import (
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 	"github.com/theQRL/go-zond/internal/blocktest"
 	"github.com/theQRL/go-zond/params"
@@ -55,13 +53,13 @@ import (
 func testTransactionMarshal(t *testing.T, tests []txData, config *params.ChainConfig) {
 	t.Parallel()
 	var (
-		signer = types.LatestSigner(config)
-		key, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+		signer    = types.LatestSigner(config)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 	)
 
 	for i, tt := range tests {
 		var tx2 types.Transaction
-		tx, err := types.SignNewTx(key, signer, tt.Tx)
+		tx, err := types.SignNewTx(wallet, signer, tt.Tx)
 		if err != nil {
 			t.Fatalf("test %d: signing failed: %v", i, err)
 		}
@@ -398,7 +396,7 @@ func TestEstimateGas(t *testing.T) {
 		// Transfer from account[0] to account[1]
 		//    value: 1000 planck
 		//    fee:   0 planck
-		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &accounts[1].addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), signer, accounts[0].key)
+		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &accounts[1].addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), signer, accounts[0].wallet)
 		b.AddTx(tx)
 	}))
 	var testSuite = []struct {
@@ -501,7 +499,7 @@ func TestCall(t *testing.T) {
 		// Transfer from account[0] to account[1]
 		//    value: 1000 planck
 		//    fee:   0 planck
-		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &accounts[1].addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), signer, accounts[0].key)
+		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &accounts[1].addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), signer, accounts[0].wallet)
 		b.AddTx(tx)
 	}))
 	randomAccounts := newAccounts(3)
@@ -651,15 +649,14 @@ func TestCall(t *testing.T) {
 }
 
 type Account struct {
-	key  *walletmldsa87.Wallet
-	addr common.Address
+	wallet wallet.Wallet
+	addr   common.Address
 }
 
 func newAccounts(n int) (accounts []Account) {
 	for i := 0; i < n; i++ {
-		key, _ := crypto.GenerateMLDSA87Key()
-		addr := key.GetAddress()
-		accounts = append(accounts, Account{key: key, addr: addr})
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		accounts = append(accounts, Account{wallet: wallet, addr: wallet.GetAddress()})
 	}
 	slices.SortFunc(accounts, func(a, b Account) int { return a.addr.Cmp(b.addr) })
 	return accounts
@@ -886,11 +883,11 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 
 	// Initialize test accounts
 	var (
-		acc1Key, _                = pqcrypto.HexToWallet("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
-		acc2Key, _                = pqcrypto.HexToWallet("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
-		acc1Addr                  = acc1Key.GetAddress()
-		acc2Addr   common.Address = acc2Key.GetAddress()
-		genesis                   = &core.Genesis{
+		acc1Wallet, _                = wallet.RestoreFromSeedHex("0x0100008a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a00000000000000000000000000000000")
+		acc2Wallet, _                = wallet.RestoreFromSeedHex("0x01000049a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee00000000000000000000000000000000")
+		acc1Addr                     = acc1Wallet.GetAddress()
+		acc2Addr      common.Address = acc2Wallet.GetAddress()
+		genesis                      = &core.Genesis{
 			Config: params.TestChainConfig,
 			Alloc: core.GenesisAlloc{
 				acc1Addr: {Balance: big.NewInt(params.Quanta)},
@@ -919,7 +916,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 		// Transfer from account[0] to account[1]
 		//    value: 1000 planck
 		//    fee:   0 planck
-		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &acc2Addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), signer, acc1Key)
+		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &acc2Addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), signer, acc1Wallet)
 		b.AddTx(tx)
 	})
 	backend.setPendingBlock(pending)
@@ -1138,12 +1135,12 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Hash) {
 	config := *params.TestChainConfig
 	var (
-		acc1Key, _                 = pqcrypto.HexToWallet("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
-		acc2Key, _                 = pqcrypto.HexToWallet("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
-		acc1Addr                   = acc1Key.GetAddress()
-		acc2Addr    common.Address = acc2Key.GetAddress()
-		contract, _                = common.NewAddressFromString("Q0000000000000000000000000000000000031ec7")
-		genesis                    = &core.Genesis{
+		acc1Wallet, _                = wallet.RestoreFromSeedHex("0x0100008a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a00000000000000000000000000000000")
+		acc2Wallet, _                = wallet.RestoreFromSeedHex("0x01000049a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee00000000000000000000000000000000")
+		acc1Addr                     = acc1Wallet.GetAddress()
+		acc2Addr      common.Address = acc2Wallet.GetAddress()
+		contract, _                  = common.NewAddressFromString("Q0000000000000000000000000000000000031ec7")
+		genesis                      = &core.Genesis{
 			Config: &config,
 			Alloc: core.GenesisAlloc{
 				acc1Addr: {Balance: big.NewInt(params.Quanta)},
@@ -1174,29 +1171,29 @@ func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Ha
 		switch i {
 		case 0:
 			// transfer 1000planck
-			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &acc2Addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), types.ShanghaiSigner{ChainId: big.NewInt(1)}, acc1Key)
+			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &acc2Addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), types.ShanghaiSigner{ChainId: big.NewInt(1)}, acc1Wallet)
 		case 1:
 			// create contract
-			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: nil, Gas: 53100, GasFeeCap: b.BaseFee(), Data: common.FromHex("0x60806040")}), signer, acc1Key)
+			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: nil, Gas: 53100, GasFeeCap: b.BaseFee(), Data: common.FromHex("0x60806040")}), signer, acc1Wallet)
 		case 2:
 			// with logs
 			// transfer(address to, uint256 value)
 			data := fmt.Sprintf("0xa9059cbb%s%s", common.HexToHash(common.BigToHash(big.NewInt(int64(i + 1))).Hex()).String()[2:], common.BytesToHash([]byte{byte(i + 11)}).String()[2:])
-			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &contract, Gas: 60000, GasFeeCap: b.BaseFee(), Data: common.FromHex(data)}), signer, acc1Key)
+			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &contract, Gas: 60000, GasFeeCap: b.BaseFee(), Data: common.FromHex(data)}), signer, acc1Wallet)
 		case 3:
 			// dynamic fee with logs
 			// transfer(address to, uint256 value)
 			data := fmt.Sprintf("0xa9059cbb%s%s", common.HexToHash(common.BigToHash(big.NewInt(int64(i + 1))).Hex()).String()[2:], common.BytesToHash([]byte{byte(i + 11)}).String()[2:])
 			fee := big.NewInt(500)
 			fee.Add(fee, b.BaseFee())
-			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &contract, Gas: 60000, Value: big.NewInt(1), GasTipCap: big.NewInt(500), GasFeeCap: fee, Data: common.FromHex(data)}), signer, acc1Key)
+			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &contract, Gas: 60000, Value: big.NewInt(1), GasTipCap: big.NewInt(500), GasFeeCap: fee, Data: common.FromHex(data)}), signer, acc1Wallet)
 		case 4:
 			// access list with contract create
 			accessList := types.AccessList{{
 				Address:     contract,
 				StorageKeys: []common.Hash{{0}},
 			}}
-			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: nil, Gas: 58100, GasFeeCap: b.BaseFee(), Data: common.FromHex("0x60806040"), AccessList: accessList}), signer, acc1Key)
+			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: nil, Gas: 58100, GasFeeCap: b.BaseFee(), Data: common.FromHex("0x60806040"), AccessList: accessList}), signer, acc1Wallet)
 		case 5:
 			// dynamic fee tx
 			fee := big.NewInt(500)
@@ -1208,7 +1205,7 @@ func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Ha
 				Gas:       params.TxGas,
 				To:        &acc2Addr,
 				Value:     big.NewInt(0),
-			}), signer, acc1Key)
+			}), signer, acc1Wallet)
 		}
 		if err != nil {
 			t.Errorf("failed to sign tx: %v", err)

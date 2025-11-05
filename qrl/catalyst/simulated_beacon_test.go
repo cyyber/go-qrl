@@ -25,7 +25,7 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/miner"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/p2p"
@@ -77,11 +77,11 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 	txs := make(map[common.Hash]*types.Transaction)
 
 	var (
-		// testKey is a private key to use for funding a tester account.
-		testKey, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+		// testKey is a wallet to use for funding a tester account.
+		testWallet, _ = wallet.Generate(wallet.ML_DSA_87)
 
 		// testAddr is the QRL address of the tester account.
-		testAddr = testKey.GetAddress()
+		testAddr = testWallet.GetAddress()
 	)
 
 	// short period (1 second) for testing purposes
@@ -106,7 +106,7 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 	// generate a bunch of transactions
 	signer := types.NewShanghaiSigner(qrlService.BlockChain().Config().ChainID)
 	for i := 0; i < 20; i++ {
-		tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &common.Address{}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, testKey)
+		tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &common.Address{}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, testWallet)
 		if err != nil {
 			t.Fatalf("error signing transaction, err=%v", err)
 		}

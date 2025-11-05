@@ -25,11 +25,9 @@ import (
 	"errors"
 	"fmt"
 	"hash"
-	"io"
 	"math/big"
 	"os"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/rlp"
@@ -210,49 +208,17 @@ func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 
 	r := bufio.NewReader(fd)
 	buf := make([]byte, 64)
-	n, err := readASCII(buf, r)
+	n, err := common.ReadASCII(buf, r)
 	if err != nil {
 		return nil, err
 	} else if n != len(buf) {
 		return nil, errors.New("key file too short, want 64 hex characters")
 	}
-	if err := checkKeyFileEnd(r); err != nil {
+	if err := common.CheckKeyFileEnd(r); err != nil {
 		return nil, err
 	}
 
 	return HexToECDSA(string(buf))
-}
-
-// readASCII reads into 'buf', stopping when the buffer is full or
-// when a non-printable control character is encountered.
-func readASCII(buf []byte, r *bufio.Reader) (n int, err error) {
-	for ; n < len(buf); n++ {
-		buf[n], err = r.ReadByte()
-		switch {
-		case err == io.EOF || buf[n] < '!':
-			return n, nil
-		case err != nil:
-			return n, err
-		}
-	}
-	return n, nil
-}
-
-// checkKeyFileEnd skips over additional newlines at the end of a key file.
-func checkKeyFileEnd(r *bufio.Reader) error {
-	for i := 0; ; i++ {
-		b, err := r.ReadByte()
-		switch {
-		case err == io.EOF:
-			return nil
-		case err != nil:
-			return err
-		case b != '\n' && b != '\r':
-			return fmt.Errorf("invalid character %q at end of key file", b)
-		case i >= 2:
-			return errors.New("key file too long, want 64 hex characters")
-		}
-	}
 }
 
 // SaveECDSA saves a secp256k1 private key to the given file with
@@ -265,11 +231,6 @@ func SaveECDSA(file string, key *ecdsa.PrivateKey) error {
 // GenerateKey generates a new private key.
 func GenerateKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(S256(), rand.Reader)
-}
-
-// GenerateMLDSA87Key generates a new private key.
-func GenerateMLDSA87Key() (*walletmldsa87.Wallet, error) {
-	return walletmldsa87.NewWallet()
 }
 
 // ValidateSignatureValues verifies whether the signature values are valid with

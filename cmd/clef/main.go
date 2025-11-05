@@ -44,6 +44,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/internal/flags"
 	"github.com/theQRL/go-zond/internal/qrlapi"
 	"github.com/theQRL/go-zond/log"
@@ -560,7 +561,7 @@ func accountImport(c *cli.Context) error {
 		return err
 	}
 
-	hexSeed, err := readSeedFromFile(c.Args().First())
+	hexSeed, err := wallet.ReadSeedFromFile(c.Args().First())
 	if err != nil {
 		return err
 	}
@@ -596,7 +597,7 @@ func accountImport(c *cli.Context) error {
 		}
 	}
 
-	acc, err := internalApi.ImportRawKey(hexSeed, first)
+	acc, err := internalApi.ImportRawWallet(hexSeed, first)
 	if err != nil {
 		return err
 	}
@@ -1209,58 +1210,4 @@ These data types are defined in the channel between clef and the UI`)
 		fmt.Println(elem)
 	}
 	return nil
-}
-
-func readSeedFromFile(file string) (string, error) {
-	fd, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer fd.Close()
-
-	r := bufio.NewReader(fd)
-	buf := make([]byte, 96)
-	n, err := readASCII(buf, r)
-	if err != nil {
-		return "", err
-	} else if n != len(buf) {
-		return "", errors.New("seed too short, want 96 hex characters")
-	}
-	if err := checkKeyFileEnd(r); err != nil {
-		return "", err
-	}
-
-	return string(buf), nil
-}
-
-// checkKeyFileEnd skips over additional newlines at the end of a key file.
-func checkKeyFileEnd(r *bufio.Reader) error {
-	for i := 0; ; i++ {
-		b, err := r.ReadByte()
-		switch {
-		case err == io.EOF:
-			return nil
-		case err != nil:
-			return err
-		case b != '\n' && b != '\r':
-			return fmt.Errorf("invalid character %q at end of file", b)
-		case i >= 2:
-			return errors.New("key file too long, want 48 hex characters")
-		}
-	}
-}
-
-// readASCII reads into 'buf', stopping when the buffer is full or
-// when a non-printable control character is encountered.
-func readASCII(buf []byte, r *bufio.Reader) (n int, err error) {
-	for ; n < len(buf); n++ {
-		buf[n], err = r.ReadByte()
-		switch {
-		case err == io.EOF || buf[n] < '!':
-			return n, nil
-		case err != nil:
-			return n, err
-		}
-	}
-	return n, nil
 }

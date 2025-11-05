@@ -22,13 +22,13 @@ import (
 	"io"
 	"math/big"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/accounts/external"
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
 // ErrNoChainID is returned whenever the user failed to specify a chain id.
@@ -83,8 +83,8 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 }
 
 // NewKeyedTransactorWithChainID is a utility method to easily create a transaction signer
-// from a single private key.
-func NewKeyedTransactorWithChainID(w *walletmldsa87.Wallet, chainID *big.Int) (*TransactOpts, error) {
+// from a single wallet.
+func NewKeyedTransactorWithChainID(w wallet.Wallet, chainID *big.Int) (*TransactOpts, error) {
 	keyAddr := w.GetAddress()
 	if chainID == nil {
 		return nil, ErrNoChainID

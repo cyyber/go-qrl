@@ -31,8 +31,7 @@ import (
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/trie"
@@ -54,14 +53,14 @@ func makeReceipt(addr common.Address) *types.Receipt {
 
 func BenchmarkFilters(b *testing.B) {
 	var (
-		db, _   = rawdb.NewLevelDBDatabase(b.TempDir(), 0, 0, "", false)
-		_, sys  = newTestFilterSystem(b, db, Config{})
-		key1, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr1   = crypto.PubkeyToAddress(key1.PublicKey)
-		addr2   = common.BytesToAddress([]byte("jeff"))
-		addr3   = common.BytesToAddress([]byte("ethereum"))
-		addr4   = common.BytesToAddress([]byte("random addresses please"))
-		to, _   = common.NewAddressFromString("Q0000000000000000000000000000000000000999")
+		db, _      = rawdb.NewLevelDBDatabase(b.TempDir(), 0, 0, "", false)
+		_, sys     = newTestFilterSystem(b, db, Config{})
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		addr1      = wallet1.GetAddress()
+		addr2      = common.BytesToAddress([]byte("jeff"))
+		addr3      = common.BytesToAddress([]byte("ethereum"))
+		addr4      = common.BytesToAddress([]byte("random addresses please"))
+		to, _      = common.NewAddressFromString("Q0000000000000000000000000000000000000999")
 
 		gspec = &core.Genesis{
 			Alloc:   core.GenesisAlloc{addr1: {Balance: big.NewInt(1000000)}},
@@ -118,9 +117,9 @@ func TestFilters(t *testing.T) {
 		db           = rawdb.NewMemoryDatabase()
 		backend, sys = newTestFilterSystem(t, db, Config{})
 		// Sender account
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr    = key1.GetAddress()
-		signer  = types.NewShanghaiSigner(big.NewInt(1))
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		addr       = wallet1.GetAddress()
+		signer     = types.NewShanghaiSigner(big.NewInt(1))
 		// Logging contract
 		contract  = common.Address{0xfe}
 		contract2 = common.Address{0xff}
@@ -207,7 +206,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 			tx2, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{
 				Nonce:     1,
@@ -215,7 +214,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract2,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx2)
 		case 2:
 			data, err := contractABI.Pack("log2", hash2.Big(), hash1.Big())
@@ -228,7 +227,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 		case 998:
 			data, err := contractABI.Pack("log1", hash3.Big())
@@ -241,7 +240,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract2,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 		case 999:
 			data, err := contractABI.Pack("log1", hash4.Big())
@@ -254,7 +253,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 		}
 	})
@@ -283,7 +282,7 @@ func TestFilters(t *testing.T) {
 			Gas:       30000,
 			To:        &contract,
 			Data:      data,
-		}), signer, key1)
+		}), signer, wallet1)
 		if err != nil {
 			t.Fatal(err)
 		}

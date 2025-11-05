@@ -25,8 +25,6 @@ import (
 	"strconv"
 	"strings"
 
-	walletcommon "github.com/theQRL/go-qrllib/wallet/common"
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/common/math"
@@ -37,6 +35,7 @@ import (
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
 	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrldb"
 	"github.com/theQRL/go-zond/rlp"
@@ -355,14 +354,9 @@ func (tx *stTransaction) toMessage(ps stPostState, baseFee *big.Int) (*core.Mess
 	if tx.Sender != nil {
 		from = *tx.Sender
 	} else if len(tx.Seed) > 0 {
-		extendedSeed, err := walletcommon.NewExtendedSeedFromHexString(tx.Seed)
+		key, err := wallet.RestoreFromSeedHex(tx.Seed)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert tx.Seed string into extendedSeed: %v", err)
-		}
-		// Derive sender from key if needed.
-		key, err := walletmldsa87.NewWalletFromExtendedSeed(extendedSeed)
-		if err != nil {
-			return nil, fmt.Errorf("invalid seed: %v", err)
+			return nil, err
 		}
 		from = key.GetAddress()
 	}

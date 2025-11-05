@@ -22,18 +22,18 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
 // Tests that transactions can be added to strict lists and list contents and
 // nonce boundaries are correctly maintained.
 func TestStrictListAdd(t *testing.T) {
 	// Generate a list of transactions to insert
-	key, _ := crypto.GenerateMLDSA87Key()
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 
 	txs := make(types.Transactions, 1024)
 	for i := 0; i < len(txs); i++ {
-		txs[i] = transaction(uint64(i), 0, key)
+		txs[i] = transaction(uint64(i), 0, wallet)
 	}
 	// Insert the transactions in a random order
 	list := newList(true)
@@ -53,11 +53,11 @@ func TestStrictListAdd(t *testing.T) {
 
 func BenchmarkListAdd(b *testing.B) {
 	// Generate a list of transactions to insert
-	key, _ := crypto.GenerateMLDSA87Key()
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 
 	txs := make(types.Transactions, 100000)
 	for i := 0; i < len(txs); i++ {
-		txs[i] = transaction(uint64(i), 0, key)
+		txs[i] = transaction(uint64(i), 0, wallet)
 	}
 	// Insert the transactions in a random order
 	priceLimit := big.NewInt(int64(DefaultConfig.PriceLimit))

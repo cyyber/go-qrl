@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
 // SignerUIAPI implements methods Clef provides for a UI to query, in the bidirectional communication
@@ -118,20 +118,21 @@ func fetchKeystore(am *accounts.Manager) *keystore.KeyStore {
 	return ks[0].(*keystore.KeyStore)
 }
 
-// ImportRawKey stores the given hex encoded ECDSA key into the key directory,
+// ImportRawWallet stores the given hex encoded wallet seed into the key directory,
 // encrypting it with the passphrase.
 // Example call (should fail on password too short)
-// {"jsonrpc":"2.0","method":"clef_importRawKey","params":["1111111111111111111111111111111111111111111111111111111111111111","test"], "id":6}
-func (s *UIServerAPI) ImportRawKey(hexSeed string, password string) (accounts.Account, error) {
-	key, err := pqcrypto.HexToWallet(hexSeed)
+// {"jsonrpc":"2.0","method":"clef_importRawWallet","params":["1111111111111111111111111111111111111111111111111111111111111111","test"], "id":6}
+func (s *UIServerAPI) ImportRawWallet(seed string, password string) (accounts.Account, error) {
+	wallet, err := wallet.RestoreFromSeedHex(seed)
 	if err != nil {
 		return accounts.Account{}, err
 	}
-	if err := ValidatePasswordFormat(password); err != nil {
-		return accounts.Account{}, fmt.Errorf("password requirements not met: %v", err)
-	}
+	// TODO(rgeraldes24): revert
+	// if err := ValidatePasswordFormat(password); err != nil {
+	// 	return accounts.Account{}, fmt.Errorf("password requirements not met: %v", err)
+	// }
 	// No error
-	return fetchKeystore(s.am).ImportMLDSA87(key, password)
+	return fetchKeystore(s.am).ImportWallet(wallet, password)
 }
 
 // OpenWallet initiates a hardware wallet opening procedure, establishing a USB

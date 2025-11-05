@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/consensus"
@@ -38,7 +37,7 @@ import (
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/internal/qrlapi"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl/tracers/logger"
@@ -212,7 +211,7 @@ func TestTraceCall(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 	})
 	defer backend.teardown()
@@ -354,7 +353,7 @@ func TestTraceTransaction(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 		target = signedTx.Hash()
 	})
@@ -412,7 +411,7 @@ func TestTraceBlock(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 		txHash = signedTx.Hash()
 	})
@@ -510,7 +509,7 @@ func TestTracingWithOverrides(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 	})
 	defer backend.chain.Stop()
@@ -812,15 +811,14 @@ func TestTracingWithOverrides(t *testing.T) {
 }
 
 type Account struct {
-	key  *walletmldsa87.Wallet
-	addr common.Address
+	wallet wallet.Wallet
+	addr   common.Address
 }
 
 func newAccounts(n int) (accounts []Account) {
 	for i := 0; i < n; i++ {
-		key, _ := crypto.GenerateMLDSA87Key()
-		addr := key.GetAddress()
-		accounts = append(accounts, Account{key: key, addr: addr})
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		accounts = append(accounts, Account{wallet: wallet, addr: wallet.GetAddress()})
 	}
 	slices.SortFunc(accounts, func(a, b Account) int { return a.addr.Cmp(b.addr) })
 	return accounts
@@ -879,7 +877,7 @@ func TestTraceChain(t *testing.T) {
 				GasFeeCap: b.BaseFee(),
 				Data:      nil,
 			})
-			signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+			signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 			b.AddTx(signedTx)
 			nonce += 1
 		}

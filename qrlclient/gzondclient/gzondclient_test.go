@@ -29,7 +29,7 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/params"
 	qrlsvc "github.com/theQRL/go-zond/qrl"
@@ -40,8 +40,8 @@ import (
 )
 
 var (
-	testKey, _      = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-	testAddr        = testKey.GetAddress()
+	testWallet, _   = wallet.Generate(wallet.ML_DSA_87)
+	testAddr        = testWallet.GetAddress()
 	zeroAddr, _     = common.NewAddressFromString("Q0000000000000000000000000000000000000000")
 	testContract, _ = common.NewAddressFromString("Q000000000000000000000000000000000000beef")
 	testEmpty, _    = common.NewAddressFromString("Q000000000000000000000000000000000000eeee")
@@ -391,7 +391,7 @@ func testSubscribePendingTransactions(t *testing.T, client *rpc.Client) {
 		Data:      nil,
 	})
 	signer := types.LatestSignerForChainID(chainID)
-	signedTx, err := types.SignTx(tx, signer, testKey)
+	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,7 +428,7 @@ func testSubscribeFullPendingTransactions(t *testing.T, client *rpc.Client) {
 		Data:      nil,
 	})
 	signer := types.LatestSignerForChainID(chainID)
-	signedTx, err := types.SignTx(tx, signer, testKey)
+	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)
 	}

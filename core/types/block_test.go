@@ -25,7 +25,7 @@ import (
 	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/internal/blocktest"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/rlp"
@@ -219,10 +219,10 @@ func BenchmarkEncodeBlock(b *testing.B) {
 
 func makeBenchBlock() *Block {
 	var (
-		key, _   = pqcrypto.GenerateWalletKey()
-		txs      = make([]*Transaction, 70)
-		receipts = make([]*Receipt, len(txs))
-		signer   = LatestSigner(params.TestChainConfig)
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		txs       = make([]*Transaction, 70)
+		receipts  = make([]*Receipt, len(txs))
+		signer    = LatestSigner(params.TestChainConfig)
 	)
 	header := &Header{
 		Number:   math.BigPow(2, 9),
@@ -243,7 +243,7 @@ func makeBenchBlock() *Block {
 			GasFeeCap: gasFeeCap,
 			Data:      data,
 		})
-		signedTx, err := SignTx(tx, signer, key)
+		signedTx, err := SignTx(tx, signer, wallet)
 		if err != nil {
 			panic(err)
 		}

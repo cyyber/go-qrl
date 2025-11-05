@@ -30,7 +30,7 @@ import (
 	"github.com/theQRL/go-zond/consensus/beacon"
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/params"
 	qrlsvc "github.com/theQRL/go-zond/qrl"
@@ -181,9 +181,9 @@ func TestToFilterArg(t *testing.T) {
 }
 
 var (
-	testKey, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-	testAddr    = testKey.GetAddress()
-	testBalance = big.NewInt(2e15)
+	testWallet, _ = wallet.Generate(wallet.ML_DSA_87)
+	testAddr      = testWallet.GetAddress()
+	testBalance   = big.NewInt(2e15)
 )
 
 var genesis = &core.Genesis{
@@ -194,7 +194,7 @@ var genesis = &core.Genesis{
 	BaseFee:   big.NewInt(params.InitialBaseFee),
 }
 
-var testTx1 = types.MustSignNewTx(testKey, types.LatestSigner(genesis.Config), &types.DynamicFeeTx{
+var testTx1 = types.MustSignNewTx(testWallet, types.LatestSigner(genesis.Config), &types.DynamicFeeTx{
 	Nonce:     0,
 	Value:     big.NewInt(12),
 	Gas:       params.TxGas,
@@ -203,7 +203,7 @@ var testTx1 = types.MustSignNewTx(testKey, types.LatestSigner(genesis.Config), &
 	To:        &common.Address{2},
 })
 
-var testTx2 = types.MustSignNewTx(testKey, types.LatestSigner(genesis.Config), &types.DynamicFeeTx{
+var testTx2 = types.MustSignNewTx(testWallet, types.LatestSigner(genesis.Config), &types.DynamicFeeTx{
 	Nonce:     1,
 	Value:     big.NewInt(8),
 	Gas:       params.TxGas,
@@ -713,7 +713,7 @@ func sendTransaction(zc *Client) error {
 	}
 
 	signer := types.LatestSignerForChainID(chainID)
-	tx, err := types.SignNewTx(testKey, signer, &types.DynamicFeeTx{
+	tx, err := types.SignNewTx(testWallet, signer, &types.DynamicFeeTx{
 		Nonce:     nonce,
 		To:        &common.Address{2},
 		Value:     big.NewInt(1),

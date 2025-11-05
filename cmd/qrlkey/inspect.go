@@ -77,7 +77,7 @@ make sure to use this feature with great caution!`,
 			PublicKey: hex.EncodeToString(publicKey[:]),
 		}
 		if showPrivate {
-			seed := key.Wallet.GetSeed()
+			seed := key.Wallet.GetExtendedSeed()
 			out.Seed = hex.EncodeToString(seed[:])
 		}
 

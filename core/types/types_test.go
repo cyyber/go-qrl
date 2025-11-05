@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/rlp"
 )
 
@@ -41,7 +41,7 @@ func BenchmarkDecodeRLP(b *testing.B) {
 }
 
 func benchRLP(b *testing.B, encode bool) {
-	key, _ := pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 	to, _ := common.NewAddressFromString("Q00000000000000000000000000000000deadbeef")
 	signer := NewShanghaiSigner(big.NewInt(1337))
 	for _, tc := range []struct {
@@ -77,7 +77,7 @@ func benchRLP(b *testing.B, encode bool) {
 		},
 		{
 			"1559-transaction",
-			MustSignNewTx(key, signer,
+			MustSignNewTx(wallet, signer,
 				&DynamicFeeTx{
 					Nonce:     1,
 					Gas:       1000000,

@@ -38,7 +38,7 @@ import (
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/crypto/cipher"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -183,8 +183,8 @@ func EncryptDataV1(data, auth []byte, argon2idT, argon2idM uint32, argon2idP uin
 // EncryptKey encrypts a key using the specified argon2id parameters into a json
 // blob that can be decrypted later on.
 func EncryptKey(key *Key, auth string, argon2idT, argo2idM uint32, argo2idP uint8) ([]byte, error) {
-	seed := key.Wallet.GetSeed()
-	cryptoStruct, err := EncryptDataV1(seed[:], []byte(auth), argon2idT, argo2idM, argo2idP)
+	seed := key.Wallet.GetExtendedSeed()
+	cryptoStruct, err := EncryptDataV1(seed.ToBytes(), []byte(auth), argon2idT, argo2idM, argo2idP)
 	if err != nil {
 		return nil, err
 	}
@@ -206,25 +206,31 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	}
 	// Depending on the version try to parse one way or another
 	var (
-		keyBytes, keyId []byte
-		err             error
+		seedBytes, keyId []byte
+		err              error
 	)
 
 	k := new(encryptedKeyJSONV1)
 	if err := json.Unmarshal(keyjson, k); err != nil {
 		return nil, err
 	}
-	keyBytes, keyId, err = decryptKeyV1(k, auth)
+	seedBytes, keyId, err = decryptKeyV1(k, auth)
 
 	// Handle any decryption errors and return the key
 	if err != nil {
 		return nil, err
 	}
-	w := pqcrypto.ToWalletUnsafe(keyBytes)
+
+	w, err := wallet.RestoreFromSeedBytes(seedBytes)
+	if err != nil {
+		return nil, err
+	}
+
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Key{
 		Id:      id,
 		Address: w.GetAddress(),
@@ -259,7 +265,7 @@ func DecryptDataV1(cryptoJson CryptoJSON, auth string) ([]byte, error) {
 	return plainText, err
 }
 
-func decryptKeyV1(keyProtected *encryptedKeyJSONV1, auth string) (keyBytes []byte, keyId []byte, err error) {
+func decryptKeyV1(keyProtected *encryptedKeyJSONV1, auth string) (seedBytes []byte, keyId []byte, err error) {
 	if keyProtected.Version != version {
 		return nil, nil, fmt.Errorf("version not supported: %v", keyProtected.Version)
 	}

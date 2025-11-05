@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/theQRL/go-qrllib/wallet/common/descriptor"
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
+	"github.com/theQRL/go-qrllib/wallet/common/wallettype"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 )
 
@@ -65,7 +65,7 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 }
 
 // SignTx signs the transaction using the given ML-DSA-87 signer and wallet.
-func SignTx(tx *Transaction, s Signer, w *walletmldsa87.Wallet) (*Transaction, error) {
+func SignTx(tx *Transaction, s Signer, w wallet.Wallet) (*Transaction, error) {
 	// Check that chain ID of tx matches the signer. We also accept ID zero here,
 	// because it indicates that the chain ID was not specified in the tx.
 	// NOTE(rgeraldes24): chain ID is filled in in the WithSignatureAndPublicKey method
@@ -81,11 +81,11 @@ func SignTx(tx *Transaction, s Signer, w *walletmldsa87.Wallet) (*Transaction, e
 		return nil, err
 	}
 	pk := w.GetPK()
-	return tx.WithSignaturePublicKeyAndDescriptor(s, sig[:], pk[:], w.GetDescriptor().ToDescriptor().ToBytes())
+	return tx.WithSignaturePublicKeyAndDescriptor(s, sig[:], pk[:], descBytes)
 }
 
 // SignNewTx creates a transaction and signs it.
-func SignNewTx(w *walletmldsa87.Wallet, s Signer, txdata TxData) (*Transaction, error) {
+func SignNewTx(w wallet.Wallet, s Signer, txdata TxData) (*Transaction, error) {
 	tx := NewTx(txdata)
 	descBytes := w.GetDescriptor().ToDescriptor().ToBytes()
 	h := s.Hash(tx, descBytes)
@@ -99,7 +99,7 @@ func SignNewTx(w *walletmldsa87.Wallet, s Signer, txdata TxData) (*Transaction, 
 
 // MustSignNewTx creates a transaction and signs it.
 // This panics if the transaction cannot be signed.
-func MustSignNewTx(d *walletmldsa87.Wallet, s Signer, txdata TxData) *Transaction {
+func MustSignNewTx(d wallet.Wallet, s Signer, txdata TxData) *Transaction {
 	tx, err := SignNewTx(d, s, txdata)
 	if err != nil {
 		panic(err)
@@ -176,26 +176,29 @@ func (s ShanghaiSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, tx.ChainId(), s.ChainId)
 	}
 
-	sig, pk, desc := tx.RawSignatureValue(), tx.RawPublicKeyValue(), tx.RawDescriptorValue()
-	msg := s.Hash(tx, desc)
+	sig, pk, descBytes := tx.RawSignatureValue(), tx.RawPublicKeyValue(), tx.RawDescriptorValue()
+	msg := s.Hash(tx, descBytes)
 
-	var descArr [3]byte
-	copy(descArr[:], desc)
-
-	ok, err := pqcrypto.Verify(msg.Bytes(), sig, pk, descArr)
+	desc, err := pqcrypto.BytesToDescriptor(descBytes)
 	if err != nil {
 		return common.Address{}, err
+	}
+
+	ok := false
+	switch desc.Type() {
+	case byte(wallettype.ML_DSA_87):
+		ok, err = pqcrypto.MLDSA87VerifySignature(sig, msg.Bytes(), pk)
+		if err != nil {
+			return common.Address{}, err
+		}
+	default:
+		return common.Address{}, fmt.Errorf("unsupported wallet type in descriptor: %v", desc.Type())
 	}
 	if !ok {
 		return common.Address{}, fmt.Errorf("%w: verification failed", pqcrypto.ErrBadSignature)
 	}
 
-	d, err := descriptor.FromBytes(desc)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	return pqcrypto.PKToAddress(tx.RawPublicKeyValue(), d)
+	return pqcrypto.PublicKeyAndDescriptorToAddress(tx.RawPublicKeyValue(), desc)
 }
 
 func (s ShanghaiSigner) Equal(s2 Signer) bool {

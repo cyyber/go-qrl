@@ -33,15 +33,14 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 )
 
 func TestSimulatedBackend(t *testing.T) {
 	var gasLimit uint64 = 8000029
-	key, _ := crypto.GenerateMLDSA87Key() // nolint: gosec
-	auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87) // nolint: gosec
+	auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 	genAlloc := make(core.GenesisAlloc)
 	genAlloc[auth.From] = core.GenesisAccount{Balance: big.NewInt(9223372036854775807)}
 
@@ -72,10 +71,11 @@ func TestSimulatedBackend(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      common.FromHex(code),
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, key)
+	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, wallet)
 
 	err = sim.SendTransaction(context.Background(), tx)
 	if err != nil {
+		t.Fatal(err)
 		t.Fatal("error sending transaction")
 	}
 
@@ -98,7 +98,7 @@ func TestSimulatedBackend(t *testing.T) {
 	}
 }
 
-var testKey, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+var testWallet, _ = wallet.Generate(wallet.ML_DSA_87)
 
 // the following is based on this contract:
 //
@@ -128,7 +128,7 @@ func simTestBackend(testAddr common.Address) *SimulatedBackend {
 }
 
 func TestNewSimulatedBackend(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	expectedBal := big.NewInt(10000000000000000)
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -166,7 +166,7 @@ func TestAdjustTime(t *testing.T) {
 }
 
 func TestNewAdjustTimeFail(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 	sim := simTestBackend(testAddr)
 	defer sim.blockchain.Stop()
 
@@ -182,7 +182,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -212,7 +212,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx2, err := types.SignTx(tx2, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx2, err := types.SignTx(tx2, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 }
 
 func TestBalanceAt(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	expectedBal := big.NewInt(10000000000000000)
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -300,7 +300,7 @@ func TestBlockByNumber(t *testing.T) {
 }
 
 func TestNonceAt(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -327,7 +327,7 @@ func TestNonceAt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -360,7 +360,7 @@ func TestNonceAt(t *testing.T) {
 }
 
 func TestSendTransaction(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -378,7 +378,7 @@ func TestSendTransaction(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -401,7 +401,7 @@ func TestSendTransaction(t *testing.T) {
 }
 
 func TestTransactionByHash(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 
 	sim := NewSimulatedBackend(
 		core.GenesisAlloc{
@@ -423,7 +423,7 @@ func TestTransactionByHash(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -476,9 +476,9 @@ func TestEstimateGas(t *testing.T) {
 	const contractAbi = "[{\"inputs\":[],\"name\":\"Assert\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"OOG\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"PureRevert\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"Revert\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"Valid\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 	const contractBin = "0x60806040523480156100115760006000fd5b50610017565b61016e806100266000396000f3fe60806040523480156100115760006000fd5b506004361061005c5760003560e01c806350f6fe3414610062578063aa8b1d301461006c578063b9b046f914610076578063d8b9839114610080578063e09fface1461008a5761005c565b60006000fd5b61006a610094565b005b6100746100ad565b005b61007e6100b5565b005b6100886100c2565b005b610092610135565b005b6000600090505b5b808060010191505061009b565b505b565b60006000fd5b565b600015156100bf57fe5b5b565b6040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252600d8152602001807f72657665727420726561736f6e0000000000000000000000000000000000000081526020015060200191505060405180910390fd5b565b5b56fea2646970667358221220345bbcbb1a5ecf22b53a78eaebf95f8ee0eceff6d10d4b9643495084d2ec934a64736f6c63430006040033"
 
-	key, _ := crypto.GenerateMLDSA87Key()
-	var addr common.Address = key.GetAddress()
-	opts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	var addr common.Address = wallet.GetAddress()
+	opts, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 	sim := NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(params.Quanta)}}, 10000000)
 	defer sim.Close()
@@ -582,8 +582,8 @@ func TestEstimateGas(t *testing.T) {
 }
 
 func TestEstimateGasWithPrice(t *testing.T) {
-	key, _ := crypto.GenerateKey()
-	addr := crypto.PubkeyToAddress(key.PublicKey)
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	addr := common.Address(wallet.GetAddress())
 
 	sim := NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(params.Quanta*2 + 2e17)}}, 10000000)
 	defer sim.Close()
@@ -672,7 +672,7 @@ func TestEstimateGasWithPrice(t *testing.T) {
 }
 
 func TestHeaderByHash(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -693,7 +693,7 @@ func TestHeaderByHash(t *testing.T) {
 }
 
 func TestHeaderByNumber(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -739,7 +739,7 @@ func TestHeaderByNumber(t *testing.T) {
 }
 
 func TestTransactionCount(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -769,7 +769,7 @@ func TestTransactionCount(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -798,7 +798,7 @@ func TestTransactionCount(t *testing.T) {
 }
 
 func TestTransactionInBlock(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -833,7 +833,7 @@ func TestTransactionInBlock(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -870,7 +870,7 @@ func TestTransactionInBlock(t *testing.T) {
 }
 
 func TestPendingNonceAt(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -898,7 +898,7 @@ func TestPendingNonceAt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -928,7 +928,7 @@ func TestPendingNonceAt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -949,7 +949,7 @@ func TestPendingNonceAt(t *testing.T) {
 }
 
 func TestTransactionReceipt(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
@@ -967,7 +967,7 @@ func TestTransactionReceipt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -1006,7 +1006,7 @@ func TestSuggestGasPrice(t *testing.T) {
 }
 
 func TestPendingCodeAt(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	bgCtx := context.Background()
@@ -1022,7 +1022,7 @@ func TestPendingCodeAt(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	auth, _ := bind.NewKeyedTransactorWithChainID(testWallet, big.NewInt(1337))
 	contractAddr, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(abiBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v tx: %v contract: %v", err, tx, contract)
@@ -1042,7 +1042,7 @@ func TestPendingCodeAt(t *testing.T) {
 }
 
 func TestCodeAt(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	bgCtx := context.Background()
@@ -1058,7 +1058,7 @@ func TestCodeAt(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	auth, _ := bind.NewKeyedTransactorWithChainID(testWallet, big.NewInt(1337))
 	contractAddr, tx, contract, err := bind.DeployContract(auth, parsed, common.FromHex(abiBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v tx: %v contract: %v", err, tx, contract)
@@ -1082,7 +1082,7 @@ func TestCodeAt(t *testing.T) {
 //
 //	receipt{status=1 cgas=23949 bloom=00000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000040200000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 logs=[log: b6818c8064f645cd82d99b59a1a267d6d61117ef [75fd880d39c1daf53b6547ab6cb59451fc6452d27caa90e5b6649dd8293b9eed] 000000000000000000000000376c47978271565f56deb45495afa69e59c16ab200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000158 9ae378b6d4409eada347a5dc0c180f186cb62dc68fcc0f043425eb917335aa28 0 95d429d309bb9d753954195fe2d69bd140b4ae731b9b5b605c34323de162cf00 0]}
 func TestPendingAndCallContract(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	bgCtx := context.Background()
@@ -1091,7 +1091,7 @@ func TestPendingAndCallContract(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testWallet, big.NewInt(1337))
 	addr, _, _, err := bind.DeployContract(contractAuth, parsed, common.FromHex(abiBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v", err)
@@ -1166,7 +1166,7 @@ contract Reverter {
 	}
 }*/
 func TestCallContractRevert(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	bgCtx := context.Background()
@@ -1178,7 +1178,7 @@ func TestCallContractRevert(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
 	}
-	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	contractAuth, _ := bind.NewKeyedTransactorWithChainID(testWallet, big.NewInt(1337))
 	addr, _, _, err := bind.DeployContract(contractAuth, parsed, common.FromHex(reverterBin), sim)
 	if err != nil {
 		t.Errorf("could not deploy contract: %v", err)
@@ -1261,7 +1261,7 @@ func TestCallContractRevert(t *testing.T) {
 //     Since Commit() was called 2n+1 times in total,
 //     having a chain length of just n+1 means that a reorg occurred.
 func TestFork(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	// 1.
@@ -1315,12 +1315,12 @@ const callableBin = "6080604052348015600f57600080fd5b5060998061001e6000396000f3f
 //  9. Re-send the transaction and mine a block.
 //  10. Check that the event was reborn.
 func TestForkLogsReborn(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	// 1.
 	parsed, _ := abi.JSON(strings.NewReader(callableAbi))
-	auth, _ := bind.NewKeyedTransactorWithChainID(testKey, big.NewInt(1337))
+	auth, _ := bind.NewKeyedTransactorWithChainID(testWallet, big.NewInt(1337))
 	_, _, contract, err := bind.DeployContract(auth, parsed, common.FromHex(callableBin), sim)
 	if err != nil {
 		t.Errorf("deploying contract: %v", err)
@@ -1388,7 +1388,7 @@ func TestForkLogsReborn(t *testing.T) {
 //  5. Mine a block, Re-send the transaction and mine another one.
 //  6. Check that the TX is now included in block 2.
 func TestForkResendTx(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	// 1.
@@ -1405,7 +1405,7 @@ func TestForkResendTx(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	sim.SendTransaction(context.Background(), tx)
 	sim.Commit()
 	// 3.
@@ -1431,7 +1431,7 @@ func TestForkResendTx(t *testing.T) {
 }
 
 func TestCommitReturnValue(t *testing.T) {
-	testAddr := common.Address(testKey.GetAddress())
+	testAddr := common.Address(testWallet.GetAddress())
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 
@@ -1454,7 +1454,7 @@ func TestCommitReturnValue(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 	sim.SendTransaction(context.Background(), tx)
 	h2 := sim.Commit()
 
@@ -1479,7 +1479,7 @@ func TestCommitReturnValue(t *testing.T) {
 // TestAdjustTimeAfterFork ensures that after a fork, AdjustTime uses the pending fork
 // block's parent rather than the canonical head's parent.
 func TestAdjustTimeAfterFork(t *testing.T) {
-	testAddr := testKey.GetAddress()
+	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 

@@ -28,7 +28,7 @@ import (
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/rlp"
 	"golang.org/x/crypto/sha3"
@@ -609,7 +609,7 @@ func BenchmarkWriteAncientBlocks(b *testing.B) {
 
 // makeTestBlocks creates fake blocks for the ancient write benchmark.
 func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
-	key, _ := pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 	signer := types.LatestSignerForChainID(big.NewInt(8))
 
 	// Create transactions.
@@ -617,7 +617,7 @@ func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
 	for i := 0; i < len(txs); i++ {
 		var err error
 		to := common.Address{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-		txs[i], err = types.SignNewTx(key, signer, &types.DynamicFeeTx{
+		txs[i], err = types.SignNewTx(wallet, signer, &types.DynamicFeeTx{
 			Nonce:     2,
 			GasFeeCap: big.NewInt(30000),
 			Gas:       0x45454545,

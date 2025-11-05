@@ -33,7 +33,7 @@ import (
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
 	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl/tracers/logger"
 	"github.com/theQRL/go-zond/qrldb"
@@ -676,10 +676,10 @@ func TestFastVsFullChains(t *testing.T) {
 func testFastVsFullChains(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		key, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = key.GetAddress()
-		funds   = big.NewInt(1000000000000000)
-		gspec   = &Genesis{
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(1000000000000000)
+		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
@@ -700,7 +700,7 @@ func testFastVsFullChains(t *testing.T, scheme string) {
 					GasFeeCap: block.header.BaseFee,
 					Data:      nil,
 				})
-				signedTx, err := types.SignTx(tx, signer, key)
+				signedTx, err := types.SignTx(tx, signer, wallet)
 				if err != nil {
 					panic(err)
 				}
@@ -805,10 +805,10 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 func testLightVsFastVsFullChainHeads(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = crypto.PubkeyToAddress(key.PublicKey)
-		funds   = big.NewInt(1000000000000000)
-		gspec   = &Genesis{
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(1000000000000000)
+		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
@@ -921,13 +921,13 @@ func TestChainTxReorgs(t *testing.T) {
 
 func testChainTxReorgs(t *testing.T, scheme string) {
 	var (
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		key2, _ = pqcrypto.HexToWallet("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
-		key3, _ = pqcrypto.HexToWallet("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
-		addr1   = key1.GetAddress()
-		addr2   = key2.GetAddress()
-		addr3   = key3.GetAddress()
-		gspec   = &Genesis{
+		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet2, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet3, _ = wallet.Generate(wallet.ML_DSA_87)
+		addr1      = wallet1.GetAddress()
+		addr2      = wallet2.GetAddress()
+		addr3      = wallet3.GetAddress()
+		gspec      = &Genesis{
 			Config:   params.TestChainConfig,
 			GasLimit: 3141592,
 			Alloc: GenesisAlloc{
@@ -943,8 +943,8 @@ func testChainTxReorgs(t *testing.T, scheme string) {
 	//  - postponed: transaction included at a later block in the forked chain
 	//  - swapped: transaction included at the same block number in the forked chain
 	to := common.Address(addr1)
-	postponed, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 0, To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, key1)
-	swapped, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 1, To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, key1)
+	postponed, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 0, To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, wallet1)
+	swapped, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 1, To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, wallet1)
 
 	// Create two transactions that will be dropped by the forked chain:
 	//  - pastDrop: transaction dropped retroactively from a past block
@@ -962,13 +962,13 @@ func testChainTxReorgs(t *testing.T, scheme string) {
 		switch i {
 		case 0:
 
-			pastDrop, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr2), To: &to2, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, key2)
+			pastDrop, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr2), To: &to2, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, wallet2)
 
 			gen.AddTx(pastDrop)  // This transaction will be dropped in the fork from below the split point
 			gen.AddTx(postponed) // This transaction will be postponed till block #3 in the fork
 
 		case 2:
-			freshDrop, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr2), To: &to2, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, key2)
+			freshDrop, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr2), To: &to2, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, wallet2)
 
 			gen.AddTx(freshDrop) // This transaction will be dropped in the fork from exactly at the split point
 			gen.AddTx(swapped)   // This transaction will be swapped out at the exact height
@@ -989,18 +989,18 @@ func testChainTxReorgs(t *testing.T, scheme string) {
 	_, chain, _ = GenerateChainWithGenesis(gspec, beacon.NewFaker(), 5, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:
-			pastAdd, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr3), To: &to3, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, key3)
+			pastAdd, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr3), To: &to3, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, wallet3)
 			gen.AddTx(pastAdd) // This transaction needs to be injected during reorg
 
 		case 2:
 			gen.AddTx(postponed) // This transaction was postponed from block #1 in the original chain
 			gen.AddTx(swapped)   // This transaction was swapped from the exact current spot in the original chain
 
-			freshAdd, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr3), To: &to3, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, key3)
+			freshAdd, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr3), To: &to3, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, wallet3)
 			gen.AddTx(freshAdd) // This transaction will be added exactly at reorg time
 
 		case 3:
-			futureAdd, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr3), To: &to3, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, key3)
+			futureAdd, _ = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: gen.TxNonce(addr3), To: &to3, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: gen.header.BaseFee, Data: nil}), signer, wallet3)
 			gen.AddTx(futureAdd) // This transaction will be added after a full reorg
 		}
 	})
@@ -1044,8 +1044,8 @@ func TestLogReorgs(t *testing.T) {
 
 func testLogReorgs(t *testing.T, scheme string) {
 	var (
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr1   = key1.GetAddress()
+		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
+		addr1      = wallet1.GetAddress()
 
 		// this code generates a log
 		code   = common.Hex2Bytes("60606040525b7f24ec1d3ff24c2f6ff210738839dbc339cd45a5294d85c79361016243157aae7b60405180905060405180910390a15b600a8060416000396000f360606040526008565b00")
@@ -1067,7 +1067,7 @@ func testLogReorgs(t *testing.T, scheme string) {
 				GasFeeCap: gen.header.BaseFee,
 				Data:      code,
 			})
-			tx, err := types.SignTx(tx, signer, key1)
+			tx, err := types.SignTx(tx, signer, wallet1)
 			if err != nil {
 				t.Fatalf("failed to create tx: %v", err)
 			}
@@ -1111,8 +1111,8 @@ func TestLogRebirth(t *testing.T) {
 
 func testLogRebirth(t *testing.T, scheme string) {
 	var (
-		key1, _       = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr1         = key1.GetAddress()
+		wallet1, _    = wallet.Generate(wallet.ML_DSA_87)
+		addr1         = wallet1.GetAddress()
 		gspec         = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(10000000000000000)}}}
 		signer        = types.LatestSigner(gspec.Config)
 		engine        = beacon.NewFaker()
@@ -1130,7 +1130,7 @@ func testLogRebirth(t *testing.T, scheme string) {
 	genDb, chain, _ := GenerateChainWithGenesis(gspec, engine, 3, func(i int, gen *BlockGen) {
 		if i < 2 {
 			for ii := 0; ii < 5; ii++ {
-				tx, err := types.SignNewTx(key1, signer, &types.DynamicFeeTx{
+				tx, err := types.SignNewTx(wallet1, signer, &types.DynamicFeeTx{
 					Nonce:     gen.TxNonce(addr1),
 					GasFeeCap: gen.header.BaseFee,
 					Gas:       uint64(1000001),
@@ -1156,7 +1156,7 @@ func testLogRebirth(t *testing.T, scheme string) {
 			return
 		}
 		for ii := 0; ii < 5; ii++ {
-			tx, err := types.SignNewTx(key1, signer, &types.DynamicFeeTx{
+			tx, err := types.SignNewTx(wallet1, signer, &types.DynamicFeeTx{
 				Nonce:     gen.TxNonce(addr1),
 				GasFeeCap: gen.header.BaseFee,
 				Gas:       uint64(1000000),
@@ -1233,9 +1233,9 @@ func TestReorgSideEvent(t *testing.T) {
 
 func testReorgSideEvent(t *testing.T, scheme string) {
 	var (
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr1   = key1.GetAddress()
-		gspec   = &Genesis{
+		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
+		addr1      = wallet1.GetAddress()
+		gspec      = &Genesis{
 			Config: params.TestChainConfig,
 			Alloc:  GenesisAlloc{addr1: {Balance: big.NewInt(10000000000000000)}},
 		}
@@ -1257,7 +1257,7 @@ func testReorgSideEvent(t *testing.T, scheme string) {
 			GasFeeCap: gen.header.BaseFee,
 			Data:      nil,
 		})
-		tx, err := types.SignTx(tx, signer, key1)
+		tx, err := types.SignTx(tx, signer, wallet1)
 		if i == 2 {
 			gen.OffsetTime(-9)
 		}
@@ -1372,11 +1372,11 @@ func TestEIP161AccountRemoval(t *testing.T) {
 func testEIP161AccountRemoval(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		key, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = key.GetAddress()
-		funds   = big.NewInt(100000000000000000)
-		theAddr = common.Address{1}
-		gspec   = &Genesis{
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(100000000000000000)
+		theAddr   = common.Address{1}
+		gspec     = &Genesis{
 			Config: &params.ChainConfig{
 				ChainID: big.NewInt(1),
 			},
@@ -1402,7 +1402,7 @@ func testEIP161AccountRemoval(t *testing.T, scheme string) {
 				GasFeeCap: block.header.BaseFee,
 				Data:      nil,
 			})
-			tx, err = types.SignTx(tx, signer, key)
+			tx, err = types.SignTx(tx, signer, wallet)
 		case 1:
 			tx = types.NewTx(&types.DynamicFeeTx{
 				Nonce:     block.TxNonce(address),
@@ -1412,7 +1412,7 @@ func testEIP161AccountRemoval(t *testing.T, scheme string) {
 				GasFeeCap: block.header.BaseFee,
 				Data:      nil,
 			})
-			tx, err = types.SignTx(tx, signer, key)
+			tx, err = types.SignTx(tx, signer, wallet)
 		}
 		if err != nil {
 			t.Fatal(err)
@@ -1619,10 +1619,10 @@ func TestBlockchainRecovery(t *testing.T) {
 func testBlockchainRecovery(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = crypto.PubkeyToAddress(key.PublicKey)
-		funds   = big.NewInt(1000000000)
-		gspec   = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(1000000000)
+		gspec     = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
 	)
 	height := uint64(1024)
 	_, blocks, receipts := GenerateChainWithGenesis(gspec, beacon.NewFaker(), int(height), nil)
@@ -2019,10 +2019,10 @@ func testReorgToShorterRemovesCanonMappingHeaderChain(t *testing.T, scheme strin
 func TestTransactionIndices(t *testing.T) {
 	// Configure and generate a sample block chain
 	var (
-		key, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = key.GetAddress()
-		funds   = big.NewInt(100000000000000000)
-		gspec   = &Genesis{
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(100000000000000000)
+		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
@@ -2038,7 +2038,7 @@ func TestTransactionIndices(t *testing.T) {
 			GasFeeCap: block.header.BaseFee,
 			Data:      nil,
 		})
-		tx, err := types.SignTx(tx, signer, key)
+		tx, err := types.SignTx(tx, signer, wallet)
 		if err != nil {
 			panic(err)
 		}
@@ -2132,11 +2132,11 @@ func TestSkipStaleTxIndicesInSnapSync(t *testing.T) {
 func testSkipStaleTxIndicesInSnapSync(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		key, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = key.GetAddress()
-		funds   = big.NewInt(100000000000000000)
-		gspec   = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
-		signer  = types.LatestSigner(gspec.Config)
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(100000000000000000)
+		gspec     = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
+		signer    = types.LatestSigner(gspec.Config)
 	)
 	_, blocks, receipts := GenerateChainWithGenesis(gspec, beacon.NewFaker(), 128, func(i int, block *BlockGen) {
 		tx := types.NewTx(&types.DynamicFeeTx{
@@ -2147,7 +2147,7 @@ func testSkipStaleTxIndicesInSnapSync(t *testing.T, scheme string) {
 			GasFeeCap: block.header.BaseFee,
 			Data:      nil,
 		})
-		tx, err := types.SignTx(tx, signer, key)
+		tx, err := types.SignTx(tx, signer, wallet)
 		if err != nil {
 			panic(err)
 		}
@@ -2220,12 +2220,12 @@ func testSkipStaleTxIndicesInSnapSync(t *testing.T, scheme string) {
 // Benchmarks large blocks with value transfers to non-existing accounts
 func benchmarkLargeNumberOfValueToNonexisting(b *testing.B, numTxs, numBlocks int, recipientFn func(uint64) common.Address) {
 	var (
-		address, _      = common.NewAddressFromString("Q000000000000000000000000000000000000c0de")
-		signer          = types.ShanghaiSigner{}
-		testBankKey, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		testBankAddress = testBankKey.GetAddress()
-		bankFunds       = big.NewInt(100000000000000000)
-		gspec           = &Genesis{
+		address, _        = common.NewAddressFromString("Q000000000000000000000000000000000000c0de")
+		signer            = types.ShanghaiSigner{}
+		testBankWallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		testBankAddress   = testBankWallet.GetAddress()
+		bankFunds         = big.NewInt(100000000000000000)
+		gspec             = &Genesis{
 			Config: params.TestChainConfig,
 			Alloc: GenesisAlloc{
 				testBankAddress: {Balance: bankFunds},
@@ -2253,7 +2253,7 @@ func benchmarkLargeNumberOfValueToNonexisting(b *testing.B, numTxs, numBlocks in
 				GasFeeCap: block.header.BaseFee,
 				Data:      nil,
 			})
-			tx, err := types.SignTx(tx, signer, testBankKey)
+			tx, err := types.SignTx(tx, signer, testBankWallet)
 			if err != nil {
 				b.Error(err)
 			}
@@ -2347,10 +2347,10 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		key, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = key.GetAddress()
-		funds   = big.NewInt(1000000000000000)
-		bb, _   = common.NewAddressFromString("Q000000000000000000000000000000000000bbbb")
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(1000000000000000)
+		bb, _     = common.NewAddressFromString("Q000000000000000000000000000000000000bbbb")
 	)
 
 	// The bb-code needs to CREATE2 the aa contract. It consists of
@@ -2416,7 +2416,7 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 			GasFeeCap: b.header.BaseFee,
 			Data:      nil,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, key)
+		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, wallet)
 		b.AddTx(tx)
 		nonce++
 	})
@@ -2469,10 +2469,10 @@ func testEIP2718Transition(t *testing.T, scheme string) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		key, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = key.GetAddress()
-		funds   = big.NewInt(1000000000000000)
-		gspec   = &Genesis{
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(1000000000000000)
+		gspec     = &Genesis{
 			Config: params.TestChainConfig,
 			Alloc: GenesisAlloc{
 				address: {Balance: funds},
@@ -2496,7 +2496,7 @@ func testEIP2718Transition(t *testing.T, scheme string) {
 
 		// One transaction to 0xAAAA
 		signer := types.LatestSigner(gspec.Config)
-		tx, _ := types.SignNewTx(key, signer, &types.DynamicFeeTx{
+		tx, _ := types.SignNewTx(wallet, signer, &types.DynamicFeeTx{
 			ChainID:   gspec.Config.ChainID,
 			Nonce:     0,
 			To:        &aa,
@@ -2551,13 +2551,13 @@ func testEIP1559Transition(t *testing.T, scheme string) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		key2, _ = pqcrypto.HexToWallet("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
-		addr1   = key1.GetAddress()
-		addr2   = key2.GetAddress()
-		funds   = new(big.Int).Mul(common.Big1, big.NewInt(params.Quanta))
-		config  = *params.AllBeaconProtocolChanges
-		gspec   = &Genesis{
+		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet2, _ = wallet.Generate(wallet.ML_DSA_87)
+		addr1      = wallet1.GetAddress()
+		addr2      = wallet2.GetAddress()
+		funds      = new(big.Int).Mul(common.Big1, big.NewInt(params.Quanta))
+		config     = *params.AllBeaconProtocolChanges
+		gspec      = &Genesis{
 			Config: &config,
 			Alloc: GenesisAlloc{
 				addr1: {Balance: funds},
@@ -2599,7 +2599,7 @@ func testEIP1559Transition(t *testing.T, scheme string) {
 			Data:       []byte{},
 		}
 		tx := types.NewTx(txdata)
-		tx, _ = types.SignTx(tx, signer, key1)
+		tx, _ = types.SignTx(tx, signer, wallet1)
 
 		b.AddTx(tx)
 	})
@@ -2649,7 +2649,7 @@ func testEIP1559Transition(t *testing.T, scheme string) {
 			GasTipCap: newShor(5),
 		}
 		tx := types.NewTx(txdata)
-		tx, _ = types.SignTx(tx, signer, key2)
+		tx, _ = types.SignTx(tx, signer, wallet2)
 
 		b.AddTx(tx)
 	})
@@ -2688,10 +2688,10 @@ func testSetCanonical(t *testing.T, scheme string) {
 	//log.Root().SetHandler(log.LvlFilterHandler(log.LvlDebug, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
 
 	var (
-		key, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		address = key.GetAddress()
-		funds   = big.NewInt(100000000000000000)
-		gspec   = &Genesis{
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(100000000000000000)
+		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
@@ -2709,7 +2709,7 @@ func testSetCanonical(t *testing.T, scheme string) {
 			GasFeeCap: gen.header.BaseFee,
 			Data:      nil,
 		})
-		tx, err := types.SignTx(tx, signer, key)
+		tx, err := types.SignTx(tx, signer, wallet)
 		if err != nil {
 			panic(err)
 		}
@@ -2738,7 +2738,7 @@ func testSetCanonical(t *testing.T, scheme string) {
 			GasFeeCap: gen.header.BaseFee,
 			Data:      nil,
 		})
-		tx, err := types.SignTx(tx, signer, key)
+		tx, err := types.SignTx(tx, signer, wallet)
 		if err != nil {
 			panic(err)
 		}
@@ -2894,9 +2894,9 @@ func testCanonicalHashMarker(t *testing.T, scheme string) {
 // TestTxIndexer tests the tx indexes are updated correctly.
 func TestTxIndexer(t *testing.T) {
 	var (
-		testBankKey, _  = pqcrypto.GenerateWalletKey()
-		testBankAddress = testBankKey.GetAddress()
-		testBankFunds   = big.NewInt(1000000000000000000)
+		testBankWallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		testBankAddress   = testBankWallet.GetAddress()
+		testBankFunds     = big.NewInt(1000000000000000000)
 
 		gspec = &Genesis{
 			Config:  params.TestChainConfig,
@@ -2916,7 +2916,7 @@ func TestTxIndexer(t *testing.T) {
 			GasFeeCap: big.NewInt(10 * params.InitialBaseFee),
 			Data:      nil,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, testBankKey)
+		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, testBankWallet)
 		gen.AddTx(tx)
 		nonce += 1
 	})
@@ -3113,13 +3113,13 @@ func TestEIP3651(t *testing.T) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		key2, _ = pqcrypto.HexToWallet("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
-		addr1   = key1.GetAddress()
-		addr2   = key2.GetAddress()
-		funds   = new(big.Int).Mul(common.Big1, big.NewInt(params.Quanta))
-		config  = *params.AllBeaconProtocolChanges
-		gspec   = &Genesis{
+		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet2, _ = wallet.Generate(wallet.ML_DSA_87)
+		addr1      = wallet1.GetAddress()
+		addr2      = wallet2.GetAddress()
+		funds      = new(big.Int).Mul(common.Big1, big.NewInt(params.Quanta))
+		config     = *params.AllBeaconProtocolChanges
+		gspec      = &Genesis{
 			Config: &config,
 			Alloc: GenesisAlloc{
 				addr1: {Balance: funds},
@@ -3171,7 +3171,7 @@ func TestEIP3651(t *testing.T) {
 			Data:       []byte{},
 		}
 		tx := types.NewTx(txdata)
-		tx, _ = types.SignTx(tx, signer, key1)
+		tx, _ = types.SignTx(tx, signer, wallet1)
 
 		b.AddTx(tx)
 	})

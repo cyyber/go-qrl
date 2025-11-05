@@ -22,7 +22,7 @@ import (
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/log"
 	"github.com/urfave/cli/v2"
 )
@@ -305,9 +305,9 @@ func accountImport(ctx *cli.Context) error {
 		utils.Fatalf("keyfile must be given as the only argument")
 	}
 	keyfile := ctx.Args().First()
-	key, err := pqcrypto.LoadWallet(keyfile)
+	wallet, err := wallet.RestoreFromFile(keyfile)
 	if err != nil {
-		utils.Fatalf("Failed to load the private key: %v", err)
+		utils.Fatalf("Failed to restore wallet from file: %v", err)
 	}
 	am := makeAccountManager(ctx)
 	backends := am.Backends(keystore.KeyStoreType)
@@ -317,7 +317,7 @@ func accountImport(ctx *cli.Context) error {
 	ks := backends[0].(*keystore.KeyStore)
 	passphrase := utils.GetPassPhraseWithList("Your new account is locked with a password. Please give a password. Do not forget this password.", true, 0, utils.MakePasswordList(ctx))
 
-	acct, err := ks.ImportMLDSA87(key, passphrase)
+	acct, err := ks.ImportWallet(wallet, passphrase)
 	if err != nil {
 		utils.Fatalf("Could not create the account: %v", err)
 	}
