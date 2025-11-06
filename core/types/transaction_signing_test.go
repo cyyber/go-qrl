@@ -59,7 +59,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 	signTx := func(t *testing.T, signer Signer, tx *Transaction, wallet wallet.Wallet) (*Transaction, []byte, []byte, []byte) {
 		t.Helper()
 
-		desc := wallet.GetDescriptor().ToDescriptor().ToBytes()
+		desc := wallet.GetDescriptor().ToBytes()
 		h := signer.Hash(tx, desc)
 		sigArr, err := wallet.Sign(h.Bytes())
 		if err != nil {
@@ -80,7 +80,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		t.Helper()
 
 		pk := w.GetPK()
-		addr, err := pqcrypto.PublicKeyAndDescriptorToAddress(pk[:], w.GetDescriptor().ToDescriptor())
+		addr, err := pqcrypto.PublicKeyAndDescriptorToAddress(pk[:], w.GetDescriptor())
 		if err != nil {
 			t.Fatalf("PublicKeyAndDescriptorToAddress: %v", err)
 		}

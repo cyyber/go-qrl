@@ -74,7 +74,7 @@ func SignTx(tx *Transaction, s Signer, w wallet.Wallet) (*Transaction, error) {
 		return nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, tx.ChainId(), s.ChainID())
 	}
 
-	descBytes := w.GetDescriptor().ToDescriptor().ToBytes()
+	descBytes := w.GetDescriptor().ToBytes()
 	h := s.Hash(tx, descBytes)
 	sig, err := pqcrypto.Sign(h[:], w)
 	if err != nil {
@@ -87,7 +87,7 @@ func SignTx(tx *Transaction, s Signer, w wallet.Wallet) (*Transaction, error) {
 // SignNewTx creates a transaction and signs it.
 func SignNewTx(w wallet.Wallet, s Signer, txdata TxData) (*Transaction, error) {
 	tx := NewTx(txdata)
-	descBytes := w.GetDescriptor().ToDescriptor().ToBytes()
+	descBytes := w.GetDescriptor().ToBytes()
 	h := s.Hash(tx, descBytes)
 	sig, err := pqcrypto.Sign(h[:], w)
 	if err != nil {

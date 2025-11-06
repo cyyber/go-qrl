@@ -96,7 +96,7 @@ func NewKeyedTransactorWithChainID(w wallet.Wallet, chainID *big.Int) (*Transact
 			if address != keyAddr {
 				return nil, ErrNotAuthorized
 			}
-			desc := w.GetDescriptor().ToDescriptor().ToBytes()
+			desc := w.GetDescriptor().ToBytes()
 			signature, err := pqcrypto.Sign(signer.Hash(tx, desc).Bytes(), w)
 			if err != nil {
 				return nil, err

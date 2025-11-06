@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	cryptomldsa87 "github.com/theQRL/go-qrllib/crypto/ml_dsa_87"
 	walletcommon "github.com/theQRL/go-qrllib/wallet/common"
 	"github.com/theQRL/go-qrllib/wallet/common/descriptor"
 	"github.com/theQRL/go-qrllib/wallet/common/wallettype"
@@ -22,28 +21,46 @@ const (
 
 var ErrBadWalletType = errors.New("unsupported wallet type")
 
-// NOTE(rgeraldes24): work-in-progress
+type MLDSA87Wallet struct {
+	*walletmldsa87.Wallet
+}
+
+func (w *MLDSA87Wallet) Sign(message []uint8) ([]byte, error) {
+	sig, err := w.Wallet.Sign(message)
+	if err != nil {
+		return nil, err
+	}
+	return sig[:], nil
+}
+
+func (w *MLDSA87Wallet) GetPK() []byte {
+	pk := w.Wallet.GetPK()
+	return pk[:]
+}
+
+func (w *MLDSA87Wallet) GetDescriptor() descriptor.Descriptor {
+	return w.Wallet.GetDescriptor().ToDescriptor()
+}
+
 type Wallet interface {
 	GetExtendedSeed() walletcommon.ExtendedSeed
 	GetAddress() [common.AddressLength]uint8
-	GetDescriptor() walletmldsa87.Descriptor
-	GetPK() walletmldsa87.PK
-	Sign([]uint8) ([cryptomldsa87.CryptoBytes]uint8, error)
+	GetDescriptor() descriptor.Descriptor
+	GetPK() []byte
+	Sign([]uint8) ([]byte, error)
 }
 
 func Generate(t wallettype.WalletType) (Wallet, error) {
-	var (
-		w   Wallet
-		err error
-	)
+	var w Wallet
 	switch t {
 	case ML_DSA_87:
-		w, err = walletmldsa87.NewWallet()
+		mldsa87, err := walletmldsa87.NewWallet()
+		if err != nil {
+			return nil, err
+		}
+		w = &MLDSA87Wallet{mldsa87}
 	default:
 		return nil, ErrBadWalletType
-	}
-	if err != nil {
-		return nil, err
 	}
 
 	return w, nil
@@ -64,22 +81,20 @@ func RestoreFromSeedHex(seed string) (Wallet, error) {
 }
 
 func restoreWalletFromExtendedSeed(ext walletcommon.ExtendedSeed) (Wallet, error) {
-	var (
-		wallet Wallet
-		err    error
-	)
+	var w Wallet
 	desc := descriptor.New(ext.GetDescriptorBytes())
 	switch desc.Type() {
 	case byte(wallettype.ML_DSA_87):
-		wallet, err = walletmldsa87.NewWalletFromSeed(ext.GetSeed())
+		mldsa87, err := walletmldsa87.NewWalletFromSeed(ext.GetSeed())
 		if err != nil {
 			return nil, err
 		}
+		w = &MLDSA87Wallet{mldsa87}
 	default:
 		return nil, fmt.Errorf("unsupported wallet type in descriptor: %v", desc.Type())
 	}
 
-	return wallet, nil
+	return w, nil
 }
 
 func RestoreFromFile(file string) (Wallet, error) {
