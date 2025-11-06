@@ -99,13 +99,13 @@ func TestAccountImport(t *testing.T) {
 	tests := []struct{ name, seed, output string }{
 		{
 			name:   "correct account",
-			seed:   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeffcad0b19bb29d4674531d6f115237e16",
+			seed:   "0100000123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeffcad0b19bb29d4674531d6f115237e16",
 			output: "Address: {Q958d36976b91586a10341cf20c7dfbcb122a1065}\n",
 		},
 		{
 			name:   "invalid character",
-			seed:   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeffcad0b19bb29d4674531d6f115237e161",
-			output: "Fatal: Failed to load the private key: invalid character '1' at end of key file\n",
+			seed:   "0100000123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeffcad0b19bb29d4674531d6f115237e161",
+			output: "Fatal: Failed to restore wallet from file: invalid character '1' at end of key file\n",
 		},
 	}
 	for _, test := range tests {

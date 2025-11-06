@@ -70,6 +70,7 @@ To sign a message contained in a file, use the --msgfile flag.
 			utils.Fatalf("Error decrypting key: %v", err)
 		}
 
+		// TODO(rgeraldes24): support multiple wallet types
 		signature, err := pqcrypto.Sign(accounts.TextHash(message), key.Wallet)
 		if err != nil {
 			utils.Fatalf("Failed to sign message: %v", err)
@@ -102,12 +103,9 @@ It is possible to refer to a file containing the message.`,
 		msgfileFlag,
 	},
 	Action: func(ctx *cli.Context) error {
-		signatureHex := ctx.Args().First()
-		pubKeyHex := ctx.Args().Get(1)
+		signature := common.FromHex(ctx.Args().First())
+		publicKey := common.FromHex(ctx.Args().Get(1))
 		message := getMessage(ctx, 2)
-
-		signature := common.FromHex(signatureHex)
-		publicKey := common.FromHex(pubKeyHex)
 
 		var (
 			ok  bool
@@ -115,7 +113,7 @@ It is possible to refer to a file containing the message.`,
 		)
 		switch len(signature) {
 		case pqcrypto.MLDSA87SignatureLength:
-			ok, err = pqcrypto.MLDSA87VerifySignature(signature, message, publicKey)
+			ok, err = pqcrypto.MLDSA87VerifySignature(signature, accounts.TextHash(message), publicKey)
 			if err != nil {
 				utils.Fatalf("Can't verify ML-DSA-87 signature: %v", err)
 			}

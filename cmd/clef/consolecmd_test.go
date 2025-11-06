@@ -69,7 +69,7 @@ func TestImportRaw(t *testing.T) {
 func TestListAccounts(t *testing.T) {
 	t.Parallel()
 	keyPath := filepath.Join(os.TempDir(), fmt.Sprintf("%v-tempkey.test", t.Name()))
-	os.WriteFile(keyPath, []byte("3bf5fbadaa64ce2974d2464dc17fdac669557f05bd5329c35aa84e85636d0565f5cb4d3427d6033ccabf0b6c3f157bb5"), 0777)
+	os.WriteFile(keyPath, []byte("0100003bf5fbadaa64ce2974d2464dc17fdac669557f05bd5329c35aa84e85636d0565f5cb4d3427d6033ccabf0b6c3f157bb5"), 0777)
 	t.Cleanup(func() { os.Remove(keyPath) })
 
 	t.Run("no-accounts", func(t *testing.T) {
@@ -98,7 +98,7 @@ func TestListAccounts(t *testing.T) {
 func TestListWallets(t *testing.T) {
 	t.Parallel()
 	keyPath := filepath.Join(os.TempDir(), fmt.Sprintf("%v-tempkey.test", t.Name()))
-	os.WriteFile(keyPath, []byte("3bf5fbadaa64ce2974d2464dc17fdac669557f05bd5329c35aa84e85636d0565f5cb4d3427d6033ccabf0b6c3f157bb5"), 0777)
+	os.WriteFile(keyPath, []byte("0100003bf5fbadaa64ce2974d2464dc17fdac669557f05bd5329c35aa84e85636d0565f5cb4d3427d6033ccabf0b6c3f157bb5"), 0777)
 	t.Cleanup(func() { os.Remove(keyPath) })
 
 	t.Run("no-accounts", func(t *testing.T) {
