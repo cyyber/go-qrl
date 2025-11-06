@@ -30,7 +30,6 @@ import (
 	"sync"
 	"time"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
@@ -317,8 +316,7 @@ func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string
 	if err != nil {
 		return nil, err
 	}
-	// TODO(rgeraldes24)
-	// defer zeroKey(&key.Wallet)
+	defer zeroKey(&key.Wallet)
 	return pqcrypto.Sign(hash, key.Wallet)
 }
 
@@ -329,8 +327,7 @@ func (ks *KeyStore) SignTxWithPassphrase(a accounts.Account, passphrase string, 
 	if err != nil {
 		return nil, err
 	}
-	// TODO(rgeraldes24)
-	// defer zeroKey(&key.Wallet)
+	defer zeroKey(&key.Wallet)
 	// Depending on the presence of the chain ID, sign with or without replay protection.
 	signer := types.LatestSignerForChainID(chainID)
 	return types.SignTx(tx, signer, key.Wallet)
@@ -373,8 +370,7 @@ func (ks *KeyStore) TimedUnlock(a accounts.Account, passphrase string, timeout t
 		if u.abort == nil {
 			// The address was unlocked indefinitely, so unlocking
 			// it with a timeout would be confusing.
-			// TODO(rgeraldes24)
-			// zeroKey(&key.Wallet)
+			zeroKey(&key.Wallet)
 			return nil
 		}
 		// Terminate the expire goroutine and replace it below.
@@ -421,8 +417,7 @@ func (ks *KeyStore) expire(addr common.Address, u *unlocked, timeout time.Durati
 		// because the map stores a new pointer every time the key is
 		// unlocked.
 		if ks.unlocked[addr] == u {
-			// TODO(rgeraldes24)
-			// zeroKey(&u.Wallet)
+			zeroKey(&u.Wallet)
 			delete(ks.unlocked, addr)
 		}
 		ks.mu.Unlock()
@@ -466,8 +461,7 @@ func (ks *KeyStore) Export(a accounts.Account, passphrase, newPassphrase string)
 func (ks *KeyStore) Import(keyJSON []byte, passphrase, newPassphrase string) (accounts.Account, error) {
 	key, err := DecryptKey(keyJSON, passphrase)
 	if key != nil && key.Wallet != nil {
-		// TODO(rgeraldes24)
-		// defer zeroKey(&key.Wallet)
+		defer zeroKey(&key.Wallet)
 	}
 	if err != nil {
 		return accounts.Account{}, err
@@ -524,7 +518,6 @@ func (ks *KeyStore) isUpdating() bool {
 	return ks.updating
 }
 
-// zeroKey nil to ML-DSA-87 key in memory.
-func zeroKey(k **walletmldsa87.Wallet) {
+func zeroKey(k *wallet.Wallet) {
 	*k = nil
 }

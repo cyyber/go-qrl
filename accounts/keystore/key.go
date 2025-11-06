@@ -145,8 +145,7 @@ func storeNewKey(ks keyStore, auth string) (*Key, accounts.Account, error) {
 		URL:     accounts.URL{Scheme: KeyStoreScheme, Path: ks.JoinPath(keyFileName(key.Address))},
 	}
 	if err := ks.StoreKey(a.URL.Path, key, auth); err != nil {
-		// TODO(rgeraldes24)
-		// zeroKey(&key.Wallet)
+		zeroKey(&key.Wallet)
 		return nil, a, err
 	}
 	return key, a, err

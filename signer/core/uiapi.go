@@ -127,10 +127,9 @@ func (s *UIServerAPI) ImportRawWallet(seed string, password string) (accounts.Ac
 	if err != nil {
 		return accounts.Account{}, err
 	}
-	// TODO(rgeraldes24): revert
-	// if err := ValidatePasswordFormat(password); err != nil {
-	// 	return accounts.Account{}, fmt.Errorf("password requirements not met: %v", err)
-	// }
+	if err := ValidatePasswordFormat(password); err != nil {
+		return accounts.Account{}, fmt.Errorf("password requirements not met: %v", err)
+	}
 	// No error
 	return fetchKeystore(s.am).ImportWallet(wallet, password)
 }
