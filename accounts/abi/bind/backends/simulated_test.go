@@ -75,7 +75,6 @@ func TestSimulatedBackend(t *testing.T) {
 
 	err = sim.SendTransaction(context.Background(), tx)
 	if err != nil {
-		t.Fatal(err)
 		t.Fatal("error sending transaction")
 	}
 
