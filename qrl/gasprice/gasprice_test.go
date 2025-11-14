@@ -122,7 +122,7 @@ func (b *testBackend) teardown() {
 // after use, otherwise the blockchain instance will mem-leak via goroutines.
 func newTestBackend(t *testing.T, pending bool) *testBackend {
 	var (
-		wallet, _ = wallet.RestoreFromSeedHex("010000f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
+		wallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		addr      = wallet.GetAddress()
 		config    = *params.TestChainConfig // needs copy because it is modified below
 		gspec     = &core.Genesis{
