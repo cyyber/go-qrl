@@ -144,7 +144,7 @@ func TestDerivableList(t *testing.T) {
 }
 
 func genTxs(num uint64) (types.Transactions, error) {
-	wallet, err := wallet.Generate(wallet.ML_DSA_87)
+	wallet, err := wallet.RestoreFromSeedHex("0x010000deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef00000000000000000000000000000000")
 	if err != nil {
 		return nil, err
 	}
