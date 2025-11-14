@@ -76,8 +76,7 @@ func RestoreFromSeedBytes(seed []byte) (Wallet, error) {
 
 func RestoreFromSeedHex(seed string) (Wallet, error) {
 	// NOTE(rgeraldes24): NewExtendedSeedFromHexString does not support 0x prefix
-	seedBytes := common.FromHex(seed)
-	return RestoreFromSeedBytes(seedBytes)
+	return RestoreFromSeedBytes(common.FromHex(seed))
 }
 
 func restoreWalletFromExtendedSeed(ext walletcommon.ExtendedSeed) (Wallet, error) {

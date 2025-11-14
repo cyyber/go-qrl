@@ -97,7 +97,7 @@ func TestSimulatedBackend(t *testing.T) {
 	}
 }
 
-var testWallet, _ = wallet.Generate(wallet.ML_DSA_87)
+var testWallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 
 // the following is based on this contract:
 //
