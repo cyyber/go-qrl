@@ -33,7 +33,7 @@ import (
 
 func TestGenerateWithdrawalChain(t *testing.T) {
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x0100009c647b8b7c4e7c3490668fb6c11473619db80c93704c70893d3813af4090c39c00000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		aa        = common.Address{0xaa}
 		bb        = common.Address{0xbb}
