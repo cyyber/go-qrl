@@ -37,7 +37,9 @@ type Key struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
 	// to simplify lookups we also store the address
 	Address common.Address
-	Wallet  wallet.Wallet
+	// we only store seed, as pubkey/address & private key can be derived from it
+	// seed in this struct is always in plaintext
+	Wallet wallet.Wallet
 }
 
 type keyStore interface {
@@ -76,7 +78,7 @@ type cipherparamsJSON struct {
 }
 
 func (k *Key) MarshalJSON() (j []byte, err error) {
-	seed := k.Wallet.GetExtendedSeed()
+	seed := k.Wallet.GetSeed()
 	jStruct := plainKeyJSON{
 		fmt.Sprintf("%#x", k.Address),
 		common.Bytes2Hex(seed[:]),

@@ -42,8 +42,12 @@ func (w *MLDSA87Wallet) GetDescriptor() descriptor.Descriptor {
 	return w.Wallet.GetDescriptor().ToDescriptor()
 }
 
+func (w *MLDSA87Wallet) GetSeed() walletcommon.ExtendedSeed {
+	return w.Wallet.GetExtendedSeed()
+}
+
 type Wallet interface {
-	GetExtendedSeed() walletcommon.ExtendedSeed
+	GetSeed() walletcommon.ExtendedSeed
 	GetAddress() [common.AddressLength]uint8
 	GetDescriptor() descriptor.Descriptor
 	GetPK() []byte
