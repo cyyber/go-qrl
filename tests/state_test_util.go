@@ -354,11 +354,11 @@ func (tx *stTransaction) toMessage(ps stPostState, baseFee *big.Int) (*core.Mess
 	if tx.Sender != nil {
 		from = *tx.Sender
 	} else if len(tx.Seed) > 0 {
-		key, err := wallet.RestoreFromSeedHex(tx.Seed)
+		wallet, err := wallet.RestoreFromSeedHex(tx.Seed)
 		if err != nil {
 			return nil, err
 		}
-		from = key.GetAddress()
+		from = wallet.GetAddress()
 	}
 	// Parse recipient if present.
 	var to *common.Address
