@@ -40,7 +40,7 @@ import (
 
 var (
 	// testWallet is a wallet to use for funding a tester account.
-	testWallet, _ = wallet.Generate(wallet.ML_DSA_87)
+	testWallet, _ = wallet.RestoreFromSeedHex("010000f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
 
 	// testAddr is the QRL address of the tester account.
 	testAddr = testWallet.GetAddress()
@@ -405,8 +405,8 @@ func testGetBlockReceipts(t *testing.T, protocol uint) {
 	t.Parallel()
 
 	// Define three accounts to simulate transactions with
-	acc1Wallet, _ := wallet.Generate(wallet.ML_DSA_87)
-	acc2Wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	acc1Wallet, _ := wallet.RestoreFromSeedHex("0100008a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a8a1f9a8f95be41cd7ccb6168179afb45")
+	acc2Wallet, _ := wallet.RestoreFromSeedHex("010000f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
 	acc1Addr := acc1Wallet.GetAddress()
 	acc2Addr := acc2Wallet.GetAddress()
 
