@@ -76,18 +76,6 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		return signed, sigArr[:], pkArr[:], desc
 	}
 
-	wantAddr := func(t *testing.T, w wallet.Wallet) common.Address {
-		t.Helper()
-
-		pk := w.GetPK()
-		addr, err := pqcrypto.PublicKeyAndDescriptorToAddress(pk[:], w.GetDescriptor())
-		if err != nil {
-			t.Fatalf("PublicKeyAndDescriptorToAddress: %v", err)
-		}
-
-		return addr
-	}
-
 	t.Run("ok/recovers-sender", func(t *testing.T) {
 		t.Parallel()
 
@@ -105,8 +93,8 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Sender error: %v", err)
 		}
-		if got != wantAddr(t, wallet) {
-			t.Fatalf("sender mismatch: got %x want %x", got.Bytes(), wantAddr(t, wallet).Bytes())
+		if got != wallet.GetAddress() {
+			t.Fatalf("sender mismatch: got %x want %x", got.Bytes(), wallet.GetAddress())
 		}
 	})
 	t.Run("error/invalid-chain-id", func(t *testing.T) {
