@@ -422,7 +422,7 @@ func assertEqual(orig *Transaction, cpy *Transaction) error {
 
 func TestTransactionSizes(t *testing.T) {
 	signer := NewShanghaiSigner(big.NewInt(123))
-	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	wallet, _ := wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 	to, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000001")
 	for i, txdata := range []TxData{
 		&DynamicFeeTx{
