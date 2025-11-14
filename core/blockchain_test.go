@@ -676,7 +676,7 @@ func TestFastVsFullChains(t *testing.T) {
 func testFastVsFullChains(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(1000000000000000)
 		gspec     = &Genesis{
@@ -805,7 +805,7 @@ func TestLightVsFastVsFullChainHeads(t *testing.T) {
 func testLightVsFastVsFullChainHeads(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(1000000000000000)
 		gspec     = &Genesis{
@@ -1044,7 +1044,7 @@ func TestLogReorgs(t *testing.T) {
 
 func testLogReorgs(t *testing.T, scheme string) {
 	var (
-		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		addr1      = wallet1.GetAddress()
 
 		// this code generates a log
@@ -1111,7 +1111,7 @@ func TestLogRebirth(t *testing.T) {
 
 func testLogRebirth(t *testing.T, scheme string) {
 	var (
-		wallet1, _    = wallet.Generate(wallet.ML_DSA_87)
+		wallet1, _    = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		addr1         = wallet1.GetAddress()
 		gspec         = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(10000000000000000)}}}
 		signer        = types.LatestSigner(gspec.Config)
@@ -1233,7 +1233,7 @@ func TestReorgSideEvent(t *testing.T) {
 
 func testReorgSideEvent(t *testing.T, scheme string) {
 	var (
-		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		addr1      = wallet1.GetAddress()
 		gspec      = &Genesis{
 			Config: params.TestChainConfig,
@@ -1372,7 +1372,7 @@ func TestEIP161AccountRemoval(t *testing.T) {
 func testEIP161AccountRemoval(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(100000000000000000)
 		theAddr   = common.Address{1}
@@ -1619,7 +1619,7 @@ func TestBlockchainRecovery(t *testing.T) {
 func testBlockchainRecovery(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(1000000000)
 		gspec     = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
@@ -2132,7 +2132,7 @@ func TestSkipStaleTxIndicesInSnapSync(t *testing.T) {
 func testSkipStaleTxIndicesInSnapSync(t *testing.T, scheme string) {
 	// Configure and generate a sample block chain
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(100000000000000000)
 		gspec     = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
@@ -2222,7 +2222,7 @@ func benchmarkLargeNumberOfValueToNonexisting(b *testing.B, numTxs, numBlocks in
 	var (
 		address, _        = common.NewAddressFromString("Q000000000000000000000000000000000000c0de")
 		signer            = types.ShanghaiSigner{}
-		testBankWallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		testBankWallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		testBankAddress   = testBankWallet.GetAddress()
 		bankFunds         = big.NewInt(100000000000000000)
 		gspec             = &Genesis{
@@ -2347,7 +2347,7 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(1000000000000000)
 		bb, _     = common.NewAddressFromString("Q000000000000000000000000000000000000bbbb")
@@ -2469,7 +2469,7 @@ func testEIP2718Transition(t *testing.T, scheme string) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(1000000000000000)
 		gspec     = &Genesis{
@@ -2551,8 +2551,8 @@ func testEIP1559Transition(t *testing.T, scheme string) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
-		wallet2, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		wallet2, _ = wallet.RestoreFromSeedHex("0x0100008a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a00000000000000000000000000000000")
 		addr1      = wallet1.GetAddress()
 		addr2      = wallet2.GetAddress()
 		funds      = new(big.Int).Mul(common.Big1, big.NewInt(params.Quanta))
@@ -2688,7 +2688,7 @@ func testSetCanonical(t *testing.T, scheme string) {
 	//log.Root().SetHandler(log.LvlFilterHandler(log.LvlDebug, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
 
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(100000000000000000)
 		gspec     = &Genesis{
@@ -3113,8 +3113,8 @@ func TestEIP3651(t *testing.T) {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		wallet1, _ = wallet.Generate(wallet.ML_DSA_87)
-		wallet2, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		wallet2, _ = wallet.RestoreFromSeedHex("0x0100008a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a00000000000000000000000000000000")
 		addr1      = wallet1.GetAddress()
 		addr2      = wallet2.GetAddress()
 		funds      = new(big.Int).Mul(common.Big1, big.NewInt(params.Quanta))
