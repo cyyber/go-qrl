@@ -38,7 +38,7 @@ type Key struct {
 	// to simplify lookups we also store the address
 	Address common.Address
 	// we only store the seed, as pubkey/address & private key can be derived
-	// from it seed in this struct is always in plaintext
+	// from it. Seed in this struct is always in plaintext
 	Wallet wallet.Wallet
 }
 
