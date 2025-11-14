@@ -2019,7 +2019,7 @@ func testReorgToShorterRemovesCanonMappingHeaderChain(t *testing.T, scheme strin
 func TestTransactionIndices(t *testing.T) {
 	// Configure and generate a sample block chain
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
 		funds     = big.NewInt(100000000000000000)
 		gspec     = &Genesis{
