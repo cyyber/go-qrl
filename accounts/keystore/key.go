@@ -37,8 +37,8 @@ type Key struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
 	// to simplify lookups we also store the address
 	Address common.Address
-	// we only store seed, as pubkey/address & private key can be derived from it
-	// seed in this struct is always in plaintext
+	// we only store the seed, as pubkey/address & private key can be derived
+	// from it seed in this struct is always in plaintext
 	Wallet wallet.Wallet
 }
 
