@@ -32,7 +32,7 @@ import (
 )
 
 func BenchmarkTransactionTrace(b *testing.B) {
-	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	wallet, _ := wallet.RestoreFromSeedHex("010000f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
 	from := wallet.GetAddress()
 	gas := uint64(1000000) // 1M gas
 	to, _ := common.NewAddressFromString("Q00000000000000000000000000000000deadbeef")
