@@ -1979,10 +1979,8 @@ func ParseStateScheme(ctx *cli.Context, disk qrldb.Database) (string, error) {
 	stored := rawdb.ReadStateScheme(disk)
 	if !ctx.IsSet(StateSchemeFlag.Name) {
 		if stored == "" {
-			// use default scheme for empty database, flip it when
-			// path mode is chosen as default
 			log.Info("State schema set to default", "scheme", "hash")
-			return rawdb.HashScheme, nil
+			return rawdb.PathScheme, nil
 		}
 		log.Info("State scheme set to already existing", "scheme", stored)
 		return stored, nil // reuse scheme of persistent scheme
