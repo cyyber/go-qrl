@@ -1979,7 +1979,7 @@ func ParseStateScheme(ctx *cli.Context, disk qrldb.Database) (string, error) {
 	stored := rawdb.ReadStateScheme(disk)
 	if !ctx.IsSet(StateSchemeFlag.Name) {
 		if stored == "" {
-			log.Info("State schema set to default", "scheme", "hash")
+			log.Info("State schema set to default", "scheme", "path")
 			return rawdb.PathScheme, nil
 		}
 		log.Info("State scheme set to already existing", "scheme", stored)
