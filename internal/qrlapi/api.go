@@ -1024,7 +1024,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	from, _ := types.Sender(signer, tx)
 	publicKey := tx.RawPublicKeyValue()
 	signature := tx.RawSignatureValue()
-	descriptor := tx.RawDescriptorValue()
+	descriptor := tx.Descriptor()
 	result := &RPCTransaction{
 		Type:       hexutil.Uint64(tx.Type()),
 		From:       from,

@@ -74,27 +74,29 @@ func SignTx(tx *Transaction, s Signer, w wallet.Wallet) (*Transaction, error) {
 		return nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, tx.ChainId(), s.ChainID())
 	}
 
-	descBytes := w.GetDescriptor().ToBytes()
-	h := s.Hash(tx, descBytes)
+	desc := w.GetDescriptor().ToBytes()
+	schemeParams := []byte{}
+	h := s.Hash(tx, desc, schemeParams)
 	sig, err := pqcrypto.Sign(h[:], w)
 	if err != nil {
 		return nil, err
 	}
 	pk := w.GetPK()
-	return tx.WithSignaturePublicKeyAndDescriptor(s, sig[:], pk[:], descBytes)
+	return tx.WithAuthValues(s, sig[:], pk[:], desc, schemeParams)
 }
 
 // SignNewTx creates a transaction and signs it.
 func SignNewTx(w wallet.Wallet, s Signer, txdata TxData) (*Transaction, error) {
 	tx := NewTx(txdata)
 	descBytes := w.GetDescriptor().ToBytes()
-	h := s.Hash(tx, descBytes)
+	schemeParams := []byte{}
+	h := s.Hash(tx, descBytes, schemeParams)
 	sig, err := pqcrypto.Sign(h[:], w)
 	if err != nil {
 		return nil, err
 	}
 	pk := w.GetPK()
-	return tx.WithSignaturePublicKeyAndDescriptor(s, sig, pk[:], descBytes)
+	return tx.WithAuthValues(s, sig, pk[:], descBytes, schemeParams)
 }
 
 // MustSignNewTx creates a transaction and signs it.
@@ -142,14 +144,14 @@ type Signer interface {
 	// Sender returns the sender address of the transaction.
 	Sender(tx *Transaction) (common.Address, error)
 
-	// SignaturePublicKeyAndDescriptorValues returns the raw signature, publicKey, descriptor values
+	// Auth returns the raw signature, publicKey, descriptor and params values
 	// corresponding to the given signature.
-	SignaturePublicKeyAndDescriptorValues(tx *Transaction, sig, pk, desc []byte) (signature, publicKey, descriptor []byte, err error)
+	AuthValues(tx *Transaction, sig, pk, desc, schemeParams []byte) (signature, publicKey, descriptor, params []byte, err error)
 	ChainID() *big.Int
 
 	// Hash returns 'signature hash', i.e. the transaction hash that is signed by the
 	// private key. This hash does not uniquely identify the transaction.
-	Hash(tx *Transaction, descriptor []byte) common.Hash
+	Hash(tx *Transaction, descriptor []byte, schemeParams []byte) common.Hash
 
 	// Equal returns true if the given signer is the same as the receiver.
 	Equal(Signer) bool
@@ -176,29 +178,30 @@ func (s ShanghaiSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, tx.ChainId(), s.ChainId)
 	}
 
-	sig, pk, descBytes := tx.RawSignatureValue(), tx.RawPublicKeyValue(), tx.RawDescriptorValue()
-	msg := s.Hash(tx, descBytes)
+	sig, pk, desc, params := tx.RawSignatureValue(), tx.RawPublicKeyValue(), tx.Descriptor(), tx.SchemeParams()
 
-	desc, err := pqcrypto.BytesToDescriptor(descBytes)
+	msg := s.Hash(tx, desc, params)
+
+	pqcryptodesc, err := pqcrypto.BytesToDescriptor(desc)
 	if err != nil {
 		return common.Address{}, err
 	}
 
 	ok := false
-	switch desc.Type() {
+	switch pqcryptodesc.Type() {
 	case byte(wallettype.ML_DSA_87):
 		ok, err = pqcrypto.MLDSA87VerifySignature(sig, msg.Bytes(), pk)
 		if err != nil {
 			return common.Address{}, err
 		}
 	default:
-		return common.Address{}, fmt.Errorf("unsupported wallet type in descriptor: %v", desc.Type())
+		return common.Address{}, fmt.Errorf("unsupported wallet type in descriptor: %v", pqcryptodesc.Type())
 	}
 	if !ok {
 		return common.Address{}, fmt.Errorf("%w: verification failed", pqcrypto.ErrBadSignature)
 	}
 
-	return pqcrypto.PublicKeyAndDescriptorToAddress(tx.RawPublicKeyValue(), desc)
+	return pqcrypto.PublicKeyAndDescriptorToAddress(tx.RawPublicKeyValue(), pqcryptodesc)
 }
 
 func (s ShanghaiSigner) Equal(s2 Signer) bool {
@@ -206,24 +209,22 @@ func (s ShanghaiSigner) Equal(s2 Signer) bool {
 	return ok && x.ChainId.Cmp(s.ChainId) == 0
 }
 
-func (s ShanghaiSigner) SignaturePublicKeyAndDescriptorValues(tx *Transaction, sig, pk, desc []byte) (Signature, PublicKey, Descriptor []byte, err error) {
+// TODO(rgeraldes24): refactor
+func (s ShanghaiSigner) AuthValues(tx *Transaction, sig, pk, desc, schemeParams []byte) ([]byte, []byte, []byte, []byte, error) {
 	// Check that chain ID of tx matches the signer. We also accept ID zero here,
 	// because it indicates that the chain ID was not specified in the tx.
 	chainID := tx.inner.chainID()
 	if chainID.Sign() != 0 && chainID.Cmp(s.ChainId) != 0 {
-		return nil, nil, nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, chainID, s.ChainId)
+		return nil, nil, nil, nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, chainID, s.ChainId)
 	}
-	Signature = decodeSignature(sig)
-	PublicKey = decodePublicKey(pk)
-	Descriptor = decodeDescriptor(desc)
-	return Signature, PublicKey, Descriptor, nil
+	return decodeSignature(sig), decodePublicKey(pk), decodeDescriptor(desc), decodeSchemeParams(schemeParams), nil
 }
 
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
-func (s ShanghaiSigner) Hash(tx *Transaction, descriptor []byte) common.Hash {
+func (s ShanghaiSigner) Hash(tx *Transaction, descriptor []byte, schemeParams []byte) common.Hash {
 	switch tx.Type() {
 	case DynamicFeeTxType:
 		return prefixedRlpHash(
@@ -239,6 +240,7 @@ func (s ShanghaiSigner) Hash(tx *Transaction, descriptor []byte) common.Hash {
 				tx.Data(),
 				tx.AccessList(),
 				descriptor,
+				schemeParams,
 			})
 	default:
 		// This _should_ not happen, but in case someone sends in a bad
@@ -274,4 +276,10 @@ func decodeDescriptor(d []byte) (descriptor []byte) {
 	descriptor = make([]byte, pqcrypto.DescriptorSize)
 	copy(descriptor, d)
 	return descriptor
+}
+
+func decodeSchemeParams(d []byte) []byte {
+	params := make([]byte, len(d))
+	copy(params, d)
+	return params
 }

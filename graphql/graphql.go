@@ -550,7 +550,15 @@ func (t *Transaction) Descriptor(ctx context.Context) (hexutil.Bytes, error) {
 	if err != nil || tx == nil {
 		return hexutil.Bytes{}, nil
 	}
-	return tx.RawDescriptorValue(), nil
+	return tx.Descriptor(), nil
+}
+
+func (t *Transaction) SchemaParams(ctx context.Context) (hexutil.Bytes, error) {
+	tx, err := t.resolve(ctx)
+	if err != nil || tx == nil {
+		return hexutil.Bytes{}, nil
+	}
+	return tx.SchemeParams(), nil
 }
 
 func (t *Transaction) Raw(ctx context.Context) (hexutil.Bytes, error) {

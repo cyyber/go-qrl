@@ -38,9 +38,11 @@ type txJSON struct {
 	Value                *hexutil.Big    `json:"value"`
 	Input                *hexutil.Bytes  `json:"input"`
 	AccessList           *AccessList     `json:"accessList,omitempty"`
-	PublicKey            *hexutil.Bytes  `json:"publicKey"`
-	Signature            *hexutil.Bytes  `json:"signature"`
-	Descriptor           *hexutil.Bytes  `json:"descriptor"`
+
+	Descriptor   *hexutil.Bytes `json:"descriptor"`
+	SchemeParams *hexutil.Bytes `json:"params,omitempty"`
+	PublicKey    *hexutil.Bytes `json:"publicKey"`
+	Signature    *hexutil.Bytes `json:"signature"`
 
 	// Only used for encoding:
 	Hash common.Hash `json:"hash"`
@@ -65,9 +67,11 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 		enc.Value = (*hexutil.Big)(itx.Value)
 		enc.Input = (*hexutil.Bytes)(&itx.Data)
 		enc.AccessList = &itx.AccessList
+		desc := hexutil.Bytes(itx.Descriptor[:])
+		enc.Descriptor = &desc
+		enc.SchemeParams = (*hexutil.Bytes)(&itx.SchemeParams)
 		enc.PublicKey = (*hexutil.Bytes)(&itx.PublicKey)
 		enc.Signature = (*hexutil.Bytes)(&itx.Signature)
-		enc.Descriptor = (*hexutil.Bytes)(&itx.Descriptor)
 	}
 	return json.Marshal(&enc)
 }
@@ -120,8 +124,15 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		if dec.AccessList != nil {
 			itx.AccessList = *dec.AccessList
 		}
+		if dec.Descriptor == nil {
+			return errors.New("missing required field 'descriptor' in transaction")
+		}
+		copy(itx.Descriptor[:], *dec.Descriptor)
 		if dec.PublicKey == nil {
 			return errors.New("missing required field 'publicKey' in transaction")
+		}
+		if dec.SchemeParams != nil {
+			itx.SchemeParams = *dec.SchemeParams
 		}
 		itx.PublicKey = *dec.PublicKey
 		if dec.Signature == nil {
@@ -131,7 +142,7 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		if dec.Descriptor == nil {
 			return errors.New("missing required field 'descriptor' in transaction")
 		}
-		itx.Descriptor = *dec.Descriptor
+
 		// TODO (cyyber): add sanity check later
 		//withSignature := itx.V.Sign() != 0 || itx.R.Sign() != 0 || itx.S.Sign() != 0
 		//if withSignature {
