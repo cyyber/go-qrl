@@ -1939,7 +1939,7 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 // will be returned.
 //
 //   - none: use the scheme consistent with persistent state, or fallback
-//     to hash-based scheme if state is empty.
+//     to path-based scheme if state is empty.
 //   - hash: use hash-based scheme or error out if not compatible with
 //     persistent state scheme.
 //   - path: use path-based scheme or error out if not compatible with
