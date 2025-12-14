@@ -66,13 +66,13 @@ func TestDecodeEmptyTypedTx(t *testing.T) {
 }
 
 func TestEIP2718TransactionSigHash(t *testing.T) {
-	schemeParams := []byte{}
+	extraParams := []byte{}
 	s := NewShanghaiSigner(big.NewInt(1))
 	descBytes := walletmldsa87.NewMLDSA87Descriptor().ToDescriptor().ToBytes()
-	if hash := s.Hash(emptyEip2718Tx, descBytes, schemeParams); hash != common.HexToHash("3eccbd7da2b5cd673dee109498df365cab01f066fef0eaefefcd2c28316830d2") {
+	if hash := s.Hash(emptyEip2718Tx, descBytes, extraParams); hash != common.HexToHash("3eccbd7da2b5cd673dee109498df365cab01f066fef0eaefefcd2c28316830d2") {
 		t.Errorf("empty EIP-2718 transaction hash mismatch, got %x", hash)
 	}
-	if hash := s.Hash(signedEip2718Tx, signedEip2718Tx.Descriptor(), schemeParams); hash != common.HexToHash("3eccbd7da2b5cd673dee109498df365cab01f066fef0eaefefcd2c28316830d2") {
+	if hash := s.Hash(signedEip2718Tx, signedEip2718Tx.Descriptor(), extraParams); hash != common.HexToHash("3eccbd7da2b5cd673dee109498df365cab01f066fef0eaefefcd2c28316830d2") {
 		t.Errorf("signed EIP-2718 transaction hash mismatch, got %x", hash)
 	}
 }
@@ -199,8 +199,8 @@ func TestEIP2930Signer(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		schemeParams := []byte{}
-		sigHash := test.signer.Hash(test.tx, descBytes, schemeParams)
+		extraParams := []byte{}
+		sigHash := test.signer.Hash(test.tx, descBytes, extraParams)
 		if sigHash != test.wantSignerHash {
 			t.Errorf("test %d: wrong sig hash: got %x, want %x", i, sigHash, test.wantSignerHash)
 		}

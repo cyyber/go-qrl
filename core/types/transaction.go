@@ -80,7 +80,7 @@ type TxData interface {
 	to() *common.Address
 
 	descriptor() []byte
-	schemeParams() []byte
+	extraParams() []byte
 	rawSignatureValue() []byte
 	rawPublicKeyValue() []byte
 	setAuthValues(chainID *big.Int, sig, pk, desc, schemaParams []byte)
@@ -292,10 +292,10 @@ func (tx *Transaction) Descriptor() []byte {
 	return tx.inner.descriptor()
 }
 
-// SchemeParams returns the scheme params value of the transaction.
+// ExtraParams returns the scheme params value of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) SchemeParams() []byte {
-	return tx.inner.schemeParams()
+func (tx *Transaction) ExtraParams() []byte {
+	return tx.inner.extraParams()
 }
 
 // GasFeeCapCmp compares the fee cap of two transactions.
@@ -397,13 +397,13 @@ func (tx *Transaction) Size() uint64 {
 }
 
 // WithAuthValues returns a new transaction with the given signature.
-func (tx *Transaction) WithAuthValues(signer Signer, sig, pk, desc, schemeParams []byte) (*Transaction, error) {
-	signature, publicKey, descriptor, schemeParams, err := signer.AuthValues(tx, sig, pk, desc, schemeParams)
+func (tx *Transaction) WithAuthValues(signer Signer, sig, pk, desc, extraParams []byte) (*Transaction, error) {
+	signature, publicKey, descriptor, extraParams, err := signer.AuthValues(tx, sig, pk, desc, extraParams)
 	if err != nil {
 		return nil, err
 	}
 	cpy := tx.inner.copy()
-	cpy.setAuthValues(signer.ChainID(), signature, publicKey, descriptor, schemeParams)
+	cpy.setAuthValues(signer.ChainID(), signature, publicKey, descriptor, extraParams)
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 

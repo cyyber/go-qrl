@@ -68,8 +68,8 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 			if err != nil {
 				return nil, err
 			}
-			schemeParams := []byte{}
-			sig, err := keystore.SignHash(account, signer.Hash(tx, desc, schemeParams).Bytes())
+			extraParams := []byte{}
+			sig, err := keystore.SignHash(account, signer.Hash(tx, desc, extraParams).Bytes())
 			if err != nil {
 				return nil, err
 			}
@@ -77,7 +77,7 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 			if err != nil {
 				return nil, err
 			}
-			return tx.WithAuthValues(signer, sig, pk, desc, schemeParams)
+			return tx.WithAuthValues(signer, sig, pk, desc, extraParams)
 		},
 		Context: context.Background(),
 	}, nil
@@ -98,13 +98,13 @@ func NewKeyedTransactorWithChainID(w wallet.Wallet, chainID *big.Int) (*Transact
 				return nil, ErrNotAuthorized
 			}
 			desc := w.GetDescriptor().ToBytes()
-			schemeParams := []byte{}
-			sig, err := pqcrypto.Sign(signer.Hash(tx, desc, schemeParams).Bytes(), w)
+			extraParams := []byte{}
+			sig, err := pqcrypto.Sign(signer.Hash(tx, desc, extraParams).Bytes(), w)
 			if err != nil {
 				return nil, err
 			}
 			pk := w.GetPK()
-			return tx.WithAuthValues(signer, sig, pk[:], desc, schemeParams)
+			return tx.WithAuthValues(signer, sig, pk[:], desc, extraParams)
 		},
 		Context: context.Background(),
 	}, nil

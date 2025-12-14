@@ -57,10 +57,10 @@ type DynamicFeeTx struct {
 	Data       []byte
 	AccessList AccessList
 
-	Descriptor   [3]byte
-	SchemeParams []byte
-	PublicKey    []byte
-	Signature    []byte
+	Descriptor  [3]byte
+	ExtraParams []byte
+	PublicKey   []byte
+	Signature   []byte
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -71,15 +71,15 @@ func (tx *DynamicFeeTx) copy() TxData {
 		Data:  common.CopyBytes(tx.Data),
 		Gas:   tx.Gas,
 		// These are copied below.
-		AccessList:   make(AccessList, len(tx.AccessList)),
-		Value:        new(big.Int),
-		ChainID:      new(big.Int),
-		GasTipCap:    new(big.Int),
-		GasFeeCap:    new(big.Int),
-		Descriptor:   tx.Descriptor,
-		SchemeParams: common.CopyBytes(tx.SchemeParams),
-		PublicKey:    make([]byte, pqcrypto.MLDSA87PublicKeyLength),
-		Signature:    make([]byte, pqcrypto.MLDSA87SignatureLength),
+		AccessList:  make(AccessList, len(tx.AccessList)),
+		Value:       new(big.Int),
+		ChainID:     new(big.Int),
+		GasTipCap:   new(big.Int),
+		GasFeeCap:   new(big.Int),
+		Descriptor:  tx.Descriptor,
+		ExtraParams: common.CopyBytes(tx.ExtraParams),
+		PublicKey:   make([]byte, pqcrypto.MLDSA87PublicKeyLength),
+		Signature:   make([]byte, pqcrypto.MLDSA87SignatureLength),
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -139,14 +139,14 @@ func (tx *DynamicFeeTx) descriptor() []byte {
 	return tx.Descriptor[:]
 }
 
-func (tx *DynamicFeeTx) schemeParams() []byte {
-	return tx.SchemeParams
+func (tx *DynamicFeeTx) extraParams() []byte {
+	return tx.ExtraParams
 }
 
-func (tx *DynamicFeeTx) setAuthValues(chainID *big.Int, sig, pk, desc, schemeParams []byte) {
+func (tx *DynamicFeeTx) setAuthValues(chainID *big.Int, sig, pk, desc, extraParams []byte) {
 	tx.ChainID = chainID
 	copy(tx.Descriptor[:], desc)
-	tx.SchemeParams = schemeParams
+	tx.ExtraParams = extraParams
 	tx.PublicKey = pk
 	tx.Signature = sig
 }

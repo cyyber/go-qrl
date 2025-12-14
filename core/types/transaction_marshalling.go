@@ -39,10 +39,10 @@ type txJSON struct {
 	Input                *hexutil.Bytes  `json:"input"`
 	AccessList           *AccessList     `json:"accessList,omitempty"`
 
-	Descriptor   *hexutil.Bytes `json:"descriptor"`
-	SchemeParams *hexutil.Bytes `json:"params,omitempty"`
-	PublicKey    *hexutil.Bytes `json:"publicKey"`
-	Signature    *hexutil.Bytes `json:"signature"`
+	Descriptor  *hexutil.Bytes `json:"descriptor"`
+	ExtraParams *hexutil.Bytes `json:"extraParams,omitempty"`
+	PublicKey   *hexutil.Bytes `json:"publicKey"`
+	Signature   *hexutil.Bytes `json:"signature"`
 
 	// Only used for encoding:
 	Hash common.Hash `json:"hash"`
@@ -69,7 +69,7 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 		enc.AccessList = &itx.AccessList
 		desc := hexutil.Bytes(itx.Descriptor[:])
 		enc.Descriptor = &desc
-		enc.SchemeParams = (*hexutil.Bytes)(&itx.SchemeParams)
+		enc.ExtraParams = (*hexutil.Bytes)(&itx.ExtraParams)
 		enc.PublicKey = (*hexutil.Bytes)(&itx.PublicKey)
 		enc.Signature = (*hexutil.Bytes)(&itx.Signature)
 	}
@@ -131,8 +131,8 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		if dec.PublicKey == nil {
 			return errors.New("missing required field 'publicKey' in transaction")
 		}
-		if dec.SchemeParams != nil {
-			itx.SchemeParams = *dec.SchemeParams
+		if dec.ExtraParams != nil {
+			itx.ExtraParams = *dec.ExtraParams
 		}
 		itx.PublicKey = *dec.PublicKey
 		if dec.Signature == nil {

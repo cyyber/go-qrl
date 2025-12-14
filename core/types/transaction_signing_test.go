@@ -55,13 +55,13 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 			AccessList: nil,
 		})
 	}
-	schemeParams := []byte{}
+	extraParams := []byte{}
 
 	signTx := func(t *testing.T, signer Signer, tx *Transaction, wallet wallet.Wallet) (*Transaction, []byte, []byte, []byte) {
 		t.Helper()
 
 		desc := wallet.GetDescriptor().ToBytes()
-		h := signer.Hash(tx, desc, schemeParams)
+		h := signer.Hash(tx, desc, extraParams)
 		sigArr, err := wallet.Sign(h.Bytes())
 		if err != nil {
 			t.Fatalf("sign: %v", err)
@@ -69,7 +69,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 
 		pkArr := wallet.GetPK()
 
-		signed, err := tx.WithAuthValues(signer, sigArr[:], pkArr[:], desc, schemeParams)
+		signed, err := tx.WithAuthValues(signer, sigArr[:], pkArr[:], desc, extraParams)
 		if err != nil {
 			t.Fatalf("WithSignaturePublicKeyAndDescriptor: %v", err)
 		}
@@ -129,7 +129,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 
 		// Flip one bit in the descriptor and re-wrap.
 		desc[len(desc)-1] ^= 0x01
-		tampered, err := signed.WithAuthValues(signer, sig, pk, desc, schemeParams)
+		tampered, err := signed.WithAuthValues(signer, sig, pk, desc, extraParams)
 		if err != nil {
 			t.Fatalf("re-wrap with bad descriptor: %v", err)
 		}
@@ -152,7 +152,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 
 		// Tweak the signature bytes and re-wrap.
 		sig[len(sig)-1] ^= 0x80
-		tampered, err := signed.WithAuthValues(signer, sig, pk, desc, schemeParams)
+		tampered, err := signed.WithAuthValues(signer, sig, pk, desc, extraParams)
 		if err != nil {
 			t.Fatalf("re-wrap with bad signature: %v", err)
 		}
