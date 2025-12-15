@@ -137,6 +137,7 @@ type DynamicFeeTx struct {
 	To         *common.Address `json:"to"`
 	Value      *big.Int        `json:"value"`
 	Data       []byte          `json:"data"`
+  // TODO(rgeraldes24)
 	AccessList AccessList      `json:"accessList"`
 	PublicKey  []byte          `json:"publicKey"`
 	Signature  []byte          `json:"signature"`

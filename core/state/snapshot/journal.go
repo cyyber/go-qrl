@@ -37,10 +37,6 @@ const journalVersion uint64 = 0
 
 // journalGenerator is a disk layer entry containing the generator progress marker.
 type journalGenerator struct {
-	// Indicator that whether the database was in progress of being wiped.
-	// It's deprecated but keep it here for background compatibility.
-	Wiping bool
-
 	Done     bool // Whether the generator finished creating the snapshot
 	Marker   []byte
 	Accounts uint64

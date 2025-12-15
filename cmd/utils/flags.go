@@ -406,12 +406,6 @@ var (
 	}
 
 	// Account settings
-	UnlockedAccountFlag = &cli.StringFlag{
-		Name:     "unlock",
-		Usage:    "Comma separated list of accounts to unlock",
-		Value:    "",
-		Category: flags.AccountCategory,
-	}
 	PasswordFileFlag = &cli.PathFlag{
 		Name:      "password",
 		Usage:     "Password file to use for non-interactive password input",
@@ -1829,11 +1823,6 @@ func IsNetworkPreset(ctx *cli.Context) bool {
 func DialRPCWithHeaders(endpoint string, headers []string) (*rpc.Client, error) {
 	if endpoint == "" {
 		return nil, errors.New("endpoint must be specified")
-	}
-	if strings.HasPrefix(endpoint, "rpc:") || strings.HasPrefix(endpoint, "ipc:") {
-		// Backwards compatibility with gzond < 1.5 which required
-		// these prefixes.
-		endpoint = endpoint[4:]
 	}
 	var opts []rpc.ClientOption
 	if len(headers) > 0 {

@@ -135,21 +135,8 @@ var (
 		Bin: "0x{{.InputBin}}",
 		{{end}}
 	}
-	// {{.Type}}ABI is the input ABI used to generate the binding from.
-	// Deprecated: Use {{.Type}}MetaData.ABI instead.
-	var {{.Type}}ABI = {{.Type}}MetaData.ABI
-
-	{{if $contract.FuncSigs}}
-		// Deprecated: Use {{.Type}}MetaData.Sigs instead.
-		// {{.Type}}FuncSigs maps the 4-byte function signature to its string representation.
-		var {{.Type}}FuncSigs = {{.Type}}MetaData.Sigs
-	{{end}}
 
 	{{if .InputBin}}
-		// {{.Type}}Bin is the compiled bytecode used for deploying new contracts.
-		// Deprecated: Use {{.Type}}MetaData.Bin instead.
-		var {{.Type}}Bin = {{.Type}}MetaData.Bin
-
 		// Deploy{{.Type}} deploys a new QRL contract, binding an instance of {{.Type}} to it.
 		func Deploy{{.Type}}(auth *bind.TransactOpts, backend bind.ContractBackend {{range .Constructor.Inputs}}, {{.Name}} {{bindtype .Type $structs}}{{end}}) (common.Address, *types.Transaction, *{{.Type}}, error) {
 		  parsed, err := {{.Type}}MetaData.GetAbi()
@@ -163,7 +150,7 @@ var (
 			{{decapitalise $name}}Addr, _, _, _ := Deploy{{capitalise $name}}(auth, backend)
 			{{$contract.Type}}Bin = strings.ReplaceAll({{$contract.Type}}Bin, "__${{$pattern}}$__", {{decapitalise $name}}Addr.String()[1:])
 		  {{end}}
-		  address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex({{.Type}}Bin), backend {{range .Constructor.Inputs}}, {{.Name}}{{end}})
+		  address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex({{.Type}}MetaData.Bin), backend {{range .Constructor.Inputs}}, {{.Name}}{{end}})
 		  if err != nil {
 		    return common.Address{}, nil, nil, err
 		  }

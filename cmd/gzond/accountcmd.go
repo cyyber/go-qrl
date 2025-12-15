@@ -17,13 +17,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/cmd/utils"
+	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -185,62 +186,6 @@ func accountList(ctx *cli.Context) error {
 	return nil
 }
 
-// tries unlocking the specified account a few times.
-func unlockAccount(ks *keystore.KeyStore, address string, i int, passwords []string) (accounts.Account, string) {
-	account, err := utils.MakeAddress(ks, address)
-	if err != nil {
-		utils.Fatalf("Could not list accounts: %v", err)
-	}
-	for trials := 0; trials < 3; trials++ {
-		prompt := fmt.Sprintf("Unlocking account %s | Attempt %d/%d", address, trials+1, 3)
-		password := utils.GetPassPhraseWithList(prompt, false, i, passwords)
-		err = ks.Unlock(account, password)
-		if err == nil {
-			log.Info("Unlocked account", "address", account.Address.Hex())
-			return account, password
-		}
-		if err, ok := err.(*keystore.AmbiguousAddrError); ok {
-			log.Info("Unlocked account", "address", account.Address.Hex())
-			return ambiguousAddrRecovery(ks, err, password), password
-		}
-		if err != keystore.ErrDecrypt {
-			// No need to prompt again if the error is not decryption-related.
-			break
-		}
-	}
-	// All trials expended to unlock account, bail out
-	utils.Fatalf("Failed to unlock account %s (%v)", address, err)
-
-	return accounts.Account{}, ""
-}
-
-func ambiguousAddrRecovery(ks *keystore.KeyStore, err *keystore.AmbiguousAddrError, auth string) accounts.Account {
-	fmt.Printf("Multiple key files exist for address %#x:\n", err.Addr)
-	for _, a := range err.Matches {
-		fmt.Println("  ", a.URL)
-	}
-	fmt.Println("Testing your password against all of them...")
-	var match *accounts.Account
-	for i, a := range err.Matches {
-		if e := ks.Unlock(a, auth); e == nil {
-			match = &err.Matches[i]
-			break
-		}
-	}
-	if match == nil {
-		utils.Fatalf("None of the listed files could be unlocked.")
-		return accounts.Account{}
-	}
-	fmt.Printf("Your password unlocked %s\n", match.URL)
-	fmt.Println("In order to avoid this warning, you need to remove the following duplicate key files:")
-	for _, a := range err.Matches {
-		if a != *match {
-			fmt.Println("  ", a.URL)
-		}
-	}
-	return *match
-}
-
 // accountCreate creates a new account into the keystore defined by the CLI flags.
 func accountCreate(ctx *cli.Context) error {
 	cfg := loadBaseConfig(ctx)
@@ -291,10 +236,24 @@ func accountUpdate(ctx *cli.Context) error {
 	ks := backends[0].(*keystore.KeyStore)
 
 	for _, addr := range ctx.Args().Slice() {
-		account, oldPassword := unlockAccount(ks, addr, 0, nil)
-		newPassword := utils.GetPassPhraseWithList("Please give a new password. Do not forget this password.", true, 0, nil)
-		if err := ks.Update(account, oldPassword, newPassword); err != nil {
-			utils.Fatalf("Could not update the account: %v", err)
+		addr, err := common.NewAddressFromString(addr)
+		if err != nil {
+			return err
+		}
+		account := accounts.Account{Address: addr}
+		newPassword := utils.GetPassPhrase("Please give a NEW password. Do not forget this password.", true)
+		updateFn := func(attempt int) error {
+			prompt := fmt.Sprintf("Please provide the OLD password for account %s | Attempt %d/%d", addr, attempt+1, 3)
+			password := utils.GetPassPhrase(prompt, false)
+			return ks.Update(account, password, newPassword)
+		}
+		// let user attempt unlock thrice.
+		err = updateFn(0)
+		for attempts := 1; attempts < 3 && errors.Is(err, keystore.ErrDecrypt); attempts++ {
+			err = updateFn(attempts)
+		}
+		if err != nil {
+			return fmt.Errorf("could not update account: %w", err)
 		}
 	}
 	return nil

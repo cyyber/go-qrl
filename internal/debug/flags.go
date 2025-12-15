@@ -49,19 +49,6 @@ var (
 		Value:    "",
 		Category: flags.LoggingCategory,
 	}
-	vmoduleFlag = &cli.StringFlag{
-		Name:     "vmodule",
-		Usage:    "Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. qrl/*=5,p2p=4)",
-		Value:    "",
-		Hidden:   true,
-		Category: flags.LoggingCategory,
-	}
-	logjsonFlag = &cli.BoolFlag{
-		Name:     "log.json",
-		Usage:    "Format logs with JSON",
-		Hidden:   true,
-		Category: flags.LoggingCategory,
-	}
 	logFormatFlag = &cli.StringFlag{
 		Name:     "log.format",
 		Usage:    "Log format to use (json|logfmt|terminal)",
@@ -155,10 +142,8 @@ var (
 var Flags = []cli.Flag{
 	verbosityFlag,
 	logVmoduleFlag,
-	vmoduleFlag,
 	backtraceAtFlag,
 	debugFlag,
-	logjsonFlag,
 	logFormatFlag,
 	logFileFlag,
 	logRotateFlag,
@@ -195,10 +180,6 @@ func Setup(ctx *cli.Context) error {
 		logFmtFlag = ctx.String(logFormatFlag.Name)
 	)
 	switch {
-	case ctx.Bool(logjsonFlag.Name):
-		// Retain backwards compatibility with `--log.json` flag if `--log.format` not set
-		defer log.Warn("The flag '--log.json' is deprecated, please use '--log.format=json' instead")
-		logfmt = log.JSONFormat()
 	case logFmtFlag == "json":
 		logfmt = log.JSONFormat()
 	case logFmtFlag == "logfmt":
@@ -259,13 +240,6 @@ func Setup(ctx *cli.Context) error {
 	verbosity := ctx.Int(verbosityFlag.Name)
 	glogger.Verbosity(log.Lvl(verbosity))
 	vmodule := ctx.String(logVmoduleFlag.Name)
-	if vmodule == "" {
-		// Retain backwards compatibility with `--vmodule` flag if `--log.vmodule` not set
-		vmodule = ctx.String(vmoduleFlag.Name)
-		if vmodule != "" {
-			defer log.Warn("The flag '--vmodule' is deprecated, please use '--log.vmodule' instead")
-		}
-	}
 	glogger.Vmodule(vmodule)
 
 	debug := ctx.Bool(debugFlag.Name)
