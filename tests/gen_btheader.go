@@ -17,21 +17,21 @@ var _ = (*btHeaderMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (b btHeader) MarshalJSON() ([]byte, error) {
 	type btHeader struct {
-		Bloom                 types.Bloom
-		Coinbase              common.Address
-		MixHash               common.Hash
-		Number                *math.HexOrDecimal256
-		Hash                  common.Hash
-		ParentHash            common.Hash
-		ReceiptTrie           common.Hash
-		StateRoot             common.Hash
-		TransactionsTrie      common.Hash
-		ExtraData             hexutil.Bytes
-		GasLimit              math.HexOrDecimal64
-		GasUsed               math.HexOrDecimal64
-		Timestamp             math.HexOrDecimal64
-		BaseFeePerGas         *math.HexOrDecimal256
-		WithdrawalsRoot       *common.Hash
+		Bloom            types.Bloom
+		Coinbase         common.Address
+		MixHash          common.Hash
+		Number           *math.HexOrDecimal256
+		Hash             common.Hash
+		ParentHash       common.Hash
+		ReceiptTrie      common.Hash
+		StateRoot        common.Hash
+		TransactionsTrie common.Hash
+		ExtraData        hexutil.Bytes
+		GasLimit         math.HexOrDecimal64
+		GasUsed          math.HexOrDecimal64
+		Timestamp        math.HexOrDecimal64
+		BaseFeePerGas    *math.HexOrDecimal256
+		WithdrawalsRoot  *common.Hash
 	}
 	var enc btHeader
 	enc.Bloom = b.Bloom
@@ -55,21 +55,21 @@ func (b btHeader) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (b *btHeader) UnmarshalJSON(input []byte) error {
 	type btHeader struct {
-		Bloom                 *types.Bloom
-		Coinbase              *common.Address
-		MixHash               *common.Hash
-		Number                *math.HexOrDecimal256
-		Hash                  *common.Hash
-		ParentHash            *common.Hash
-		ReceiptTrie           *common.Hash
-		StateRoot             *common.Hash
-		TransactionsTrie      *common.Hash
-		ExtraData             *hexutil.Bytes
-		GasLimit              *math.HexOrDecimal64
-		GasUsed               *math.HexOrDecimal64
-		Timestamp             *math.HexOrDecimal64
-		BaseFeePerGas         *math.HexOrDecimal256
-		WithdrawalsRoot       *common.Hash
+		Bloom            *types.Bloom
+		Coinbase         *common.Address
+		MixHash          *common.Hash
+		Number           *math.HexOrDecimal256
+		Hash             *common.Hash
+		ParentHash       *common.Hash
+		ReceiptTrie      *common.Hash
+		StateRoot        *common.Hash
+		TransactionsTrie *common.Hash
+		ExtraData        *hexutil.Bytes
+		GasLimit         *math.HexOrDecimal64
+		GasUsed          *math.HexOrDecimal64
+		Timestamp        *math.HexOrDecimal64
+		BaseFeePerGas    *math.HexOrDecimal256
+		WithdrawalsRoot  *common.Hash
 	}
 	var dec btHeader
 	if err := json.Unmarshal(input, &dec); err != nil {

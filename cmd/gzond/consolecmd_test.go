@@ -102,7 +102,7 @@ func TestAttachWelcome(t *testing.T) {
 		"--ws", "--ws.port", wsPort)
 	t.Run("ipc", func(t *testing.T) {
 		waitForEndpoint(t, ipc, 3*time.Second)
-		testAttachWelcome(t, gzond, "ipc:"+ipc, ipcAPIs)
+		testAttachWelcome(t, gzond, ipc, ipcAPIs)
 	})
 	t.Run("http", func(t *testing.T) {
 		endpoint := "http://127.0.0.1:" + httpPort
