@@ -23,6 +23,8 @@ import (
 )
 
 func TestCompleteKeywords(t *testing.T) {
+	t.Parallel()
+
 	re := New("", os.Stdout)
 	re.Run(`
 		function theClass() {

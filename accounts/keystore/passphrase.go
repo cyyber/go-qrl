@@ -228,7 +228,7 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid UUID: %w", err)
 	}
 
 	return &Key{

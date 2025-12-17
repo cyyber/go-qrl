@@ -27,6 +27,7 @@ import (
 	"math/rand"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/theQRL/go-zond/common/hexutil"
 	"golang.org/x/crypto/sha3"
@@ -41,8 +42,8 @@ const (
 )
 
 var (
-	hashT    = reflect.TypeOf(Hash{})
-	addressT = reflect.TypeOf(Address{})
+	hashT    = reflect.TypeFor[Hash]()
+	addressT = reflect.TypeFor[Address]()
 
 	// MaxAddress represents the maximum possible address value.
 	MaxAddress, _ = NewAddressFromString("Qffffffffffffffffffffffffffffffffffffffff")
@@ -252,9 +253,6 @@ func (a Address) Cmp(other Address) int {
 
 // Bytes gets the string representation of the underlying address.
 func (a Address) Bytes() []byte { return a[:] }
-
-// Hash converts an address to a hash by left-padding it with zeros.
-func (a Address) Hash() Hash { return BytesToHash(a[:]) }
 
 // Big converts an address to a big integer.
 func (a Address) Big() *big.Int { return new(big.Int).SetBytes(a[:]) }

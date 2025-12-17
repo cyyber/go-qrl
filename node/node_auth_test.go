@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -98,7 +98,7 @@ func TestAuthEndpoints(t *testing.T) {
 		t.Fatalf("failed to create jwt secret: %v", err)
 	}
 	// Gzond must read it from a file, and does not support in-memory JWT secrets, so we create a temporary file.
-	jwtPath := path.Join(t.TempDir(), "jwt_secret")
+	jwtPath := filepath.Join(t.TempDir(), "jwt_secret")
 	if err := os.WriteFile(jwtPath, []byte(hexutil.Encode(secret[:])), 0600); err != nil {
 		t.Fatalf("failed to prepare jwt secret file: %v", err)
 	}
@@ -123,12 +123,16 @@ func TestAuthEndpoints(t *testing.T) {
 	node.RegisterAPIs([]rpc.API{
 		{
 			Namespace:     "engine",
+			Version:       "1.0",
 			Service:       helloRPC("hello engine"),
+			Public:        true,
 			Authenticated: true,
 		},
 		{
 			Namespace:     "qrl",
+			Version:       "1.0",
 			Service:       helloRPC("hello qrl"),
+			Public:        true,
 			Authenticated: true,
 		},
 	})

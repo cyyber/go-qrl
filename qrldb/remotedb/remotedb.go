@@ -34,7 +34,7 @@ type Database struct {
 
 func (db *Database) Has(key []byte) (bool, error) {
 	if _, err := db.Get(key); err != nil {
-		return false, nil
+		return false, err
 	}
 	return true, nil
 }
@@ -108,10 +108,6 @@ func (db *Database) TruncateTail(n uint64) (uint64, error) {
 
 func (db *Database) Sync() error {
 	return nil
-}
-
-func (db *Database) MigrateTable(s string, f func([]byte) ([]byte, error)) error {
-	panic("not supported")
 }
 
 func (db *Database) NewBatch() qrldb.Batch {

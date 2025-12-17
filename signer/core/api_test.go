@@ -96,12 +96,12 @@ func (ui *headlessUi) ApproveNewAccount(request *core.NewAccountRequest) (core.N
 }
 
 func (ui *headlessUi) ShowError(message string) {
-	//stdout is used by communication
+	// stdout is used by communication
 	fmt.Fprintln(os.Stderr, message)
 }
 
 func (ui *headlessUi) ShowInfo(message string) {
-	//stdout is used by communication
+	// stdout is used by communication
 	fmt.Fprintln(os.Stderr, message)
 }
 

@@ -36,6 +36,7 @@ import (
 var testSigData = make([]byte, 32)
 
 func TestKeyStore(t *testing.T) {
+	t.Parallel()
 	dir, ks := tmpKeyStore(t)
 
 	a, err := ks.NewAccount("foo")
@@ -70,6 +71,7 @@ func TestKeyStore(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 
 	pass := "" // not used but required by API
@@ -86,6 +88,7 @@ func TestSign(t *testing.T) {
 }
 
 func TestSignWithPassphrase(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 
 	pass := "passwd"
@@ -280,6 +283,7 @@ type walletEvent struct {
 // Tests that wallet notifications and correctly fired when accounts are added
 // or deleted from the keystore.
 func TestWalletNotifications(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 
 	// Subscribe to the wallet feed and collect events.
@@ -339,7 +343,9 @@ func TestWalletNotifications(t *testing.T) {
 	checkEvents(t, wantEvents, events)
 }
 
+// TestImportWallet tests the import functionality of a keystore.
 func TestImportWallet(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 	wallet, err := wallet.Generate(wallet.ML_DSA_87)
 	if err != nil {
@@ -356,7 +362,9 @@ func TestImportWallet(t *testing.T) {
 	}
 }
 
+// TestImportExport tests the import and export functionality of a keystore.
 func TestImportExport(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 	acc, err := ks.NewAccount("old")
 	if err != nil {
@@ -385,6 +393,7 @@ func TestImportExport(t *testing.T) {
 // TestImportRace tests the keystore on races.
 // This test should fail under -race if importing races.
 func TestImportRace(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 	acc, err := ks.NewAccount("old")
 	if err != nil {
@@ -450,8 +459,5 @@ func checkEvents(t *testing.T, want []walletEvent, have []walletEvent) {
 
 func tmpKeyStore(t *testing.T) (string, *KeyStore) {
 	d := t.TempDir()
-	newKs := func(kd string) *KeyStore {
-		return NewKeyStore(kd, veryLightArgon2idT, veryLightArgon2idM, veryLightArgon2idP)
-	}
-	return d, newKs(d)
+	return d, NewKeyStore(d, veryLightArgon2idT, veryLightArgon2idM, veryLightArgon2idP)
 }
