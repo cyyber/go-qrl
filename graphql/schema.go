@@ -144,6 +144,7 @@ const schema string = `
         publicKey: Bytes!
         signature: Bytes!
         descriptor: Bytes!
+        extraParams: Bytes!
         # Envelope transaction support
         type: Long
         accessList: [AccessTuple!]

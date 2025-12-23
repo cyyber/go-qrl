@@ -29,7 +29,7 @@ import (
 type txJSON struct {
 	Type hexutil.Uint64 `json:"type"`
 
-	ChainID              *hexutil.Big    `json:"chainId,omitempty"`
+	ChainID              *hexutil.Big    `json:"chainId"`
 	Nonce                *hexutil.Uint64 `json:"nonce"`
 	To                   *common.Address `json:"to"`
 	Gas                  *hexutil.Uint64 `json:"gas"`
@@ -40,7 +40,7 @@ type txJSON struct {
 	AccessList           *AccessList     `json:"accessList,omitempty"`
 
 	Descriptor  *hexutil.Bytes `json:"descriptor"`
-	ExtraParams *hexutil.Bytes `json:"extraParams,omitempty"`
+	ExtraParams *hexutil.Bytes `json:"extraParams"`
 	PublicKey   *hexutil.Bytes `json:"publicKey"`
 	Signature   *hexutil.Bytes `json:"signature"`
 
@@ -128,11 +128,12 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 			return errors.New("missing required field 'descriptor' in transaction")
 		}
 		copy(itx.Descriptor[:], *dec.Descriptor)
+		if dec.ExtraParams == nil {
+			return errors.New("missing required field 'extraParams' in transaction")
+		}
+		itx.ExtraParams = *dec.ExtraParams
 		if dec.PublicKey == nil {
 			return errors.New("missing required field 'publicKey' in transaction")
-		}
-		if dec.ExtraParams != nil {
-			itx.ExtraParams = *dec.ExtraParams
 		}
 		itx.PublicKey = *dec.PublicKey
 		if dec.Signature == nil {

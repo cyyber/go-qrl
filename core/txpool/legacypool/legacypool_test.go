@@ -1239,6 +1239,7 @@ func TestPendingGlobalLimiting(t *testing.T) {
 	}
 }
 
+// TODO(rgeraldes24)
 // Test the limit on transaction size is enforced correctly.
 // This test verifies every transaction having allowed size
 // is added to the pool, and longer transactions are rejected.

@@ -71,7 +71,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 
 		signed, err := tx.WithAuthValues(signer, sigArr[:], pkArr[:], desc, extraParams)
 		if err != nil {
-			t.Fatalf("WithSignaturePublicKeyAndDescriptor: %v", err)
+			t.Fatalf("WithAuthValues: %v", err)
 		}
 
 		return signed, sigArr[:], pkArr[:], desc
