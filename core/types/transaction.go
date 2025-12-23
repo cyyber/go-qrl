@@ -83,7 +83,7 @@ type TxData interface {
 	extraParams() []byte
 	rawSignatureValue() []byte
 	rawPublicKeyValue() []byte
-	setAuthValues(chainID *big.Int, sig, pk, desc, schemaParams []byte)
+	setAuthValues(chainID *big.Int, sig, pk, desc, extraParams []byte)
 
 	// effectiveGasPrice computes the gas price paid by the transaction, given
 	// the inclusion block baseFee.
