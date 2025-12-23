@@ -2027,12 +2027,11 @@ func testJournaling(t *testing.T, nolocals bool) {
 	t.Parallel()
 
 	// Create a temporary file for the journal
-	file, err := os.CreateTemp("", "")
+	file, err := os.CreateTemp(t.TempDir(), "")
 	if err != nil {
 		t.Fatalf("failed to create temporary journal: %v", err)
 	}
 	journal := file.Name()
-	defer os.Remove(journal)
 
 	// Clean up the temporary file, we only need the path for now
 	file.Close()

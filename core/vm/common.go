@@ -17,9 +17,10 @@
 package vm
 
 import (
+	"math"
+
 	"github.com/holiman/uint256"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
 )
 
 // calcMemSize64 calculates the required memory size, and returns

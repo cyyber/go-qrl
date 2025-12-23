@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	gomath "math"
 	"math/big"
 	"sync"
 	"time"
@@ -647,7 +648,7 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call qrl.CallMsg, h
 	txContext := core.NewQRVMTxContext(msg)
 	qrvmContext := core.NewQRVMBlockContext(header, b.blockchain, nil)
 	vmEnv := vm.NewQRVM(qrvmContext, txContext, stateDB, b.config, vm.Config{NoBaseFee: true})
-	gasPool := new(core.GasPool).AddGas(math.MaxUint64)
+	gasPool := new(core.GasPool).AddGas(gomath.MaxUint64)
 
 	return core.ApplyMessage(vmEnv, msg, gasPool)
 }

@@ -20,10 +20,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"math"
 	"time"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/qrldb"

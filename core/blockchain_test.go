@@ -2085,7 +2085,6 @@ func TestTransactionIndices(t *testing.T) {
 		ancientDb, _ := rawdb.NewDatabaseWithFreezer(rawdb.NewMemoryDatabase(), frdir, "", false)
 		rawdb.WriteAncientBlocks(ancientDb, append([]*types.Block{gspec.ToBlock()}, blocks...), append([]types.Receipts{{}}, receipts...))
 
-		l := l
 		chain, err := NewBlockChain(ancientDb, nil, gspec, beacon.NewFaker(), vm.Config{}, &l)
 		if err != nil {
 			t.Fatalf("failed to create tester chain: %v", err)
@@ -2109,7 +2108,6 @@ func TestTransactionIndices(t *testing.T) {
 	rawdb.WriteAncientBlocks(ancientDb, append([]*types.Block{gspec.ToBlock()}, blocks...), append([]types.Receipts{{}}, receipts...))
 	limit = []uint64{0, 64 /* drop stale */, 32 /* shorten history */, 64 /* extend history */, 0 /* restore all */}
 	for _, l := range limit {
-		l := l
 		chain, err := NewBlockChain(ancientDb, nil, gspec, beacon.NewFaker(), vm.Config{}, &l)
 		if err != nil {
 			t.Fatalf("failed to create tester chain: %v", err)

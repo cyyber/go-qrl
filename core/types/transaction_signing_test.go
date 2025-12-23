@@ -137,7 +137,6 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
 			t.Fatalf("expected bad signature error; got %v", err)
 		}
-
 	})
 	t.Run("error/mutated-signature", func(t *testing.T) {
 		t.Parallel()
@@ -160,6 +159,5 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
 			t.Fatalf("expected bad signature error; got %v", err)
 		}
-
 	})
 }

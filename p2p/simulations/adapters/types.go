@@ -124,12 +124,12 @@ type NodeConfig struct {
 	//
 	// The default value is empty so that the default log writer
 	// is the system standard output.
-	LogFile string
+	// LogFile string
 
 	// LogVerbosity is the log verbosity of the p2p node at runtime.
 	//
 	// The default verbosity is INFO.
-	LogVerbosity log.Lvl
+	// LogVerbosity log.Lvl
 }
 
 // nodeConfigJSON is used to encode and decode NodeConfig as JSON by encoding
@@ -156,8 +156,8 @@ func (n *NodeConfig) MarshalJSON() ([]byte, error) {
 		Properties:      n.Properties,
 		Port:            n.Port,
 		EnableMsgEvents: n.EnableMsgEvents,
-		LogFile:         n.LogFile,
-		LogVerbosity:    int(n.LogVerbosity),
+		// LogFile:         n.LogFile,
+		// LogVerbosity:    int(n.LogVerbosity),
 	}
 	if n.PrivateKey != nil {
 		confJSON.PrivateKey = hex.EncodeToString(crypto.FromECDSA(n.PrivateKey))
@@ -196,8 +196,8 @@ func (n *NodeConfig) UnmarshalJSON(data []byte) error {
 	n.Properties = confJSON.Properties
 	n.Port = confJSON.Port
 	n.EnableMsgEvents = confJSON.EnableMsgEvents
-	n.LogFile = confJSON.LogFile
-	n.LogVerbosity = log.Lvl(confJSON.LogVerbosity)
+	// n.LogFile = confJSON.LogFile
+	// n.LogVerbosity = log.Lvl(confJSON.LogVerbosity)
 
 	return nil
 }
@@ -227,7 +227,7 @@ func RandomNodeConfig() *NodeConfig {
 		Name:            fmt.Sprintf("node_%s", qnodId.String()),
 		Port:            port,
 		EnableMsgEvents: true,
-		LogVerbosity:    log.LvlInfo,
+		// LogVerbosity:    log.LvlInfo,
 	}
 }
 

@@ -374,35 +374,38 @@ type execNodeConfig struct {
 }
 
 func initLogging() {
-	// Initialize the logging by default first.
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.LogfmtFormat()))
-	glogger.Verbosity(log.LvlInfo)
-	log.Root().SetHandler(glogger)
+	// TODO(rgeraldes24)
+	/*
+		// Initialize the logging by default first.
+		glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.LogfmtFormat()))
+		glogger.Verbosity(log.LvlInfo)
+		log.Root().SetHandler(glogger)
 
-	confEnv := os.Getenv(envNodeConfig)
-	if confEnv == "" {
-		return
-	}
-	var conf execNodeConfig
-	if err := json.Unmarshal([]byte(confEnv), &conf); err != nil {
-		return
-	}
-	var writer = os.Stderr
-	if conf.Node.LogFile != "" {
-		logWriter, err := os.Create(conf.Node.LogFile)
-		if err != nil {
+		confEnv := os.Getenv(envNodeConfig)
+		if confEnv == "" {
 			return
 		}
-		writer = logWriter
-	}
-	var verbosity = log.LvlInfo
-	if conf.Node.LogVerbosity <= log.LvlTrace && conf.Node.LogVerbosity >= log.LvlCrit {
-		verbosity = conf.Node.LogVerbosity
-	}
-	// Reinitialize the logger
-	glogger = log.NewGlogHandler(log.StreamHandler(writer, log.TerminalFormat(true)))
-	glogger.Verbosity(verbosity)
-	log.Root().SetHandler(glogger)
+		var conf execNodeConfig
+		if err := json.Unmarshal([]byte(confEnv), &conf); err != nil {
+			return
+		}
+		var writer = os.Stderr
+		if conf.Node.LogFile != "" {
+			logWriter, err := os.Create(conf.Node.LogFile)
+			if err != nil {
+				return
+			}
+			writer = logWriter
+		}
+		var verbosity = log.LvlInfo
+		if conf.Node.LogVerbosity <= log.LvlTrace && conf.Node.LogVerbosity >= log.LvlCrit {
+			verbosity = conf.Node.LogVerbosity
+		}
+		// Reinitialize the logger
+		glogger = log.NewGlogHandler(log.StreamHandler(writer, log.TerminalFormat(true)))
+		glogger.Verbosity(verbosity)
+		log.Root().SetHandler(glogger)
+	*/
 }
 
 // execP2PNode starts a simulation node when the current binary is executed with

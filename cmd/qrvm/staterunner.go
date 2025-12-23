@@ -53,9 +53,9 @@ type StatetestResult struct {
 
 func stateTestCmd(ctx *cli.Context) error {
 	// Configure the go-zond logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
+	glogger := log.NewGlogHandler(log.NewTerminalHandler(os.Stderr, false))
+	glogger.Verbosity(log.FromLegacyLevel(ctx.Int(VerbosityFlag.Name)))
+	log.SetDefault(log.NewLogger(glogger))
 
 	// Configure the QRVM logger
 	config := &logger.Config{

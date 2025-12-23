@@ -41,10 +41,11 @@ func blockTestCmd(ctx *cli.Context) error {
 	if len(ctx.Args().First()) == 0 {
 		return errors.New("path-to-test argument required")
 	}
-	// Configure the go-ethereum logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
+	// Configure the go-zond logger
+	glogger := log.NewGlogHandler(log.NewTerminalHandler(os.Stderr, false))
+	glogger.Verbosity(log.FromLegacyLevel(ctx.Int(VerbosityFlag.Name)))
+	log.SetDefault(log.NewLogger(glogger))
+
 	var tracer vm.QRVMLogger
 	// Configure the QRVM logger
 	if ctx.Bool(MachineFlag.Name) {

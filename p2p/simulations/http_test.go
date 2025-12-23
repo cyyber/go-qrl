@@ -29,9 +29,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mattn/go-colorable"
 	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/p2p"
 	"github.com/theQRL/go-zond/p2p/qnode"
@@ -40,11 +38,12 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	loglevel := flag.Int("loglevel", 2, "verbosity of logs")
+	// TODO(rgeraldes24)
+	// loglevel := flag.Int("loglevel", 2, "verbosity of logs")
 
 	flag.Parse()
-	log.PrintOrigins(true)
-	log.Root().SetHandler(log.LvlFilterHandler(log.Lvl(*loglevel), log.StreamHandler(colorable.NewColorableStderr(), log.TerminalFormat(true))))
+	// log.PrintOrigins(true)
+	// log.Root().SetHandler(log.LvlFilterHandler(log.Lvl(*loglevel), log.StreamHandler(colorable.NewColorableStderr(), log.TerminalFormat(true))))
 	os.Exit(m.Run())
 }
 

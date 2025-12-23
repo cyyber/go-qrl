@@ -61,7 +61,6 @@ func getBlock(transactions int, dataSize int) *types.Block {
 					signedTx, _ := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, d)
 					b.AddTx(signedTx)
 				}
-
 			}
 		})
 	block := blocks[len(blocks)-1]

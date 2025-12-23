@@ -18,9 +18,9 @@ package rawdb
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/golang/snappy"
-	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/rlp"
 )
 

@@ -1,5 +1,5 @@
-#/bin/bash -eu
-# Copyright 2020 Google Inc.
+#!/bin/bash -eu
+# Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,17 +14,6 @@
 # limitations under the License.
 #
 ################################################################################
-
-# This file is for integration with Google OSS-Fuzz.
-# The following ENV variables are available when executing on OSS-fuzz:
-#
-# /out/         $OUT    Directory to store build artifacts (fuzz targets, dictionaries, options files, seed corpus archives).
-# /src/         $SRC    Directory to checkout source files.
-# /work/        $WORK   Directory to store intermediate files.
-#
-# $CC, $CXX, $CCC       The C and C++ compiler binaries.
-# $CFLAGS, $CXXFLAGS    C and C++ compiler flags.
-# $LIB_FUZZING_ENGINE   C++ compiler argument to link fuzz target against the prebuilt engine library (e.g. libFuzzer).
 
 # This sets the -coverpgk for the coverage report when the corpus is executed through go test
 coverpkg="github.com/theQRL/go-zond/..."
@@ -59,26 +48,27 @@ DOG
   cd -
 }
 
-function compile_fuzzer {
-  # Inputs:
-  # $1: The package to fuzz, within go-zond
-  # $2: The name of the fuzzing function
-  # $3: The name to give to the final fuzzing-binary
-
-  path=$GOPATH/src/github.com/theQRL/go-zond/$1
-  func=$2
+function compile_fuzzer() {
+  package=$1
+  function=$2
   fuzzer=$3
+  file=$4
+
+  path=$GOPATH/src/$package
 
   echo "Building $fuzzer"
+  cd $path
 
-  # Do a coverage-build or a regular build
-  if [[ $SANITIZER = *coverage* ]]; then
-    coverbuild $path $func $fuzzer $coverpkg
-  else
-    (cd $path && \
-        go-fuzz -func $func -o $WORK/$fuzzer.a . && \
-        $CXX $CXXFLAGS $LIB_FUZZING_ENGINE $WORK/$fuzzer.a -o $OUT/$fuzzer)
-  fi
+  # Install build dependencies
+  go mod tidy
+  go get github.com/holiman/gofuzz-shim/testing
+
+	if [[ $SANITIZER == *coverage* ]]; then
+		coverbuild $path $function $fuzzer $coverpkg
+	else
+	  gofuzz-shim --func $function --package $package -f $file -o $fuzzer.a
+		$CXX $CXXFLAGS $LIB_FUZZING_ENGINE $fuzzer.a -o $OUT/$fuzzer
+	fi
 
   ## Check if there exists a seed corpus file
   corpusfile="${path}/testdata/${fuzzer}_seed_corpus.zip"
@@ -87,8 +77,11 @@ function compile_fuzzer {
     cp $corpusfile $OUT/
     echo "Found seed corpus: $corpusfile"
   fi
+  cd -
 }
 
+go install github.com/holiman/gofuzz-shim@latest
+repo=$GOPATH/src/github.com/theQRL/go-zond
 compile_fuzzer tests/fuzzers/bitutil  Fuzz      fuzzBitutilCompress
 compile_fuzzer tests/fuzzers/bn256    FuzzAdd   fuzzBn256Add
 compile_fuzzer tests/fuzzers/bn256    FuzzMul   fuzzBn256Mul
