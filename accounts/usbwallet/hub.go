@@ -24,7 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/karalabe/usb"
+	"github.com/karalabe/hid"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/event"
 	"github.com/theQRL/go-zond/log"
@@ -72,7 +72,7 @@ type Hub struct {
 // 	return newHub(LedgerScheme, 0x2c97, []uint16{
 
 // 		// Device definitions taken from
-// 		// https://github.com/LedgerHQ/ledger-live/blob/38012bc8899e0f07149ea9cfe7e64b2c146bc92b/libs/ledgerjs/packages/devices/src/index.ts
+// 		// https://github.com/LedgerHQ/ledger-live/blob/595cb73b7e6622dbbcfc11867082ddc886f1bf01/libs/ledgerjs/packages/devices/src/index.ts
 
 // 		// Original product IDs
 // 		0x0000, /* Ledger Blue */
@@ -80,25 +80,22 @@ type Hub struct {
 // 		0x0004, /* Ledger Nano X */
 // 		0x0005, /* Ledger Nano S Plus */
 // 		0x0006, /* Ledger Nano FTS */
+//		0x0007, /* Ledger Flex */
 
-// 		0x0015, /* HID + U2F + WebUSB Ledger Blue */
-// 		0x1015, /* HID + U2F + WebUSB Ledger Nano S */
-// 		0x4015, /* HID + U2F + WebUSB Ledger Nano X */
-// 		0x5015, /* HID + U2F + WebUSB Ledger Nano S Plus */
-// 		0x6015, /* HID + U2F + WebUSB Ledger Nano FTS */
+// 		0x0000, /* WebUSB Ledger Blue */
+// 		0x1000, /* WebUSB Ledger Nano S */
+// 		0x4000, /* WebUSB Ledger Nano X */
+// 		0x5000, /* WebUSB Ledger Nano S Plus */
+// 		0x6000, /* WebUSB Ledger Nano FTS */
 
-// 		0x0011, /* HID + WebUSB Ledger Blue */
-// 		0x1011, /* HID + WebUSB Ledger Nano S */
-// 		0x4011, /* HID + WebUSB Ledger Nano X */
-// 		0x5011, /* HID + WebUSB Ledger Nano S Plus */
-// 		0x6011, /* HID + WebUSB Ledger Nano FTS */
+// 		0x7000, /* WebUSB Ledger Flex */
 // 	}, 0xffa0, 0, newLedgerDriver)
 // }
 
 /*
 // newHub creates a new hardware wallet manager for generic USB devices.
 func newHub(scheme string, vendorID uint16, productIDs []uint16, usageID uint16, endpointID int, makeDriver func(log.Logger) driver) (*Hub, error) {
-	if !usb.Supported() {
+	if !hid.Supported() {
 		return nil, errors.New("unsupported platform")
 	}
 	hub := &Hub{
@@ -144,7 +141,7 @@ func (hub *Hub) refreshWallets() {
 		return
 	}
 	// Retrieve the current list of USB wallet devices
-	var devices []usb.DeviceInfo
+	var devices []hid.DeviceInfo
 
 	if runtime.GOOS == "linux" {
 		// hidapi on Linux opens the device during enumeration to retrieve some infos,
@@ -159,7 +156,7 @@ func (hub *Hub) refreshWallets() {
 			return
 		}
 	}
-	infos, err := usb.Enumerate(hub.vendorID, 0)
+	infos, err := hid.Enumerate(hub.vendorID, 0)
 	if err != nil {
 		failcount := hub.enumFails.Add(1)
 		if runtime.GOOS == "linux" {
@@ -174,8 +171,11 @@ func (hub *Hub) refreshWallets() {
 
 	for _, info := range infos {
 		for _, id := range hub.productIDs {
+			// We check both the raw ProductID (legacy) and just the upper byte, as Ledger
+			// uses `MMII`, encoding a model (MM) and an interface bitfield (II)
+			mmOnly := info.ProductID & 0xff00
 			// Windows and Macos use UsageID matching, Linux uses Interface matching
-			if info.ProductID == id && (info.UsagePage == hub.usageID || info.Interface == hub.endpointID) {
+			if (info.ProductID == id || mmOnly == id) && (info.UsagePage == hub.usageID || info.Interface == hub.endpointID) {
 				devices = append(devices, info)
 				break
 			}

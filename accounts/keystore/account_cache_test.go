@@ -54,7 +54,7 @@ var (
 	}
 )
 
-// waitWatcherStarts waits up to 1s for the keystore watcher to start.
+// waitWatcherStart waits up to 1s for the keystore watcher to start.
 func waitWatcherStart(ks *KeyStore) bool {
 	// On systems where file watch is not supported, just return "ok".
 	if !ks.cache.watcher.enabled() {
@@ -129,7 +129,6 @@ func TestWatchNoDir(t *testing.T) {
 	}
 	// Create the directory and copy a key file into it.
 	os.MkdirAll(dir, 0700)
-	defer os.RemoveAll(dir)
 	file := filepath.Join(dir, "aaa")
 	if err := cp.CopyFile(file, cachetestAccounts[0].URL.Path); err != nil {
 		t.Fatal(err)
@@ -155,6 +154,7 @@ func TestWatchNoDir(t *testing.T) {
 }
 
 func TestCacheInitialReload(t *testing.T) {
+	t.Parallel()
 	cache, _ := newAccountCache(cachetestDir)
 	accounts := cache.accounts()
 	if !reflect.DeepEqual(accounts, cachetestAccounts) {
@@ -163,6 +163,7 @@ func TestCacheInitialReload(t *testing.T) {
 }
 
 func TestCacheAddDeleteOrder(t *testing.T) {
+	t.Parallel()
 	cache, _ := newAccountCache("testdata/no-such-dir")
 	cache.watcher.running = true // prevent unexpected reloads
 
@@ -255,6 +256,7 @@ func TestCacheAddDeleteOrder(t *testing.T) {
 }
 
 func TestCacheFind(t *testing.T) {
+	t.Parallel()
 	dir := filepath.Join("testdata", "dir")
 	cache, _ := newAccountCache(dir)
 	cache.watcher.running = true // prevent unexpected reloads
@@ -337,7 +339,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	t.Parallel()
 
 	// Create a temporary keystore to test with
-	dir := filepath.Join(os.TempDir(), fmt.Sprintf("qrl-keystore-updatedkeyfilecontents-test-%d-%d", os.Getpid(), rand.Int()))
+	dir := t.TempDir()
 	ks := NewKeyStore(dir, LightArgon2idT, LightArgon2idM, LightArgon2idP)
 
 	list := ks.Accounts()
@@ -347,9 +349,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	if !waitWatcherStart(ks) {
 		t.Fatal("keystore watcher didn't start in time")
 	}
-	// Create the directory and copy a key file into it.
-	os.MkdirAll(dir, 0700)
-	defer os.RemoveAll(dir)
+	// Copy a key file into it
 	file := filepath.Join(dir, "aaa")
 
 	// Place one of our testfiles in there
@@ -365,7 +365,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 		return
 	}
 	// needed so that modTime of `file` is different to its current value after forceCopyFile
-	time.Sleep(time.Second)
+	os.Chtimes(file, time.Now().Add(-time.Second), time.Now().Add(-time.Second))
 
 	// Now replace file contents
 	if err := forceCopyFile(file, cachetestAccounts[1].URL.Path); err != nil {
@@ -381,7 +381,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	}
 
 	// needed so that modTime of `file` is different to its current value after forceCopyFile
-	time.Sleep(time.Second)
+	os.Chtimes(file, time.Now().Add(-time.Second), time.Now().Add(-time.Second))
 
 	// Now replace file contents again
 	if err := forceCopyFile(file, cachetestAccounts[2].URL.Path); err != nil {
@@ -397,7 +397,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	}
 
 	// needed so that modTime of `file` is different to its current value after os.WriteFile
-	time.Sleep(time.Second)
+	os.Chtimes(file, time.Now().Add(-time.Second), time.Now().Add(-time.Second))
 
 	// Now replace file contents with crap
 	if err := os.WriteFile(file, []byte("foo"), 0600); err != nil {
