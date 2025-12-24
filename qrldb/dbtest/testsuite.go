@@ -381,7 +381,7 @@ func TestDatabaseSuite(t *testing.T, New func() qrldb.KeyValueStore) {
 		}
 	})
 
-	t.Run("OperatonsAfterClose", func(t *testing.T) {
+	t.Run("OperationsAfterClose", func(t *testing.T) {
 		db := New()
 		db.Put([]byte("key"), []byte("value"))
 		db.Close()
