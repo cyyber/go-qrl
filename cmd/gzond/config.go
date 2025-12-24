@@ -39,7 +39,6 @@ import (
 	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/metrics"
 	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl/catalyst"
 	"github.com/theQRL/go-zond/qrl/qrlconfig"
 	"github.com/urfave/cli/v2"
@@ -114,7 +113,7 @@ func defaultNodeConfig() node.Config {
 	git, _ := version.VCS()
 	cfg := node.DefaultConfig
 	cfg.Name = clientIdentifier
-	cfg.Version = params.VersionWithCommit(git.Commit, git.Date)
+	cfg.Version = version.WithCommit(git.Commit, git.Date)
 	cfg.HTTPModules = append(cfg.HTTPModules, "qrl")
 	cfg.WSModules = append(cfg.WSModules, "qrl")
 	cfg.IPCPath = "gzond.ipc"

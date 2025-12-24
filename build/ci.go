@@ -58,7 +58,7 @@ import (
 	"github.com/theQRL/go-zond/crypto/signify"
 	"github.com/theQRL/go-zond/internal/build"
 	"github.com/theQRL/go-zond/internal/download"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-zond/internal/version"
 )
 
 var (
@@ -114,7 +114,7 @@ var (
 	// A debian package is created for all executables listed here.
 	debQRL = debPackage{
 		Name:        "qrl",
-		Version:     params.Version,
+		Version:     version.Semantic,
 		Executables: debExecutables,
 	}
 
@@ -428,7 +428,7 @@ func doArchive(cmdline []string) {
 
 	var (
 		env       = build.Env()
-		basegzond = archiveBasename(*arch, params.ArchiveVersion(env.Commit))
+		basegzond = archiveBasename(*arch, version.Archive(env.Commit))
 		gzond     = "gzond-" + basegzond + ext
 		alltools  = "gzond-alltools-" + basegzond + ext
 	)
@@ -550,7 +550,7 @@ func doDockerBuildx(cmdline []string) {
 	case env.Branch == "main":
 		tags = []string{"latest"}
 	case strings.HasPrefix(env.Tag, "v0."):
-		tags = []string{"stable", fmt.Sprintf("release-0.%d", params.VersionMinor), "v" + params.Version}
+		tags = []string{"stable", fmt.Sprintf("release-%v", version.Family), "v" + version.Semantic}
 	}
 	// Need to create a mult-arch builder
 	check := exec.Command("docker", "buildx", "inspect", "multi-arch-builder")
@@ -569,7 +569,7 @@ func doDockerBuildx(cmdline []string) {
 			gzondImage := fmt.Sprintf("%s%s", spec.base, tag)
 			cmd := exec.Command("docker", "buildx", "build",
 				"--build-arg", "COMMIT="+env.Commit,
-				"--build-arg", "VERSION="+params.VersionWithMeta,
+				"--build-arg", "VERSION="+version.WithMeta,
 				"--build-arg", "BUILDNUM="+env.Buildnum,
 				"--tag", gzondImage,
 				"--platform", *platform,
@@ -936,19 +936,19 @@ func doWindowsInstaller(cmdline []string) {
 	// Build the installer. This assumes that all the needed files have been previously
 	// built (don't mix building and packaging to keep cross compilation complexity to a
 	// minimum).
-	version := strings.Split(params.Version, ".")
+	ver := strings.Split(version.Semantic, ".")
 	if env.Commit != "" {
-		version[2] += "-" + env.Commit[:8]
+		ver[2] += "-" + env.Commit[:8]
 	}
-	installer, err := filepath.Abs("gzond-" + archiveBasename(*arch, params.ArchiveVersion(env.Commit)) + ".exe")
+	installer, err := filepath.Abs("gzond-" + archiveBasename(*arch, version.Archive(env.Commit)) + ".exe")
 	if err != nil {
 		log.Fatalf("Failed to convert installer file path: %v", err)
 	}
 	build.MustRunCommand("makensis.exe",
 		"/DOUTPUTFILE="+installer,
-		"/DMAJORVERSION="+version[0],
-		"/DMINORVERSION="+version[1],
-		"/DBUILDVERSION="+version[2],
+		"/DMAJORVERSION="+ver[0],
+		"/DMINORVERSION="+ver[1],
+		"/DBUILDVERSION="+ver[2],
 		"/DARCH="+*arch,
 		filepath.Join(*workdir, "gzond.nsi"),
 	)
