@@ -125,10 +125,6 @@ var (
 			"plucky",   // 25.04, EOL: 01/2026
 		}
 	*/
-
-	// TODO(now.youtrack.cloud/issue/TGZ-23)
-	// This is where the tests should be unpacked.
-	// executionSpecTestsDir = "tests/spec-tests"
 )
 
 var GOBIN, _ = filepath.Abs(filepath.Join("build", "bin"))
@@ -276,14 +272,8 @@ func doTest(cmdline []string) {
 	)
 	flag.CommandLine.Parse(cmdline)
 
-	// Load checksums file (needed for both spec tests and dlgo)
+	// Load checksums file (needed for dlgo)
 	csdb := download.MustLoadChecksums("build/checksums.txt")
-
-	// TODO(now.youtrack.cloud/issue/TGZ-23)
-	// Get test fixtures.
-	// if !*short {
-	// 	downloadSpecTestFixtures(csdb, *cachedir)
-	// }
 
 	// Configure the toolchain.
 	tc := build.GoToolchain{GOARCH: *arch, CC: *cc}
@@ -330,24 +320,6 @@ func doTest(cmdline []string) {
 		build.MustRun(&test)
 	}
 }
-
-// TODO(now.youtrack.cloud/issue/TGZ-23)
-/*
-// downloadSpecTestFixtures downloads and extracts the execution-spec-tests fixtures.
-func downloadSpecTestFixtures(csdb *download.ChecksumDB, cachedir string) string {
-	ext := ".tar.gz"
-	base := "fixtures" // TODO(MariusVanDerWijden) rename once the version becomes part of the filename
-	url := fmt.Sprintf("https://github.com/theQRL/execution-spec-tests/releases/download/v%s/%s%s", executionSpecTestsVersion, base, ext)
-	archivePath := filepath.Join(cachedir, base+ext)
-	if err := csdb.DownloadFile(url, archivePath); err != nil {
-		log.Fatal(err)
-	}
-	if err := build.ExtractArchive(archivePath, executionSpecTestsDir); err != nil {
-		log.Fatal(err)
-	}
-	return filepath.Join(cachedir, base)
-}
-*/
 
 // doLint runs golangci-lint on requested packages.
 func doLint(cmdline []string) {
