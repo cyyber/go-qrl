@@ -255,7 +255,7 @@ func (t Type) GetType() reflect.Type {
 	case HashTy, FixedPointTy: // currently not used
 		return reflect.TypeFor[[32]byte]()
 	case FunctionTy:
-		return reflect.TypeFor[[common.AddressLength+4]byte]()
+		return reflect.TypeFor[[common.AddressLength + 4]byte]()
 	default:
 		panic("Invalid type")
 	}

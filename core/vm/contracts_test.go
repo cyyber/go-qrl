@@ -49,11 +49,10 @@ type precompiledFailureTest struct {
 // allPrecompiles does not map to the actual set of precompiles, as it also contains
 // repriced versions of precompiles at certain slots
 var allPrecompiles = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}):    &depositroot{},
-	common.BytesToAddress([]byte{2}):    &sha256hash{},
-	common.BytesToAddress([]byte{4}):    &dataCopy{},
-	common.BytesToAddress([]byte{5}):    &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{0xf5}): &bigModExp{eip2565: true},
+	common.BytesToAddress([]byte{1}): &depositroot{},
+	common.BytesToAddress([]byte{2}): &sha256hash{},
+	common.BytesToAddress([]byte{3}): &dataCopy{},
+	common.BytesToAddress([]byte{4}): &bigModExp{},
 }
 
 func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
@@ -192,27 +191,12 @@ func BenchmarkPrecompiledIdentity(bench *testing.B) {
 	benchmarkPrecompiled("04", t, bench)
 }
 
-// Tests the sample inputs from the ModExp EIP 198.
+// Tests the sample inputs from the ModExp.
 func TestPrecompiledModExp(t *testing.T) {
-	testJson("modexp", "Q0000000000000000000000000000000000000005", t)
+	testJson("modexp", "Q0000000000000000000000000000000000000004", t)
 }
 func BenchmarkPrecompiledModExp(b *testing.B) {
-	benchJson("modexp", "Q0000000000000000000000000000000000000005", b)
-}
-
-func TestPrecompiledModExpEip2565(t *testing.T) {
-	testJson("modexp_eip2565", "Q00000000000000000000000000000000000000f5", t)
-}
-func BenchmarkPrecompiledModExpEip2565(b *testing.B) {
-	benchJson("modexp_eip2565", "Q00000000000000000000000000000000000000f5", b)
-}
-
-// Tests the sample inputs from the elliptic curve addition EIP 213.
-func TestPrecompiledBn256Add(t *testing.T) {
-	testJson("bn256Add", "Q0000000000000000000000000000000000000006", t)
-}
-func BenchmarkPrecompiledBn256Add(b *testing.B) {
-	benchJson("bn256Add", "Q0000000000000000000000000000000000000006", b)
+	benchJson("modexp", "Q0000000000000000000000000000000000000004", b)
 }
 
 // Tests OOG
@@ -222,24 +206,8 @@ func TestPrecompiledModExpOOG(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, test := range modexpTests {
-		testPrecompiledOOG("Q0000000000000000000000000000000000000005", test, t)
+		testPrecompiledOOG("Q0000000000000000000000000000000000000004", test, t)
 	}
-}
-
-// Tests the sample inputs from the elliptic curve scalar multiplication EIP 213.
-func TestPrecompiledBn256ScalarMul(t *testing.T) {
-	testJson("bn256ScalarMul", "Q0000000000000000000000000000000000000007", t)
-}
-func BenchmarkPrecompiledBn256ScalarMul(b *testing.B) {
-	benchJson("bn256ScalarMul", "Q0000000000000000000000000000000000000007", b)
-}
-
-// Tests the sample inputs from the elliptic curve pairing check EIP 197.
-func TestPrecompiledBn256Pairing(t *testing.T) {
-	testJson("bn256Pairing", "Q0000000000000000000000000000000000000008", t)
-}
-func BenchmarkPrecompiledBn256Pairing(b *testing.B) {
-	benchJson("bn256Pairing", "Q0000000000000000000000000000000000000008", b)
 }
 
 func TestPrecompiledDepositroot(t *testing.T) {

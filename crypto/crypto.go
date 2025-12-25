@@ -73,6 +73,7 @@ func HashData(kh KeccakState, data []byte) (h common.Hash) {
 	kh.Read(h[:])
 	return h
 }
+
 // TODO(rgeraldes24): 12 vs 8
 // CreateAddress creates a qrl address given the bytes and the nonce
 func CreateAddress(b common.Address, nonce uint64) common.Address {

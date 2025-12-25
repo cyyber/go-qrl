@@ -43,8 +43,8 @@ type PrecompiledContract interface {
 var PrecompiledContractsShanghai = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &depositroot{},
 	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: true},
+	common.BytesToAddress([]byte{3}): &dataCopy{},
+	common.BytesToAddress([]byte{4}): &bigModExp{},
 }
 
 var (
@@ -195,9 +195,7 @@ func (c *dataCopy) Run(in []byte) ([]byte, error) {
 }
 
 // bigModExp implements a native big integer exponential modular operation.
-type bigModExp struct {
-	eip2565 bool
-}
+type bigModExp struct{}
 
 var (
 	big0      = big.NewInt(0)
@@ -281,39 +279,31 @@ func (c *bigModExp) RequiredGas(input []byte) uint64 {
 	adjExpLen.Add(adjExpLen, big.NewInt(int64(msb)))
 	// Calculate the gas cost of the operation
 	gas := new(big.Int).Set(math.BigMax(modLen, baseLen))
-	if c.eip2565 {
-		// EIP-2565 has three changes
-		// 1. Different multComplexity (inlined here)
-		// in EIP-2565 (https://eips.ethereum.org/EIPS/eip-2565):
-		//
-		// def mult_complexity(x):
-		//    ceiling(x/8)^2
-		//
-		//where is x is max(length_of_MODULUS, length_of_BASE)
-		gas = gas.Add(gas, big7)
-		gas = gas.Div(gas, big8)
-		gas.Mul(gas, gas)
 
-		gas.Mul(gas, math.BigMax(adjExpLen, big1))
-		// 2. Different divisor (`GQUADDIVISOR`) (3)
-		gas.Div(gas, big3)
-		if gas.BitLen() > 64 {
-			return gomath.MaxUint64
-		}
-		// 3. Minimum price of 200 gas
-		if gas.Uint64() < 200 {
-			return 200
-		}
-		return gas.Uint64()
-	}
-	gas = modexpMultComplexity(gas)
+	// EIP-2565 has three changes
+	// 1. Different multComplexity (inlined here)
+	// in EIP-2565 (https://eips.ethereum.org/EIPS/eip-2565):
+	//
+	// def mult_complexity(x):
+	//    ceiling(x/8)^2
+	//
+	//where is x is max(length_of_MODULUS, length_of_BASE)
+	gas = gas.Add(gas, big7)
+	gas = gas.Div(gas, big8)
+	gas.Mul(gas, gas)
+
 	gas.Mul(gas, math.BigMax(adjExpLen, big1))
-	gas.Div(gas, big20)
-
+	// 2. Different divisor (`GQUADDIVISOR`) (3)
+	gas.Div(gas, big3)
 	if gas.BitLen() > 64 {
 		return gomath.MaxUint64
 	}
+	// 3. Minimum price of 200 gas
+	if gas.Uint64() < 200 {
+		return 200
+	}
 	return gas.Uint64()
+
 }
 
 func (c *bigModExp) Run(input []byte) ([]byte, error) {

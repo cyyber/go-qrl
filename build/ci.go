@@ -25,14 +25,11 @@ Usage: go run build/ci.go <command> <command flags/arguments>
 Available commands are:
 
 	lint           -- runs certain pre-selected linters
-	install    [ -arch architecture ] [ -cc compiler ] [ packages... ]                          -- builds packages and executables
-	test       [ -coverage ] [ packages... ]                                                    -- runs the tests
+	install    [ -arch architecture ] [ -cc compiler ] [ packages... ] -- builds packages and executables
+	test       [ -coverage ] [ packages... ]                           -- runs the tests
 
-	archive    [ -arch architecture ] [ -type zip|tar ] [ -signer key-envvar ] [ -signify key-envvar ] [ -upload dest ] -- archives build artifacts
-	importkeys                                                                                  -- imports signing keys from env
 	debsrc     [ -signer key-id ] [ -upload dest ]                                              -- creates a debian source package
 	nsis                                                                                        -- creates a Windows NSIS installer
-	purge      [ -store blobstore ] [ -days threshold ]                                         -- purges old archives from the blobstore
 
 For all commands, -n prevents execution of external programs (dry run mode).
 */
@@ -51,11 +48,9 @@ import (
 	"runtime"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/cespare/cp"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/signify"
 	"github.com/theQRL/go-zond/internal/build"
 	"github.com/theQRL/go-zond/internal/download"
 	"github.com/theQRL/go-zond/internal/version"
@@ -64,12 +59,6 @@ import (
 var (
 	goModules = []string{
 		".",
-	}
-
-	// Files that end up in the gzond*.zip archive.
-	gzondArchiveFiles = []string{
-		"COPYING",
-		executablePath("gzond"),
 	}
 
 	// Files that end up in the gzond-alltools*.zip archive.
@@ -83,84 +72,63 @@ var (
 		executablePath("clef"),
 	}
 
-	// A debian package is created for all executables listed here.
-	debExecutables = []debExecutable{
-		{
-			BinaryName:  "abigen",
-			Description: "Source code generator to convert QRL contract definitions into easy to use, compile-time type-safe Go packages.",
-		},
-		{
-			BinaryName:  "bootnode",
-			Description: "QRL bootnode.",
-		},
-		{
-			BinaryName:  "qrvm",
-			Description: "Developer utility version of the QRVM (Quantum Resistant Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode.",
-		},
-		{
-			BinaryName:  "gzond",
-			Description: "QRL CLI client.",
-		},
-		{
-			BinaryName:  "rlpdump",
-			Description: "Developer utility tool that prints RLP structures.",
-		},
-		{
-			BinaryName:  "clef",
-			Description: "QRL account management tool.",
-		},
-	}
+	// TODO(now.youtrack.cloud/issue/TGZ-22)
+	/*
+		// A debian package is created for all executables listed here.
+		debExecutables = []debExecutable{
+			{
+				BinaryName:  "abigen",
+				Description: "Source code generator to convert QRL contract definitions into easy to use, compile-time type-safe Go packages.",
+			},
+			{
+				BinaryName:  "bootnode",
+				Description: "QRL bootnode.",
+			},
+			{
+				BinaryName:  "qrvm",
+				Description: "Developer utility version of the QRVM (Quantum Resistant Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode.",
+			},
+			{
+				BinaryName:  "gzond",
+				Description: "QRL CLI client.",
+			},
+			{
+				BinaryName:  "rlpdump",
+				Description: "Developer utility tool that prints RLP structures.",
+			},
+			{
+				BinaryName:  "clef",
+				Description: "QRL account management tool.",
+			},
+		}
 
-	// A debian package is created for all executables listed here.
-	debQRL = debPackage{
-		Name:        "qrl",
-		Version:     version.Semantic,
-		Executables: debExecutables,
-	}
+		// A debian package is created for all executables listed here.
+		debQRL = debPackage{
+			Name:        "qrl",
+			Version:     version.Semantic,
+			Executables: debExecutables,
+		}
 
-	// Debian meta packages to build and push to Ubuntu PPA
-	debPackages = []debPackage{
-		debQRL,
-	}
+		// Debian meta packages to build and push to Ubuntu PPA
+		debPackages = []debPackage{
+			debQRL,
+		}
 
-	// Distros for which packages are created.
-	// Note: vivid is unsupported because there is no golang-1.6 package for it.
-	// Note: the following Ubuntu releases have been officially deprecated on Launchpad:
-	//   wily, yakkety, zesty, artful, cosmic, disco, eoan, groovy, hirsuite, impish,
-	//   kinetic
-	debDistroGoBoots = map[string]string{
-		"trusty": "golang-1.11", // EOL: 04/2024
-		"xenial": "golang-go",   // EOL: 04/2026
-		"bionic": "golang-go",   // EOL: 04/2028
-		"focal":  "golang-go",   // EOL: 04/2030
-		"jammy":  "golang-go",   // EOL: 04/2032
-		"lunar":  "golang-go",   // EOL: 01/2024
-	}
+		// Distros for which packages are created
+		debDistros = []string{
+			"xenial",   // 16.04, EOL: 04/2026
+			"bionic",   // 18.04, EOL: 04/2028
+			"focal",    // 20.04, EOL: 04/2030
+			"jammy",    // 22.04, EOL: 04/2032
+			"noble",    // 24.04, EOL: 04/2034
+			"oracular", // 24.10, EOL: 07/2025
+			"plucky",   // 25.04, EOL: 01/2026
+		}
+	*/
 
-	debGoBootPaths = map[string]string{
-		"golang-1.11": "/usr/lib/go-1.11",
-		"golang-go":   "/usr/lib/go",
-	}
-
-	// This is the version of Go that will be downloaded by
-	//
-	//     go run ci.go install -dlgo
-	dlgoVersion = "1.21.1"
-
-	// This is the version of Go that will be used to bootstrap the PPA builder.
-	//
-	// This version is fine to be old and full of security holes, we just use it
-	// to build the latest Go. Don't change it. If it ever becomes insufficient,
-	// we need to switch over to a recursive builder to jumpt across supported
-	// versions.
-	gobootVersion = "1.19.6"
-
-	// This is the version of execution-spec-tests that we are using.
-	// When updating, you must also update build/checksums.txt.
-	executionSpecTestsVersion = "1.0.2"
-
+	// TODO(now.youtrack.cloud/issue/TGZ-23)
 	// This is where the tests should be unpacked.
-	executionSpecTestsDir = "tests/spec-tests"
+	// executionSpecTestsDir = "tests/spec-tests"
 )
 
 var GOBIN, _ = filepath.Abs(filepath.Join("build", "bin"))
@@ -188,8 +156,6 @@ func main() {
 		doTest(os.Args[2:])
 	case "lint":
 		doLint(os.Args[2:])
-	case "archive":
-		doArchive(os.Args[2:])
 	case "dockerx":
 		doDockerBuildx(os.Args[2:])
 	// TODO(now.youtrack.cloud/issue/TGZ-22)
@@ -197,8 +163,6 @@ func main() {
 	// doDebianSource(os.Args[2:])
 	case "nsis":
 		doWindowsInstaller(os.Args[2:])
-	case "purge":
-		doPurge(os.Args[2:])
 	default:
 		log.Fatal("unknown command ", os.Args[1])
 	}
@@ -250,6 +214,10 @@ func doInstall(cmdline []string) {
 // buildFlags returns the go tool flags for building.
 func buildFlags(env build.Environment, staticLinking bool, buildTags []string) (flags []string) {
 	var ld []string
+	// See https://github.com/golang/go/issues/33772#issuecomment-528176001
+	// We need to set --buildid to the linker here, and also pass --build-id to the
+	// cgo-linker further down.
+	ld = append(ld, "--buildid=none")
 	if env.Commit != "" {
 		ld = append(ld, "-X", "github.com/theQRL/go-zond/internal/version.gitCommit="+env.Commit)
 		ld = append(ld, "-X", "github.com/theQRL/go-zond/internal/version.gitDate="+env.Date)
@@ -262,7 +230,11 @@ func buildFlags(env build.Environment, staticLinking bool, buildTags []string) (
 	if runtime.GOOS == "linux" {
 		// Enforce the stacksize to 8M, which is the case on most platforms apart from
 		// alpine Linux.
-		extld := []string{"-Wl,-z,stack-size=0x800000"}
+		// See https://sourceware.org/binutils/docs-2.23.1/ld/Options.html#Options
+		// regarding the options --build-id=none and --strip-all. It is needed for
+		// reproducible builds; removing references to temporary files in C-land, and
+		// making build-id reproducibly absent.
+		extld := []string{"-Wl,-z,stack-size=0x800000,--build-id=none,--strip-all"}
 		if staticLinking {
 			extld = append(extld, "-static")
 			// Under static linking, use of certain glibc features must be
@@ -271,12 +243,18 @@ func buildFlags(env build.Environment, staticLinking bool, buildTags []string) (
 		}
 		ld = append(ld, "-extldflags", "'"+strings.Join(extld, " ")+"'")
 	}
+	// TODO(gballet): revisit after the input api has been defined
+	if runtime.GOARCH == "wasm" {
+		ld = append(ld, "-gcflags=all=-d=softfloat")
+	}
 	if len(ld) > 0 {
 		flags = append(flags, "-ldflags", strings.Join(ld, " "))
 	}
 	if len(buildTags) > 0 {
 		flags = append(flags, "-tags", strings.Join(buildTags, ","))
 	}
+	// We use -trimpath to avoid leaking local paths into the built executables.
+	flags = append(flags, "-trimpath")
 	return flags
 }
 
@@ -292,28 +270,38 @@ func doTest(cmdline []string) {
 		coverage = flag.Bool("coverage", false, "Whether to record code coverage")
 		verbose  = flag.Bool("v", false, "Whether to log verbosely")
 		race     = flag.Bool("race", false, "Execute the race detector")
+		short    = flag.Bool("short", false, "Pass the 'short'-flag to go test")
 		// cachedir = flag.String("cachedir", "./build/cache", "directory for caching downloads")
+		threads = flag.Int("p", 1, "Number of CPU threads to use for testing")
 	)
 	flag.CommandLine.Parse(cmdline)
 
-	// Get test fixtures.
+	// Load checksums file (needed for both spec tests and dlgo)
 	csdb := download.MustLoadChecksums("build/checksums.txt")
+
 	// TODO(now.youtrack.cloud/issue/TGZ-23)
-	// downloadSpecTestFixtures(csdb, *cachedir)
+	// Get test fixtures.
+	// if !*short {
+	// 	downloadSpecTestFixtures(csdb, *cachedir)
+	// }
 
 	// Configure the toolchain.
 	tc := build.GoToolchain{GOARCH: *arch, CC: *cc}
 	if *dlgo {
 		tc.Root = build.DownloadGo(csdb)
 	}
+
 	gotest := tc.Go("test")
 
-	// CI needs a bit more time for the statetests (default 10m).
-	gotest.Args = append(gotest.Args, "-timeout=20m")
+	// CI needs a bit more time for the statetests (default 45m).
+	gotest.Args = append(gotest.Args, "-timeout=45m")
+
+	// Enable integration-tests
+	gotest.Args = append(gotest.Args, "-tags=integrationtests")
 
 	// Test a single package at a time. CI builders are slow
 	// and some tests run into timeouts under load.
-	gotest.Args = append(gotest.Args, "-p", "1")
+	gotest.Args = append(gotest.Args, "-p", fmt.Sprintf("%d", *threads))
 	if *coverage {
 		gotest.Args = append(gotest.Args, "-covermode=atomic", "-cover")
 	}
@@ -323,15 +311,28 @@ func doTest(cmdline []string) {
 	if *race {
 		gotest.Args = append(gotest.Args, "-race")
 	}
-
-	packages := []string{"./..."}
-	if len(flag.CommandLine.Args()) > 0 {
-		packages = flag.CommandLine.Args()
+	if *short {
+		gotest.Args = append(gotest.Args, "-short")
 	}
-	gotest.Args = append(gotest.Args, packages...)
-	build.MustRun(gotest)
+
+	packages := flag.CommandLine.Args()
+	if len(packages) > 0 {
+		gotest.Args = append(gotest.Args, packages...)
+		build.MustRun(gotest)
+		return
+	}
+
+	// No packages specified, run all tests for all modules.
+	gotest.Args = append(gotest.Args, "./...")
+	for _, mod := range goModules {
+		test := *gotest
+		test.Dir = mod
+		build.MustRun(&test)
+	}
 }
 
+// TODO(now.youtrack.cloud/issue/TGZ-23)
+/*
 // downloadSpecTestFixtures downloads and extracts the execution-spec-tests fixtures.
 func downloadSpecTestFixtures(csdb *download.ChecksumDB, cachedir string) string {
 	ext := ".tar.gz"
@@ -346,6 +347,7 @@ func downloadSpecTestFixtures(csdb *download.ChecksumDB, cachedir string) string
 	}
 	return filepath.Join(cachedir, base)
 }
+*/
 
 // doLint runs golangci-lint on requested packages.
 func doLint(cmdline []string) {
@@ -406,46 +408,6 @@ func downloadLinter(cachedir string) string {
 	return filepath.Join(cachedir, base, "golangci-lint")
 }
 
-// Release Packaging
-func doArchive(cmdline []string) {
-	var (
-		arch    = flag.String("arch", runtime.GOARCH, "Architecture cross packaging")
-		atype   = flag.String("type", "zip", "Type of archive to write (zip|tar)")
-		signer  = flag.String("signer", "", `Environment variable holding the signing key (e.g. LINUX_SIGNING_KEY)`)
-		signify = flag.String("signify", "", `Environment variable holding the signify key (e.g. LINUX_SIGNIFY_KEY)`)
-		upload  = flag.String("upload", "", `Destination to upload the archives (usually "gzondstore/builds")`)
-		ext     string
-	)
-	flag.CommandLine.Parse(cmdline)
-	switch *atype {
-	case "zip":
-		ext = ".zip"
-	case "tar":
-		ext = ".tar.gz"
-	default:
-		log.Fatal("unknown archive type: ", atype)
-	}
-
-	var (
-		env       = build.Env()
-		basegzond = archiveBasename(*arch, version.Archive(env.Commit))
-		gzond     = "gzond-" + basegzond + ext
-		alltools  = "gzond-alltools-" + basegzond + ext
-	)
-	maybeSkipArchive(env)
-	if err := build.WriteArchive(gzond, gzondArchiveFiles); err != nil {
-		log.Fatal(err)
-	}
-	if err := build.WriteArchive(alltools, allToolsArchiveFiles); err != nil {
-		log.Fatal(err)
-	}
-	for _, archive := range []string{gzond, alltools} {
-		if err := archiveUpload(archive, *upload, *signer, *signify); err != nil {
-			log.Fatal(err)
-		}
-	}
-}
-
 func archiveBasename(arch string, archiveVersion string) string {
 	platform := runtime.GOOS + "-" + arch
 	if arch == "arm" {
@@ -458,46 +420,6 @@ func archiveBasename(arch string, archiveVersion string) string {
 		platform = "ios-all"
 	}
 	return platform + "-" + archiveVersion
-}
-
-func archiveUpload(archive string, blobstore string, signer string, signifyVar string) error {
-	// If signing was requested, generate the signature files
-	if signer != "" {
-		key := getenvBase64(signer)
-		if err := build.PGPSignFile(archive, archive+".asc", string(key)); err != nil {
-			return err
-		}
-	}
-	if signifyVar != "" {
-		key := os.Getenv(signifyVar)
-		untrustedComment := "verify with gzond-release.pub"
-		trustedComment := fmt.Sprintf("%s (%s)", archive, time.Now().UTC().Format(time.RFC1123))
-		if err := signify.SignFile(archive, archive+".sig", key, untrustedComment, trustedComment); err != nil {
-			return err
-		}
-	}
-	// If uploading to Azure was requested, push the archive possibly with its signature
-	if blobstore != "" {
-		auth := build.AzureBlobstoreConfig{
-			Account:   strings.Split(blobstore, "/")[0],
-			Token:     os.Getenv("AZURE_BLOBSTORE_TOKEN"),
-			Container: strings.SplitN(blobstore, "/", 2)[1],
-		}
-		if err := build.AzureBlobstoreUpload(archive, filepath.Base(archive), auth); err != nil {
-			return err
-		}
-		if signer != "" {
-			if err := build.AzureBlobstoreUpload(archive+".asc", filepath.Base(archive+".asc"), auth); err != nil {
-				return err
-			}
-		}
-		if signifyVar != "" {
-			if err := build.AzureBlobstoreUpload(archive+".sig", filepath.Base(archive+".sig"), auth); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // skips archiving for some build configurations.
@@ -513,7 +435,6 @@ func maybeSkipArchive(env build.Environment) {
 }
 
 // Builds the docker images and optionally uploads them to Docker Hub.
-// Builds the docker images and optionally uploads them to Docker Hub.
 func doDockerBuildx(cmdline []string) {
 	var (
 		platform = flag.String("platform", "", `Push a multi-arch docker image for the specified architectures (usually "linux/amd64,linux/arm64")`)
@@ -527,8 +448,8 @@ func doDockerBuildx(cmdline []string) {
 	maybeSkipArchive(env)
 
 	// Retrieve the upload credentials and authenticate
-	user := []byte(os.Getenv("DOCKERHUB_USERNAME"))
-	pass := []byte(os.Getenv("DOCKERHUB_TOKEN"))
+	user := getenvBase64("DOCKERHUB_USERNAME")
+	pass := getenvBase64("DOCKERHUB_TOKEN")
 
 	if len(user) > 0 && len(pass) > 0 {
 		auther := exec.Command("docker", "login", "-u", string(user), "--password-stdin")
@@ -584,6 +505,8 @@ func doDockerBuildx(cmdline []string) {
 	}
 }
 
+// TODO(now.youtrack.cloud/issue/TGZ-22)
+/*
 // Debian Packaging
 func doDebianSource(cmdline []string) {
 	var (
@@ -608,8 +531,8 @@ func doDebianSource(cmdline []string) {
 	}
 	// Download and verify the Go source packages.
 	var (
-		gobootbundle = downloadGoBootstrapSources(*cachedir)
-		gobundle     = downloadGoSources(*cachedir)
+		gobootbundles = downloadGoBootstrapSources(*cachedir)
+		gobundle      = downloadGoSources(*cachedir)
 	)
 	// Download all the dependencies needed to build the sources and run the ci script
 	srcdepfetch := tc.Go("mod", "download")
@@ -622,17 +545,19 @@ func doDebianSource(cmdline []string) {
 
 	// Create Debian packages and upload them.
 	for _, pkg := range debPackages {
-		for distro, goboot := range debDistroGoBoots {
+		for _, distro := range debDistros {
 			// Prepare the debian package with the go-zond sources.
-			meta := newDebMetadata(distro, goboot, *signer, env, now, pkg.Name, pkg.Version, pkg.Executables)
+			meta := newDebMetadata(distro, *signer, env, now, pkg.Name, pkg.Version, pkg.Executables)
 			pkgdir := stageDebianSource(*workdir, meta)
 
 			// Add bootstrapper Go source code
-			if err := build.ExtractArchive(gobootbundle, pkgdir); err != nil {
-				log.Fatalf("Failed to extract bootstrapper Go sources: %v", err)
-			}
-			if err := os.Rename(filepath.Join(pkgdir, "go"), filepath.Join(pkgdir, ".goboot")); err != nil {
-				log.Fatalf("Failed to rename bootstrapper Go source folder: %v", err)
+			for i, gobootbundle := range gobootbundles {
+				if err := build.ExtractArchive(gobootbundle, pkgdir); err != nil {
+					log.Fatalf("Failed to extract bootstrapper Go sources: %v", err)
+				}
+				if err := os.Rename(filepath.Join(pkgdir, "go"), filepath.Join(pkgdir, fmt.Sprintf(".goboot-%d", i+1))); err != nil {
+					log.Fatalf("Failed to rename bootstrapper Go source folder: %v", err)
+				}
 			}
 			// Add builder Go source code
 			if err := build.ExtractArchive(gobundle, pkgdir); err != nil {
@@ -668,26 +593,37 @@ func doDebianSource(cmdline []string) {
 	}
 }
 
-// downloadGoBootstrapSources downloads the Go source tarball that will be used
+// downloadGoBootstrapSources downloads the Go source tarball(s) that will be used
 // to bootstrap the builder Go.
-func downloadGoBootstrapSources(cachedir string) string {
+func downloadGoBootstrapSources(cachedir string) []string {
 	csdb := download.MustLoadChecksums("build/checksums.txt")
-	file := fmt.Sprintf("go%s.src.tar.gz", gobootVersion)
-	url := "https://dl.google.com/go/" + file
-	dst := filepath.Join(cachedir, file)
-	if err := csdb.DownloadFile(url, dst); err != nil {
-		log.Fatal(err)
+
+	var bundles []string
+	for _, booter := range []string{"ppa-builder-1.19", "ppa-builder-1.21", "ppa-builder-1.23"} {
+		gobootVersion, err := csdb.FindVersion(booter)
+		if err != nil {
+			log.Fatal(err)
+		}
+		file := fmt.Sprintf("go%s.src.tar.gz", gobootVersion)
+		dst := filepath.Join(cachedir, file)
+		if err := csdb.DownloadFileFromKnownURL(dst); err != nil {
+			log.Fatal(err)
+		}
+		bundles = append(bundles, dst)
 	}
-	return dst
+	return bundles
 }
 
 // downloadGoSources downloads the Go source tarball.
 func downloadGoSources(cachedir string) string {
 	csdb := download.MustLoadChecksums("build/checksums.txt")
+	dlgoVersion, err := csdb.FindVersion("golang")
+	if err != nil {
+		log.Fatal(err)
+	}
 	file := fmt.Sprintf("go%s.src.tar.gz", dlgoVersion)
-	url := "https://dl.google.com/go/" + file
 	dst := filepath.Join(cachedir, file)
-	if err := csdb.DownloadFile(url, dst); err != nil {
+	if err := csdb.DownloadFileFromKnownURL(dst); err != nil {
 		log.Fatal(err)
 	}
 	return dst
@@ -710,12 +646,19 @@ func ppaUpload(workdir, ppa, sshUser string, files []string) {
 			os.WriteFile(idfile, sshkey, 0600)
 		}
 	}
-	// Upload
+	// Upload. This doesn't always work, so try up to three times.
 	dest := sshUser + "@ppa.launchpad.net"
-	if err := build.UploadSFTP(idfile, dest, incomingDir, files); err != nil {
-		log.Fatal(err)
+	for i := 0; i < 3; i++ {
+		err := build.UploadSFTP(idfile, dest, incomingDir, files)
+		if err == nil {
+			return
+		}
+		log.Println("PPA upload failed:", err)
+		time.Sleep(5 * time.Second)
 	}
+	log.Fatal("PPA upload failed all attempts.")
 }
+*/
 
 func getenvBase64(variable string) []byte {
 	dec, err := base64.StdEncoding.DecodeString(os.Getenv(variable))
@@ -738,6 +681,8 @@ func makeWorkdir(wdflag string) string {
 	return wdflag
 }
 
+// TODO(now.youtrack.cloud/issue/TGZ-22)
+/*
 func isUnstableBuild(env build.Environment) bool {
 	if env.Tag != "" {
 		return false
@@ -752,10 +697,7 @@ type debPackage struct {
 }
 
 type debMetadata struct {
-	Env           build.Environment
-	GoBootPackage string
-	GoBootPath    string
-
+	Env         build.Environment
 	PackageName string
 
 	// go-zond version being built. Note that this
@@ -783,21 +725,19 @@ func (d debExecutable) Package() string {
 	return d.BinaryName
 }
 
-func newDebMetadata(distro, goboot, author string, env build.Environment, t time.Time, name string, version string, exes []debExecutable) debMetadata {
+func newDebMetadata(distro, author string, env build.Environment, t time.Time, name string, version string, exes []debExecutable) debMetadata {
 	if author == "" {
 		// No signing key, use default author.
 		author = "QRL Builds <someone@theqrl.org>"
 	}
 	return debMetadata{
-		GoBootPackage: goboot,
-		GoBootPath:    debGoBootPaths[goboot],
-		PackageName:   name,
-		Env:           env,
-		Author:        author,
-		Distro:        distro,
-		Version:       version,
-		Time:          t.Format(time.RFC1123Z),
-		Executables:   exes,
+		PackageName: name,
+		Env:         env,
+		Author:      author,
+		Distro:      distro,
+		Version:     version,
+		Time:        t.Format(time.RFC1123Z),
+		Executables: exes,
 	}
 }
 
@@ -881,15 +821,13 @@ func stageDebianSource(tmpdir string, meta debMetadata) (pkgdir string) {
 	}
 	return pkgdir
 }
+*/
 
 // Windows installer
 func doWindowsInstaller(cmdline []string) {
 	// Parse the flags and make skip installer generation on PRs
 	var (
 		arch    = flag.String("arch", runtime.GOARCH, "Architecture for cross build packaging")
-		signer  = flag.String("signer", "", `Environment variable holding the signing key (e.g. WINDOWS_SIGNING_KEY)`)
-		signify = flag.String("signify key", "", `Environment variable holding the signify signing key (e.g. WINDOWS_SIGNIFY_KEY)`)
-		upload  = flag.String("upload", "", `Destination to upload the archives (usually "gzondstore/builds")`)
 		workdir = flag.String("workdir", "", `Output directory for packages (uses temp dir if unset)`)
 	)
 	flag.CommandLine.Parse(cmdline)
@@ -952,61 +890,4 @@ func doWindowsInstaller(cmdline []string) {
 		"/DARCH="+*arch,
 		filepath.Join(*workdir, "gzond.nsi"),
 	)
-	// Sign and publish installer.
-	if err := archiveUpload(installer, *upload, *signer, *signify); err != nil {
-		log.Fatal(err)
-	}
-}
-
-// Binary distribution cleanups
-
-func doPurge(cmdline []string) {
-	var (
-		store = flag.String("store", "", `Destination from where to purge archives (usually "gzondstore/builds")`)
-		limit = flag.Int("days", 30, `Age threshold above which to delete unstable archives`)
-	)
-	flag.CommandLine.Parse(cmdline)
-
-	if env := build.Env(); !env.IsCronJob {
-		log.Printf("skipping because not a cron job")
-		os.Exit(0)
-	}
-	// Create the azure authentication and list the current archives
-	auth := build.AzureBlobstoreConfig{
-		Account:   strings.Split(*store, "/")[0],
-		Token:     os.Getenv("AZURE_BLOBSTORE_TOKEN"),
-		Container: strings.SplitN(*store, "/", 2)[1],
-	}
-	blobs, err := build.AzureBlobstoreList(auth)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Found %d blobs\n", len(blobs))
-
-	// Iterate over the blobs, collect and sort all unstable builds
-	for i := 0; i < len(blobs); i++ {
-		if !strings.Contains(*blobs[i].Name, "unstable") {
-			blobs = append(blobs[:i], blobs[i+1:]...)
-			i--
-		}
-	}
-	for i := 0; i < len(blobs); i++ {
-		for j := i + 1; j < len(blobs); j++ {
-			if blobs[i].Properties.LastModified.After(*blobs[j].Properties.LastModified) {
-				blobs[i], blobs[j] = blobs[j], blobs[i]
-			}
-		}
-	}
-	// Filter out all archives more recent that the given threshold
-	for i, blob := range blobs {
-		if time.Since(*blob.Properties.LastModified) < time.Duration(*limit)*24*time.Hour {
-			blobs = blobs[:i]
-			break
-		}
-	}
-	fmt.Printf("Deleting %d blobs\n", len(blobs))
-	// Delete all marked as such and return
-	if err := build.AzureBlobstoreDelete(auth, blobs); err != nil {
-		log.Fatal(err)
-	}
 }

@@ -66,7 +66,6 @@ var (
 		// don't relicense vendored sources
 		"common/bitutil/bitutil",
 		"common/prque/",
-		"crypto/bn256/",
 		"crypto/ecies/",
 		"graphql/graphiql.go",
 		"internal/jsre/deps",

@@ -38,7 +38,6 @@ import (
 
 // Register adds the engine API to the full node.
 func Register(stack *node.Node, backend *qrl.QRL) error {
-	log.Warn("Engine API enabled", "protocol", "qrl")
 	stack.RegisterAPIs([]rpc.API{
 		{
 			Namespace:     "engine",
