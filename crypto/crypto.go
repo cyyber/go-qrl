@@ -31,7 +31,6 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/rlp"
-	"golang.org/x/crypto/sha3"
 )
 
 // SignatureLength indicates the byte length required to carry a signature with recovery id.
@@ -44,7 +43,7 @@ const RecoveryIDOffset = 64
 const DigestLength = 32
 
 var (
-	secp256k1N, _  = new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
+	secp256k1N     = S256().Params().N
 	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
 )
 
@@ -67,11 +66,6 @@ type KeccakState interface {
 	Read([]byte) (int, error)
 }
 
-// NewKeccakState creates a new KeccakState
-func NewKeccakState() KeccakState {
-	return sha3.NewLegacyKeccak256().(KeccakState)
-}
-
 // HashData hashes the provided data using the KeccakState and returns a 32 byte hash
 func HashData(kh KeccakState, data []byte) (h common.Hash) {
 	kh.Reset()
@@ -79,38 +73,7 @@ func HashData(kh KeccakState, data []byte) (h common.Hash) {
 	kh.Read(h[:])
 	return h
 }
-
-// Keccak256 calculates and returns the Keccak256 hash of the input data.
-func Keccak256(data ...[]byte) []byte {
-	b := make([]byte, 32)
-	d := NewKeccakState()
-	for _, b := range data {
-		d.Write(b)
-	}
-	d.Read(b)
-	return b
-}
-
-// Keccak256Hash calculates and returns the Keccak256 hash of the input data,
-// converting it to an internal Hash data structure.
-func Keccak256Hash(data ...[]byte) (h common.Hash) {
-	d := NewKeccakState()
-	for _, b := range data {
-		d.Write(b)
-	}
-	d.Read(h[:])
-	return h
-}
-
-// Keccak512 calculates and returns the Keccak512 hash of the input data.
-func Keccak512(data ...[]byte) []byte {
-	d := sha3.NewLegacyKeccak512()
-	for _, b := range data {
-		d.Write(b)
-	}
-	return d.Sum(nil)
-}
-
+// TODO(rgeraldes24): 12 vs 8
 // CreateAddress creates a qrl address given the bytes and the nonce
 func CreateAddress(b common.Address, nonce uint64) common.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
@@ -177,9 +140,15 @@ func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 	if x == nil {
 		return nil, errInvalidPubkey
 	}
+	if !S256().IsOnCurve(x, y) {
+		return nil, errInvalidPubkey
+	}
 	return &ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil
 }
 
+// FromECDSAPub converts a secp256k1 public key to bytes.
+// Note: it does not use the curve from pub, instead it always
+// encodes using secp256k1.
 func FromECDSAPub(pub *ecdsa.PublicKey) []byte {
 	if pub == nil || pub.X == nil || pub.Y == nil {
 		return nil
