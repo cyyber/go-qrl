@@ -48,13 +48,6 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 	return resp, nil
 }
 
-func (db *Database) HasAncient(kind string, number uint64) (bool, error) {
-	if _, err := db.Ancient(kind, number); err != nil {
-		return false, nil
-	}
-	return true, nil
-}
-
 func (db *Database) Ancient(kind string, number uint64) ([]byte, error) {
 	var resp hexutil.Bytes
 	err := db.remote.Call(&resp, "debug_dbAncient", kind, number)
@@ -110,10 +103,6 @@ func (db *Database) Sync() error {
 	return nil
 }
 
-func (db *Database) MigrateTable(s string, f func([]byte) ([]byte, error)) error {
-	panic("not supported")
-}
-
 func (db *Database) NewBatch() qrldb.Batch {
 	panic("not supported")
 }
@@ -136,10 +125,6 @@ func (db *Database) AncientDatadir() (string, error) {
 
 func (db *Database) Compact(start []byte, limit []byte) error {
 	return nil
-}
-
-func (db *Database) NewSnapshot() (qrldb.Snapshot, error) {
-	panic("not supported")
 }
 
 func (db *Database) Close() error {

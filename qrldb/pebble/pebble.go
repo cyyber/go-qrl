@@ -349,16 +349,6 @@ type snapshot struct {
 	db *pebble.Snapshot
 }
 
-// NewSnapshot creates a database snapshot based on the current state.
-// The created snapshot will not be affected by all following mutations
-// happened on the database.
-// Note don't forget to release the snapshot once it's used up, otherwise
-// the stale data will never be cleaned up by the underlying compactor.
-func (d *Database) NewSnapshot() (qrldb.Snapshot, error) {
-	snap := d.db.NewSnapshot()
-	return &snapshot{db: snap}, nil
-}
-
 // Has retrieves if a key is present in the snapshot backing by a key-value
 // data store.
 func (snap *snapshot) Has(key []byte) (bool, error) {

@@ -230,19 +230,6 @@ func (db *Database) NewIterator(prefix []byte, start []byte) qrldb.Iterator {
 	return db.db.NewIterator(bytesPrefixRange(prefix, start), nil)
 }
 
-// NewSnapshot creates a database snapshot based on the current state.
-// The created snapshot will not be affected by all following mutations
-// happened on the database.
-// Note don't forget to release the snapshot once it's used up, otherwise
-// the stale data will never be cleaned up by the underlying compactor.
-func (db *Database) NewSnapshot() (qrldb.Snapshot, error) {
-	snap, err := db.db.GetSnapshot()
-	if err != nil {
-		return nil, err
-	}
-	return &snapshot{db: snap}, nil
-}
-
 // Stat returns a particular internal stat of the database.
 func (db *Database) Stat(property string) (string, error) {
 	return db.db.GetProperty(property)
@@ -394,7 +381,7 @@ func (b *batch) Put(key, value []byte) error {
 	return nil
 }
 
-// Delete inserts the a key removal into the batch for later committing.
+// Delete inserts the key removal into the batch for later committing.
 func (b *batch) Delete(key []byte) error {
 	b.b.Delete(key)
 	b.size += len(key)
@@ -453,27 +440,4 @@ func bytesPrefixRange(prefix, start []byte) *util.Range {
 	r := util.BytesPrefix(prefix)
 	r.Start = append(r.Start, start...)
 	return r
-}
-
-// snapshot wraps a leveldb snapshot for implementing the Snapshot interface.
-type snapshot struct {
-	db *leveldb.Snapshot
-}
-
-// Has retrieves if a key is present in the snapshot backing by a key-value
-// data store.
-func (snap *snapshot) Has(key []byte) (bool, error) {
-	return snap.db.Has(key, nil)
-}
-
-// Get retrieves the given key if it's present in the snapshot backing by
-// key-value data store.
-func (snap *snapshot) Get(key []byte) ([]byte, error) {
-	return snap.db.Get(key, nil)
-}
-
-// Release releases associated resources. Release should always succeed and can
-// be called multiple times without causing error.
-func (snap *snapshot) Release() {
-	snap.db.Release()
 }
