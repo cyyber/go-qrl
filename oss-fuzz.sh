@@ -82,17 +82,74 @@ function compile_fuzzer() {
 
 go install github.com/holiman/gofuzz-shim@latest
 repo=$GOPATH/src/github.com/theQRL/go-zond
-compile_fuzzer tests/fuzzers/bitutil  Fuzz      fuzzBitutilCompress
-compile_fuzzer tests/fuzzers/runtime  Fuzz      fuzzVmRuntime
-compile_fuzzer tests/fuzzers/keystore   Fuzz fuzzKeystore
-compile_fuzzer tests/fuzzers/txfetcher  Fuzz fuzzTxfetcher
-compile_fuzzer tests/fuzzers/rlp        Fuzz fuzzRlp
-compile_fuzzer tests/fuzzers/trie       Fuzz fuzzTrie
-compile_fuzzer tests/fuzzers/stacktrie  Fuzz fuzzStackTrie
-compile_fuzzer tests/fuzzers/abi        Fuzz fuzzAbi
-compile_fuzzer tests/fuzzers/secp256k1  Fuzz fuzzSecp256k1
+compile_fuzzer github.com/theQRL/go-zond/accounts/abi \
+  FuzzABI fuzzAbi \
+  $repo/accounts/abi/abifuzzer_test.go
 
-compile_fuzzer tests/fuzzers/snap  FuzzARange fuzz_account_range
-compile_fuzzer tests/fuzzers/snap  FuzzSRange fuzz_storage_range
-compile_fuzzer tests/fuzzers/snap  FuzzByteCodes fuzz_byte_codes
-compile_fuzzer tests/fuzzers/snap  FuzzTrieNodes fuzz_trie_nodes
+compile_fuzzer github.com/theQRL/go-zond/common/bitutil \
+  FuzzEncoder fuzzBitutilEncoder \
+  $repo/common/bitutil/compress_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/common/bitutil \
+  FuzzDecoder fuzzBitutilDecoder \
+  $repo/common/bitutil/compress_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/core/vm/runtime \
+  FuzzVmRuntime fuzzVmRuntime\
+  $repo/core/vm/runtime/runtime_fuzz_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/core/vm \
+  FuzzPrecompiledContracts fuzzPrecompiledContracts\
+  $repo/core/vm/contracts_fuzz_test.go,$repo/core/vm/contracts_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/core/types \
+  FuzzRLP fuzzRlp \
+  $repo/core/types/rlp_fuzzer_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/crypto/blake2b \
+  Fuzz fuzzBlake2b \
+  $repo/crypto/blake2b/blake2b_f_fuzz_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/accounts/keystore \
+  FuzzPassword fuzzKeystore \
+  $repo/accounts/keystore/keystore_fuzzing_test.go
+
+pkg=$repo/trie/
+compile_fuzzer github.com/theQRL/go-zond/trie \
+  FuzzTrie fuzzTrie \
+  $pkg/trie_test.go,$pkg/database_test.go,$pkg/tracer_test.go,$pkg/proof_test.go,$pkg/iterator_test.go,$pkg/sync_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/trie \
+  FuzzStackTrie fuzzStackTrie \
+  $pkg/stacktrie_fuzzer_test.go,$pkg/iterator_test.go,$pkg/trie_test.go,$pkg/database_test.go,$pkg/tracer_test.go,$pkg/proof_test.go,$pkg/sync_test.go
+
+#compile_fuzzer tests/fuzzers/snap  FuzzARange fuzz_account_range
+compile_fuzzer github.com/theQRL/go-zond/qrl/protocols/snap \
+  FuzzARange fuzz_account_range \
+  $repo/qrl/protocols/snap/handler_fuzzing_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/qrl/protocols/snap \
+  FuzzSRange fuzz_storage_range \
+  $repo/qrl/protocols/snap/handler_fuzzing_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/qrl/protocols/snap \
+  FuzzByteCodes fuzz_byte_codes \
+  $repo/qrl/protocols/snap/handler_fuzzing_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/qrl/protocols/snap \
+  FuzzTrieNodes fuzz_trie_nodes\
+  $repo/qrl/protocols/snap/handler_fuzzing_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/tests/fuzzers/txfetcher \
+  Fuzz fuzzTxfetcher \
+  $repo/tests/fuzzers/txfetcher/txfetcher_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/tests/fuzzers/secp256k1 \
+  Fuzz fuzzSecp256k1\
+  $repo/tests/fuzzers/secp256k1/secp_test.go
+
+compile_fuzzer github.com/theQRL/go-zond/qrl/protocols/eth \
+  FuzzEthProtocolHandlers fuzz_eth_protocol_handlers \
+  $repo/qrl/protocols/eth/handler_test.go,$repo/qrl/protocols/eth/peer_test.go
+
+

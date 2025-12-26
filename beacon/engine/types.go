@@ -19,21 +19,12 @@ package engine
 import (
 	"fmt"
 	"math/big"
-	"slices"
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/trie"
-)
-
-// PayloadVersion denotes the version of PayloadAttributes used to request the
-// building of the payload to commence.
-type PayloadVersion byte
-
-var (
-	PayloadV1 PayloadVersion = 0x1
 )
 
 //go:generate go run github.com/fjl/gencodec -type PayloadAttributes -field-override payloadAttributesMarshaling -out gen_blockparams.go
@@ -107,16 +98,6 @@ type PayloadStatusV1 struct {
 
 // PayloadID is an identifier of the payload build process
 type PayloadID [8]byte
-
-// Version returns the payload version associated with the identifier.
-func (b PayloadID) Version() PayloadVersion {
-	return PayloadVersion(b[0])
-}
-
-// Is returns whether the identifier matches any of provided payload versions.
-func (b PayloadID) Is(versions ...PayloadVersion) bool {
-	return slices.Contains(versions, b.Version())
-}
 
 func (b PayloadID) String() string {
 	return hexutil.Encode(b[:])
