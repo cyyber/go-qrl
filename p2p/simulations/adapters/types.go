@@ -25,9 +25,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/gorilla/websocket"
 	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/internal/reexec"
 	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/p2p"

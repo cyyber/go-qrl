@@ -24,9 +24,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/theQRL/go-zond/cmd/qrvm/internal/t8ntool"
 	"github.com/theQRL/go-zond/internal/cmdtest"
+	"github.com/theQRL/go-zond/internal/reexec"
 )
 
 func TestMain(m *testing.M) {

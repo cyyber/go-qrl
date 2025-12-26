@@ -206,7 +206,7 @@ func generate(c *cli.Context) error {
 		}
 	}
 	// Generate the contract binding
-	code, err := bind.Bind(types, abis, bins, sigs, c.String(pkgFlag.Name) , libs, aliases)
+	code, err := bind.Bind(types, abis, bins, sigs, c.String(pkgFlag.Name), libs, aliases)
 	if err != nil {
 		utils.Fatalf("Failed to generate ABI binding: %v", err)
 	}
