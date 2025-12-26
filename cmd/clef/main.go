@@ -249,7 +249,6 @@ The gendoc generates example structures of the json-rpc communication types.
 			logLevelFlag,
 			keystoreFlag,
 			utils.LightKDFFlag,
-			utils.PasswordFileFlag,
 			acceptFlag,
 		},
 		Description: `
@@ -409,7 +408,6 @@ func initInternalApi(c *cli.Context) (*core.UIServerAPI, core.UIClientAPI, error
 		lightKdf                  = c.Bool(utils.LightKDFFlag.Name)
 	)
 	am := core.StartClefAccountManager(ksLoc /*false,*/, lightKdf /*""*/)
-	defer am.Close()
 	api := core.NewSignerAPI(am, 0 /*false,*/, ui, nil, false, pwStorage)
 	internalApi := core.NewUIServerAPI(api)
 	return internalApi, ui, nil
@@ -565,38 +563,29 @@ func accountImport(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	var first string
-	pwdList := utils.MakePasswordList(c)
-	if len(pwdList) > 0 {
-		first = pwdList[0]
-	} else {
-		var err error
-		readPw := func(prompt string) (string, error) {
-			resp, err := ui.OnInputRequired(core.UserInputRequest{
-				Title:      "Password",
-				Prompt:     prompt,
-				IsPassword: true,
-			})
-			if err != nil {
-				return "", err
-			}
-			return resp.Text, nil
-		}
-		first, err = readPw("Please enter a password for the imported account")
+	readPw := func(prompt string) (string, error) {
+		resp, err := ui.OnInputRequired(core.UserInputRequest{
+			Title:      "Password",
+			Prompt:     prompt,
+			IsPassword: true,
+		})
 		if err != nil {
-			return err
+			return "", err
 		}
-		second, err := readPw("Please repeat the password you just entered")
-		if err != nil {
-			return err
-		}
-		if first != second {
-			//lint:ignore ST1005 This is a message for the user
-			return errors.New("Passwords do not match")
-		}
+		return resp.Text, nil
 	}
-
+	first, err := readPw("Please enter a password for the imported account")
+	if err != nil {
+		return err
+	}
+	second, err := readPw("Please repeat the password you just entered")
+	if err != nil {
+		return err
+	}
+	if first != second {
+		//lint:ignore ST1005 This is a message for the user
+		return errors.New("Passwords do not match")
+	}
 	acc, err := internalApi.ImportRawWallet(hexSeed, first)
 	if err != nil {
 		return err
