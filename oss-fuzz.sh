@@ -86,17 +86,17 @@ compile_fuzzer github.com/theQRL/go-zond/accounts/abi \
   FuzzABI fuzzAbi \
   $repo/accounts/abi/abifuzzer_test.go
 
-# compile_fuzzer github.com/theQRL/go-zond/common/bitutil \
-#   FuzzEncoder fuzzBitutilEncoder \
-#   $repo/common/bitutil/compress_test.go
+compile_fuzzer github.com/theQRL/go-zond/common/bitutil \
+  FuzzEncoder fuzzBitutilEncoder \
+  $repo/common/bitutil/compress_test.go
 
-# compile_fuzzer github.com/theQRL/go-zond/common/bitutil \
-#   FuzzDecoder fuzzBitutilDecoder \
-#   $repo/common/bitutil/compress_test.go
+compile_fuzzer github.com/theQRL/go-zond/common/bitutil \
+  FuzzDecoder fuzzBitutilDecoder \
+  $repo/common/bitutil/compress_test.go
 
-# compile_fuzzer github.com/theQRL/go-zond/core/vm/runtime \
-#   FuzzVmRuntime fuzzVmRuntime\
-#   $repo/core/vm/runtime/runtime_fuzz_test.go
+compile_fuzzer github.com/theQRL/go-zond/core/vm/runtime \
+  FuzzVmRuntime fuzzVmRuntime\
+  $repo/core/vm/runtime/runtime_fuzz_test.go
 
 # compile_fuzzer github.com/theQRL/go-zond/core/vm \
 #   FuzzPrecompiledContracts fuzzPrecompiledContracts\
@@ -106,13 +106,9 @@ compile_fuzzer github.com/theQRL/go-zond/accounts/abi \
 #   FuzzRLP fuzzRlp \
 #   $repo/core/types/rlp_fuzzer_test.go
 
-# compile_fuzzer github.com/theQRL/go-zond/crypto/blake2b \
-#   Fuzz fuzzBlake2b \
-#   $repo/crypto/blake2b/blake2b_f_fuzz_test.go
-
-# compile_fuzzer github.com/theQRL/go-zond/accounts/keystore \
-#   FuzzPassword fuzzKeystore \
-#   $repo/accounts/keystore/keystore_fuzzing_test.go
+compile_fuzzer github.com/theQRL/go-zond/accounts/keystore \
+  FuzzPassword fuzzKeystore \
+  $repo/accounts/keystore/keystore_fuzzing_test.go
 
 # pkg=$repo/trie/
 # compile_fuzzer github.com/theQRL/go-zond/trie \

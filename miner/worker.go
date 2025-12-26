@@ -98,6 +98,7 @@ func (miner *Miner) generateWork(genParam *generateParams) *newPayloadResult {
 	if err != nil {
 		return &newPayloadResult{err: err}
 	}
+
 	// Check withdrawals fit max block size.
 	// Due to the cap on withdrawal count, this can actually never happen, but we still need to
 	// check to ensure the CL notices there's a problem if the withdrawal cap is ever lifted.

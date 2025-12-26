@@ -27,7 +27,6 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/consensus"
 	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/asm"
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
@@ -480,21 +479,9 @@ func TestEip2929Cases(t *testing.T) {
 	t.Skip("Test only useful for generating documentation")
 	id := 1
 	prettyPrint := func(comment string, code []byte) {
-		instrs := make([]string, 0)
-		it := asm.NewInstructionIterator(code)
-		for it.Next() {
-			if it.Arg() != nil && 0 < len(it.Arg()) {
-				instrs = append(instrs, fmt.Sprintf("%v %#x", it.Op(), it.Arg()))
-			} else {
-				instrs = append(instrs, fmt.Sprintf("%v", it.Op()))
-			}
-		}
-		ops := strings.Join(instrs, ", ")
 		fmt.Printf("### Case %d\n\n", id)
 		id++
-		fmt.Printf("%v\n\nBytecode: \n```\n%#x\n```\nOperations: \n```\n%v\n```\n\n",
-			comment,
-			code, ops)
+		fmt.Printf("%v\n\nBytecode: \n```\n%#x\n```\n", comment, code)
 		Execute(code, nil, &Config{
 			QRVMConfig: vm.Config{
 				Tracer:    logger.NewMarkdownLogger(nil, os.Stdout),

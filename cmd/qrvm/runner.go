@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/cmd/qrvm/internal/compiler"
 	"github.com/theQRL/go-zond/cmd/utils"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core"
@@ -212,16 +211,19 @@ func runCmd(ctx *cli.Context) error {
 		}
 		code = common.FromHex(string(hexcode))
 	} else if fn := ctx.Args().First(); len(fn) > 0 {
-		// EASM-file to compile
-		src, err := os.ReadFile(fn)
-		if err != nil {
-			return err
-		}
-		bin, err := compiler.Compile(fn, src, false)
-		if err != nil {
-			return err
-		}
-		code = common.Hex2Bytes(bin)
+		// TODO(rgeraldes24)
+		/*
+			// EASM-file to compile
+			src, err := os.ReadFile(fn)
+			if err != nil {
+				return err
+			}
+			bin, err := compiler.Compile(fn, src, false)
+			if err != nil {
+				return err
+			}
+			code = common.Hex2Bytes(bin)
+		*/
 	}
 	initialGas := ctx.Uint64(GasFlag.Name)
 	if genesisConfig.GasLimit != 0 {
