@@ -510,14 +510,14 @@ func TestEncodeToReaderReturnToPool(t *testing.T) {
 var sink interface{}
 
 func BenchmarkIntsize(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sink = intsize(0x12345678)
 	}
 }
 
 func BenchmarkPutint(b *testing.B) {
 	buf := make([]byte, 8)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		putint(buf, 0x12345678)
 		sink = buf
 	}
@@ -532,7 +532,7 @@ func BenchmarkEncodeBigInts(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(out, ints); err != nil {
 			b.Fatal(err)
@@ -549,7 +549,7 @@ func BenchmarkEncodeU256Ints(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(out, ints); err != nil {
 			b.Fatal(err)
@@ -577,7 +577,7 @@ func BenchmarkEncodeConcurrentInterface(b *testing.B) {
 			defer wg.Done()
 
 			var buffer bytes.Buffer
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				buffer.Reset()
 				err := Encode(&buffer, value)
 				if err != nil {
@@ -600,7 +600,7 @@ func BenchmarkEncodeByteArrayStruct(b *testing.B) {
 	var value byteArrayStruct
 
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(&out, &value); err != nil {
 			b.Fatal(err)
@@ -628,7 +628,7 @@ func BenchmarkEncodeStructPtrSlice(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(&out, &value); err != nil {
 			b.Fatal(err)

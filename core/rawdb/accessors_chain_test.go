@@ -866,7 +866,7 @@ func BenchmarkDecodeRLPLogs(b *testing.B) {
 	b.Run("ReceiptForStorage", func(b *testing.B) {
 		b.ReportAllocs()
 		var r []*types.ReceiptForStorage
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if err := rlp.DecodeBytes(buf, &r); err != nil {
 				b.Fatal(err)
 			}
@@ -875,7 +875,7 @@ func BenchmarkDecodeRLPLogs(b *testing.B) {
 	b.Run("rlpLogs", func(b *testing.B) {
 		b.ReportAllocs()
 		var r []*receiptLogs
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if err := rlp.DecodeBytes(buf, &r); err != nil {
 				b.Fatal(err)
 			}

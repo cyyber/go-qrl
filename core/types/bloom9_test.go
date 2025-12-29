@@ -78,7 +78,7 @@ func TestBloomExtensively(t *testing.T) {
 
 func BenchmarkBloom9(b *testing.B) {
 	test := []byte("testestestest")
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Bloom9(test)
 	}
 }
@@ -86,7 +86,7 @@ func BenchmarkBloom9(b *testing.B) {
 func BenchmarkBloom9Lookup(b *testing.B) {
 	toTest := []byte("testtest")
 	bloom := new(Bloom)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		bloom.Test(toTest)
 	}
 }
@@ -143,7 +143,7 @@ func BenchmarkCreateBloom(b *testing.B) {
 	b.Run("small", func(b *testing.B) {
 		b.ReportAllocs()
 		var bl Bloom
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			bl = CreateBloom(rSmall)
 		}
 		b.StopTimer()
@@ -156,7 +156,7 @@ func BenchmarkCreateBloom(b *testing.B) {
 	b.Run("large", func(b *testing.B) {
 		b.ReportAllocs()
 		var bl Bloom
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			bl = CreateBloom(rLarge)
 		}
 		b.StopTimer()

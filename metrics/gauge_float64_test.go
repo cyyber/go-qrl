@@ -19,7 +19,7 @@ func BenchmarkGaugeFloat64Parallel(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				c.Update(float64(i))
 			}
 			wg.Done()

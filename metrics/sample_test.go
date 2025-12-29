@@ -23,7 +23,7 @@ func BenchmarkCompute1000(b *testing.B) {
 	}
 	mean := float64(sum) / float64(len(s))
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		SampleVariance(mean, s)
 	}
 }
@@ -36,7 +36,7 @@ func BenchmarkCompute1000000(b *testing.B) {
 	}
 	mean := float64(sum) / float64(len(s))
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		SampleVariance(mean, s)
 	}
 }
@@ -46,7 +46,7 @@ func BenchmarkCopy1000(b *testing.B) {
 		s[i] = int64(i)
 	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sCopy := make([]int64, len(s))
 		copy(sCopy, s)
 	}
@@ -57,7 +57,7 @@ func BenchmarkCopy1000000(b *testing.B) {
 		s[i] = int64(i)
 	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sCopy := make([]int64, len(s))
 		copy(sCopy, s)
 	}
@@ -248,7 +248,7 @@ func benchmarkSample(b *testing.B, s Sample) {
 	runtime.ReadMemStats(&memStats)
 	pauseTotalNs := memStats.PauseTotalNs
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		s.Update(1)
 	}
 	b.StopTimer()
@@ -353,7 +353,7 @@ func BenchmarkCalculatePercentiles(b *testing.B) {
 	}
 	v := make([]int64, len(vals))
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		copy(v, vals)
 		_ = CalculatePercentiles(v, pss)
 	}

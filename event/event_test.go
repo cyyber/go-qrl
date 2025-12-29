@@ -169,7 +169,7 @@ func BenchmarkPost1000(b *testing.B) {
 
 	// The actual benchmark.
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mux.Post(testEvent(0))
 	}
 
@@ -187,7 +187,7 @@ func BenchmarkPostConcurrent(b *testing.B) {
 
 	var wg sync.WaitGroup
 	poster := func() {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			mux.Post(testEvent(0))
 		}
 		wg.Done()

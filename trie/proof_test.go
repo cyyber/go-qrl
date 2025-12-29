@@ -1027,7 +1027,7 @@ func benchmarkVerifyRangeNoProof(b *testing.B, size int) {
 		values = append(values, entry.v)
 	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := VerifyRangeProof(trie.Hash(), keys[0], keys[len(keys)-1], keys, values, nil)
 		if err != nil {
 			b.Fatalf("Expected no error, got %v", err)

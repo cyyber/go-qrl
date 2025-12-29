@@ -8,7 +8,7 @@ import (
 func BenchmarkCounterFloat64(b *testing.B) {
 	c := NewCounterFloat64()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		c.Inc(1.0)
 	}
 }
@@ -20,7 +20,7 @@ func BenchmarkCounterFloat64Parallel(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				c.Inc(1.0)
 			}
 			wg.Done()

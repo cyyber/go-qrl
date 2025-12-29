@@ -619,7 +619,7 @@ func benchGet(b *testing.B) {
 	binary.LittleEndian.PutUint64(k, benchElemCount/2)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		trie.MustGet(k)
 	}
 	b.StopTimer()
@@ -1002,14 +1002,14 @@ func BenchmarkHashFixedSize(b *testing.B) {
 	b.Run("10", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(20)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
@@ -1017,21 +1017,21 @@ func BenchmarkHashFixedSize(b *testing.B) {
 	b.Run("1K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(1000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("10K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(10000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
@@ -1053,14 +1053,14 @@ func BenchmarkCommitAfterHashFixedSize(b *testing.B) {
 	b.Run("10", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(20)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
@@ -1068,21 +1068,21 @@ func BenchmarkCommitAfterHashFixedSize(b *testing.B) {
 	b.Run("1K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(1000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("10K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(10000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
@@ -1105,14 +1105,14 @@ func BenchmarkDerefRootFixedSize(b *testing.B) {
 	b.Run("10", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(20)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
@@ -1120,21 +1120,21 @@ func BenchmarkDerefRootFixedSize(b *testing.B) {
 	b.Run("1K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(1000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
 	b.Run("10K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(10000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})

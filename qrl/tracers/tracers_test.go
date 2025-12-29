@@ -97,7 +97,7 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		snap := statedb.Snapshot()
 		st := core.NewStateTransition(qrvm, msg, new(core.GasPool).AddGas(tx.Gas()))
 		_, err = st.TransitionDb()

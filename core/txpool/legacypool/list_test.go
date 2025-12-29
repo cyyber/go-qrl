@@ -62,7 +62,7 @@ func BenchmarkListAdd(b *testing.B) {
 	// Insert the transactions in a random order
 	priceLimit := big.NewInt(int64(DefaultConfig.PriceLimit))
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		list := newList(true)
 		for _, v := range rand.Perm(len(txs)) {
 			list.Add(txs[v], DefaultConfig.PriceBump)

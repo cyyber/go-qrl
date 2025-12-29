@@ -107,7 +107,7 @@ func BenchmarkEncodeShortNode(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		nodeToBytes(node)
 	}
 }
@@ -125,7 +125,7 @@ func BenchmarkEncodeFullNode(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		nodeToBytes(node)
 	}
 }
@@ -146,7 +146,7 @@ func BenchmarkDecodeShortNode(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mustDecodeNode(hash, blob)
 	}
 }
@@ -167,7 +167,7 @@ func BenchmarkDecodeShortNodeUnsafe(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mustDecodeNodeUnsafe(hash, blob)
 	}
 }
@@ -188,7 +188,7 @@ func BenchmarkDecodeFullNode(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mustDecodeNode(hash, blob)
 	}
 }
@@ -209,7 +209,7 @@ func BenchmarkDecodeFullNodeUnsafe(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mustDecodeNodeUnsafe(hash, blob)
 	}
 }

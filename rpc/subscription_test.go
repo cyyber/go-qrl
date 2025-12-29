@@ -260,7 +260,7 @@ func BenchmarkNotify(b *testing.B) {
 		Number:     big.NewInt(100),
 	}
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		notifier.Notify(id, msg)
 	}
 }

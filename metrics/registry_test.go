@@ -9,7 +9,7 @@ func BenchmarkRegistry(b *testing.B) {
 	r := NewRegistry()
 	r.Register("foo", NewCounter())
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.Each(func(string, interface{}) {})
 	}
 }
@@ -29,7 +29,7 @@ func benchmarkRegistryGetOrRegisterParallel(b *testing.B, amount int) {
 	for i := 0; i < amount; i++ {
 		wg.Add(1)
 		go func() {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				r.GetOrRegister("foo", NewMeter)
 			}
 			wg.Done()

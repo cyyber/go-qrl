@@ -254,7 +254,7 @@ func BenchmarkFeedOfSend1000(b *testing.B) {
 		nsubs = 1000
 	)
 	subscriber := func(ch <-chan int) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			<-ch
 		}
 		done.Done()

@@ -254,7 +254,7 @@ func makeChainForBench(db qrldb.Database, full bool, count uint64) {
 }
 
 func benchWriteChain(b *testing.B, full bool, count uint64) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		dir := b.TempDir()
 		db, err := rawdb.NewLevelDBDatabase(dir, 128, 1024, "", false)
 		if err != nil {
@@ -280,7 +280,7 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		db, err := rawdb.NewLevelDBDatabase(dir, 128, 1024, "", false)
 		if err != nil {
 			b.Fatalf("error opening database at %v: %v", dir, err)

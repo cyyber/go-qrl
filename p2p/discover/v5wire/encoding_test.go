@@ -450,7 +450,7 @@ func BenchmarkV5_DecodeHandshakePingSecp256k1(b *testing.B) {
 	b.ResetTimer()
 
 	input := make([]byte, len(enc))
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		copy(input, enc)
 		net.nodeB.c.sc.storeSentHandshake(idA, "", challenge)
 		_, _, _, err := net.nodeB.c.Decode(input, "")
@@ -480,7 +480,7 @@ func BenchmarkV5_DecodePing(b *testing.B) {
 	b.ResetTimer()
 
 	input := make([]byte, len(enc))
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		copy(input, enc)
 		_, _, packet, _ := net.nodeB.c.Decode(input, addrB)
 		if _, ok := packet.(*Ping); !ok {

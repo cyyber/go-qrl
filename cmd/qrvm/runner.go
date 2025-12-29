@@ -83,7 +83,7 @@ type execStats struct {
 func timedExec(bench bool, execFunc func() ([]byte, uint64, error)) (output []byte, gasLeft uint64, stats execStats, err error) {
 	if bench {
 		result := testing.Benchmark(func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				output, gasLeft, err = execFunc()
 			}
 		})

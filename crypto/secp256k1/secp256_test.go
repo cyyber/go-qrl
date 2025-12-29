@@ -220,7 +220,7 @@ func BenchmarkSign(b *testing.B) {
 	msg := csprngEntropy(32)
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Sign(msg, seckey)
 	}
 }
@@ -231,7 +231,7 @@ func BenchmarkRecover(b *testing.B) {
 	sig, _ := Sign(msg, seckey)
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		RecoverPubkey(msg, sig)
 	}
 }

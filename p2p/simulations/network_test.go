@@ -698,7 +698,7 @@ func benchmarkMinimalServiceTmp(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		// this is a minimal service, whose protocol will close a channel upon run of protocol
 		// making it possible to bench the time it takes for the service to start and protocol actually to be run
 		protoCMap := make(map[qnode.ID]map[qnode.ID]chan struct{})

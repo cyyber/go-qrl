@@ -2226,7 +2226,7 @@ func benchmarkPendingDemotion(b *testing.B, size int) {
 	}
 	// Benchmark the speed of pool validation
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		pool.demoteUnexecutables()
 	}
 }
@@ -2251,7 +2251,7 @@ func benchmarkFuturePromotion(b *testing.B, size int) {
 	}
 	// Benchmark the speed of pool validation
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		pool.promoteExecutables(nil)
 	}
 }
@@ -2309,7 +2309,7 @@ func BenchmarkInsertRemoteWithAllLocals(b *testing.B) {
 	}
 	// Benchmark importing the transactions into the queue
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		pool, _ := setupPool()
 		testAddBalance(pool, localAddr, big.NewInt(100000000))

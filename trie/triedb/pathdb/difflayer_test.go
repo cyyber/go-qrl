@@ -89,7 +89,7 @@ func benchmarkSearch(b *testing.B, depth int, total int) {
 		have []byte
 		err  error
 	)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		have, err = layer.Node(common.Hash{}, npath, nhash)
 		if err != nil {
 			b.Fatal(err)
@@ -119,7 +119,7 @@ func BenchmarkPersist(b *testing.B) {
 		}
 		return newDiffLayer(parent, common.Hash{}, 0, 0, nodes, nil)
 	}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		var layer layer
 		layer = emptyLayer()
@@ -164,7 +164,7 @@ func BenchmarkJournal(b *testing.B) {
 	}
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		layer.journal(new(bytes.Buffer))
 	}
 }

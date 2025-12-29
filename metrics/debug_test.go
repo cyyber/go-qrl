@@ -11,7 +11,7 @@ func BenchmarkDebugGCStats(b *testing.B) {
 	r := NewRegistry()
 	RegisterDebugGCStats(r)
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		CaptureDebugGCStatsOnce(r)
 	}
 }
