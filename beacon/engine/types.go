@@ -36,7 +36,6 @@ type PayloadAttributes struct {
 	Random                common.Hash         `json:"prevRandao"            gencodec:"required"`
 	SuggestedFeeRecipient common.Address      `json:"suggestedFeeRecipient" gencodec:"required"`
 	Withdrawals           []*types.Withdrawal `json:"withdrawals"`
-	BeaconRoot            *common.Hash        `json:"parentBeaconBlockRoot"`
 }
 
 // JSON type overrides for PayloadAttributes.

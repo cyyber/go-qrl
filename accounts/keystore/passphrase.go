@@ -230,7 +230,6 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &Key{
 		Id:      id,
 		Address: w.GetAddress(),
