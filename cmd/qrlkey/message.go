@@ -80,6 +80,7 @@ To sign a message contained in a file, use the --msgfile flag.
 		} else {
 			fmt.Println("Signature:", out.Signature)
 		}
+
 		return nil
 	},
 }

@@ -77,7 +77,7 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 	txs := make(map[common.Hash]*types.Transaction)
 
 	var (
-		// testKey is a wallet to use for funding a tester account.
+		// testWallet is a wallet to use for funding a tester account.
 		testWallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 
 		// testAddr is the QRL address of the tester account.
