@@ -57,8 +57,6 @@ var (
 		utils.MinFreeDiskSpaceFlag,
 		utils.KeyStoreDirFlag,
 		utils.ExternalSignerFlag,
-		// TODO(now.youtrack.cloud/issue/TGZ-4)
-		// utils.USBFlag,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
 		utils.TxPoolJournalFlag,

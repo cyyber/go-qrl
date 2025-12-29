@@ -115,11 +115,6 @@ var (
 		Usage:    "Directory for the keystore (default = inside the datadir)",
 		Category: flags.AccountCategory,
 	}
-	USBFlag = &cli.BoolFlag{
-		Name:     "usb",
-		Usage:    "Enable monitoring and management of USB hardware wallets",
-		Category: flags.AccountCategory,
-	}
 	NetworkIdFlag = &cli.Uint64Flag{
 		Name:     "networkid",
 		Usage:    "Explicitly set network id (integer)(For testnets: use --betanet instead)",
@@ -1234,9 +1229,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	}
 	if ctx.IsSet(LightKDFFlag.Name) {
 		cfg.UseLightweightKDF = ctx.Bool(LightKDFFlag.Name)
-	}
-	if ctx.IsSet(USBFlag.Name) {
-		cfg.USB = ctx.Bool(USBFlag.Name)
 	}
 	if ctx.IsSet(DBEngineFlag.Name) {
 		dbEngine := ctx.String(DBEngineFlag.Name)

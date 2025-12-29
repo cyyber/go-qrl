@@ -198,50 +198,13 @@ func (c *dataCopy) Run(in []byte) ([]byte, error) {
 type bigModExp struct{}
 
 var (
-	big0      = big.NewInt(0)
-	big1      = big.NewInt(1)
-	big3      = big.NewInt(3)
-	big4      = big.NewInt(4)
-	big7      = big.NewInt(7)
-	big8      = big.NewInt(8)
-	big16     = big.NewInt(16)
-	big20     = big.NewInt(20)
-	big32     = big.NewInt(32)
-	big64     = big.NewInt(64)
-	big96     = big.NewInt(96)
-	big480    = big.NewInt(480)
-	big1024   = big.NewInt(1024)
-	big3072   = big.NewInt(3072)
-	big199680 = big.NewInt(199680)
+	big0  = big.NewInt(0)
+	big1  = big.NewInt(1)
+	big3  = big.NewInt(3)
+	big7  = big.NewInt(7)
+	big8  = big.NewInt(8)
+	big32 = big.NewInt(32)
 )
-
-// modexpMultComplexity implements bigModexp multComplexity formula, as defined in EIP-198
-//
-//	def mult_complexity(x):
-//		if x <= 64: return x ** 2
-//		elif x <= 1024: return x ** 2 // 4 + 96 * x - 3072
-//		else: return x ** 2 // 16 + 480 * x - 199680
-//
-// where is x is max(length_of_MODULUS, length_of_BASE)
-func modexpMultComplexity(x *big.Int) *big.Int {
-	switch {
-	case x.Cmp(big64) <= 0:
-		x.Mul(x, x) // x ** 2
-	case x.Cmp(big1024) <= 0:
-		// (x ** 2 // 4 ) + ( 96 * x - 3072)
-		x = new(big.Int).Add(
-			new(big.Int).Div(new(big.Int).Mul(x, x), big4),
-			new(big.Int).Sub(new(big.Int).Mul(big96, x), big3072),
-		)
-	default:
-		// (x ** 2 // 16) + (480 * x - 199680)
-		x = new(big.Int).Add(
-			new(big.Int).Div(new(big.Int).Mul(x, x), big16),
-			new(big.Int).Sub(new(big.Int).Mul(big480, x), big199680),
-		)
-	}
-	return x
-}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bigModExp) RequiredGas(input []byte) uint64 {
@@ -303,7 +266,6 @@ func (c *bigModExp) RequiredGas(input []byte) uint64 {
 		return 200
 	}
 	return gas.Uint64()
-
 }
 
 func (c *bigModExp) Run(input []byte) ([]byte, error) {

@@ -134,23 +134,6 @@ func (api *UIServerAPI) ImportRawWallet(seed string, password string) (accounts.
 	return fetchKeystore(api.am).ImportWallet(wallet, password)
 }
 
-// OpenWallet initiates a hardware wallet opening procedure, establishing a USB
-// connection and attempting to authenticate via the provided passphrase. Note,
-// the method may return an extra challenge requiring a second open.
-// Example
-// {"jsonrpc":"2.0","method":"clef_openWallet","params":["ledger://",""], "id":6}
-func (api *UIServerAPI) OpenWallet(url string, passphrase *string) error {
-	wallet, err := api.am.Wallet(url)
-	if err != nil {
-		return err
-	}
-	pass := ""
-	if passphrase != nil {
-		pass = *passphrase
-	}
-	return wallet.Open(pass)
-}
-
 // ChainId returns the chainid in use for Eip-155 replay protection
 // Example call
 // {"jsonrpc":"2.0","method":"clef_chainId","params":[], "id":8}

@@ -37,7 +37,7 @@ import (
 
 const (
 	// numberOfAccountsToDerive For hardware wallets, the number of accounts to derive
-	numberOfAccountsToDerive = 10
+	// numberOfAccountsToDerive = 10
 	// ExternalAPIVersion -- see extapi_changelog.md
 	ExternalAPIVersion = "6.1.0"
 	// InternalAPIVersion -- see intapi_changelog.md
@@ -121,7 +121,7 @@ type Metadata struct {
 	Origin    string `json:"Origin"`
 }
 
-func StartClefAccountManager(ksLocation string /*usbEnabled bool,*/, lightKDF bool) *accounts.Manager {
+func StartClefAccountManager(ksLocation string, lightKDF bool) *accounts.Manager {
 	var (
 		backends []accounts.Backend
 		t, m, p  = keystore.StandardArgon2idT, keystore.StandardArgon2idM, keystore.StandardArgon2idP
@@ -133,19 +133,6 @@ func StartClefAccountManager(ksLocation string /*usbEnabled bool,*/, lightKDF bo
 	if len(ksLocation) > 0 {
 		backends = append(backends, keystore.NewKeyStore(ksLocation, t, m, p))
 	}
-
-	// TODO(now.youtrack.cloud/issue/TGZ-4)
-	/*
-		if usbEnabled {
-			// Start a USB hub for Ledger hardware wallets
-			if ledgerhub, err := usbwallet.NewLedgerHub(); err != nil {
-				log.Warn(fmt.Sprintf("Failed to start Ledger hub, disabling: %v", err))
-			} else {
-				backends = append(backends, ledgerhub)
-				log.Debug("Ledger support enabled")
-			}
-		}
-	*/
 
 	// Clef doesn't allow insecure http account unlock.
 	return accounts.NewManager(backends...)
@@ -243,79 +230,14 @@ var ErrRequestDenied = errors.New("request denied")
 // NewSignerAPI creates a new API that can be used for Account management.
 // ksLocation specifies the directory where to store the password protected private
 // key that is generated when a new Account is created.
-// noUSB disables USB support that is required to support hardware devices such as
-// ledger.
-func NewSignerAPI(am *accounts.Manager, chainID int64 /*usbEnabled bool,*/, ui UIClientAPI, validator Validator, advancedMode bool, credentials storage.Storage) *SignerAPI {
+func NewSignerAPI(am *accounts.Manager, chainID int64, ui UIClientAPI, validator Validator, advancedMode bool, credentials storage.Storage) *SignerAPI {
 	if advancedMode {
 		log.Info("Clef is in advanced mode: will warn instead of reject")
 	}
 	signer := &SignerAPI{big.NewInt(chainID), am, ui, validator, !advancedMode, credentials}
-	/*
-		if usbEnabled {
-			signer.startUSBListener()
-		}
-	*/
+
 	return signer
 }
-
-/*
-// startUSBListener starts a listener for USB events, for hardware wallet interaction
-func (api *SignerAPI) startUSBListener() {
-	eventCh := make(chan accounts.WalletEvent, 16)
-	am := api.am
-	am.Subscribe(eventCh)
-	// Open any wallets already attached
-	for _, wallet := range am.Wallets() {
-		if err := wallet.Open(""); err != nil {
-			log.Warn("Failed to open wallet", "url", wallet.URL(), "err", err)
-		}
-	}
-	go api.derivationLoop(eventCh)
-}
-
-// derivationLoop listens for wallet events
-func (api *SignerAPI) derivationLoop(events chan accounts.WalletEvent) {
-	// Listen for wallet event till termination
-	for event := range events {
-		switch event.Kind {
-		case accounts.WalletArrived:
-			if err := event.Wallet.Open(""); err != nil {
-				log.Warn("New wallet appeared, failed to open", "url", event.Wallet.URL(), "err", err)
-			}
-		case accounts.WalletOpened:
-			status, _ := event.Wallet.Status()
-			log.Info("New wallet appeared", "url", event.Wallet.URL(), "status", status)
-			var derive = func(limit int, next func() accounts.DerivationPath) {
-				// Derive first N accounts, hardcoded for now
-				for i := 0; i < limit; i++ {
-					path := next()
-					if acc, err := event.Wallet.Derive(path, true); err != nil {
-						log.Warn("Account derivation failed", "error", err)
-					} else {
-						log.Info("Derived account", "address", acc.Address, "path", path)
-					}
-				}
-			}
-			log.Info("Deriving default paths")
-			derive(numberOfAccountsToDerive, accounts.DefaultIterator(accounts.DefaultBaseDerivationPath))
-			if event.Wallet.URL().Scheme == "ledger" {
-				log.Info("Deriving ledger legacy paths")
-				derive(numberOfAccountsToDerive, accounts.DefaultIterator(accounts.LegacyLedgerBaseDerivationPath))
-				log.Info("Deriving ledger live paths")
-				// For ledger live, since it's based off the same (DefaultBaseDerivationPath)
-				// as one we've already used, we need to step it forward one step to avoid
-				// hitting the same path again
-				nextFn := accounts.LedgerLiveIterator(accounts.DefaultBaseDerivationPath)
-				nextFn()
-				derive(numberOfAccountsToDerive, nextFn)
-			}
-		case accounts.WalletDropped:
-			log.Info("Old wallet dropped", "url", event.Wallet.URL())
-			event.Wallet.Close()
-		}
-	}
-}
-*/
 
 // List returns the set of wallet this signer manages. Each wallet can contain
 // multiple accounts.

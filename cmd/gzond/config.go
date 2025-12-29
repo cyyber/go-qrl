@@ -326,17 +326,6 @@ func setAccountManagerBackends(conf *node.Config, am *accounts.Manager, keydir s
 	// we can have both, but it's very confusing for the user to see the same
 	// accounts in both externally and locally, plus very racey.
 	am.AddBackend(keystore.NewKeyStore(keydir, argon2idT, argon2idM, argon2idP))
-	// TODO(now.youtrack.cloud/issue/TGZ-4)
-	/*
-		if conf.USB {
-			// Start a USB hub for Ledger hardware wallets
-			if ledgerhub, err := usbwallet.NewLedgerHub(); err != nil {
-				log.Warn(fmt.Sprintf("Failed to start Ledger hub, disabling: %v", err))
-			} else {
-				am.AddBackend(ledgerhub)
-			}
-		}
-	*/
 
 	return nil
 }

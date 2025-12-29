@@ -205,16 +205,16 @@ func TextAndHash(data []byte) ([]byte, string) {
 type WalletEventType int
 
 const (
-	// WalletArrived is fired when a new wallet is detected either via USB or via
-	// a filesystem event in the keystore.
+	// WalletArrived is fired when a new wallet is detected either via a
+	// filesystem event in the keystore.
 	WalletArrived WalletEventType = iota
 
 	// WalletOpened is fired when a wallet is successfully opened with the purpose
 	// of starting any background processes such as automatic key derivation.
 	WalletOpened
 
-	// WalletDropped is fired when a wallet is removed or disconnected, either via USB
-	// or due to a filesystem event in the keystore. This event indicates that the wallet
+	// WalletDropped is fired when a wallet is removed or disconnected due to a
+	// filesystem event in the keystore. This event indicates that the wallet
 	// is no longer available for operations.
 	WalletDropped
 )

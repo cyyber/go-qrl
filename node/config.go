@@ -82,9 +82,6 @@ type Config struct {
 	// argon2id KDF at the expense of security.
 	UseLightweightKDF bool `toml:",omitempty"`
 
-	// USB enables hardware wallet monitoring and connectivity.
-	USB bool `toml:",omitempty"`
-
 	// IPCPath is the requested location to place the IPC endpoint. If the path is
 	// a simple file name, it is placed inside the data directory (or on the root
 	// pipe path on Windows), whereas if it's a resolvable path name (absolute or
@@ -359,30 +356,6 @@ func (c *Config) NodeKey() *ecdsa.PrivateKey {
 		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
 	}
 	return key
-}
-
-// checkLegacyFile will only raise an error if a file at the given path exists.
-func (c *Config) checkLegacyFile(path string) {
-	// Short circuit if no node config is present
-	if c.DataDir == "" {
-		return
-	}
-	if _, err := os.Stat(path); err != nil {
-		return
-	}
-	logger := c.Logger
-	if logger == nil {
-		logger = log.Root()
-	}
-	switch fname := filepath.Base(path); fname {
-	case "static-nodes.json":
-		logger.Error("The static-nodes.json file is deprecated and ignored. Use P2P.StaticNodes in config.toml instead.")
-	case "trusted-nodes.json":
-		logger.Error("The trusted-nodes.json file is deprecated and ignored. Use P2P.TrustedNodes in config.toml instead.")
-	default:
-		// We shouldn't wind up here, but better print something just in case.
-		logger.Error("Ignoring deprecated file.", "file", path)
-	}
 }
 
 // KeyDirConfig determines the settings for keydirectory

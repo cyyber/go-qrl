@@ -46,14 +46,6 @@ var alphabetSoup = "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffff
 var commonParams []*twoOperandParams
 var twoOpMethods map[string]executionFunc
 
-type contractRef struct {
-	addr common.Address
-}
-
-func (c contractRef) Address() common.Address {
-	return c.addr
-}
-
 func init() {
 	// Params is a list of common edgecases that should be used for some common tests
 	params := []string{
