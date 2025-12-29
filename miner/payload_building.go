@@ -186,6 +186,7 @@ func (miner *Miner) buildPayload(args *BuildPayloadArgs) (*Payload, error) {
 	if empty.err != nil {
 		return nil, empty.err
 	}
+
 	// Construct a payload object for return.
 	payload := newPayload(empty.block, args.Id())
 
