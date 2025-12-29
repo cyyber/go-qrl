@@ -122,7 +122,7 @@ func NewMethod(name string, rawName string, funType FunctionType, mutability str
 		identity = "constructor"
 	}
 	var str string
-	// Extract meaningful state mutability of solidity method.
+	// Extract meaningful state mutability of hyperion method.
 	// If it's empty string or default value "nonpayable", never print it.
 	if mutability == "" || mutability == "nonpayable" {
 		str = fmt.Sprintf("%v(%v) returns(%v)", identity, strings.Join(inputNames, ", "), strings.Join(outputNames, ", "))

@@ -230,7 +230,6 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 		if qrvmABI.HasReceive() {
 			receive = &tmplMethod{Original: qrvmABI.Receive}
 		}
-
 		contracts[types[i]] = &tmplContract{
 			Type:        abi.ToCamelCase(types[i]),
 			InputABI:    strings.ReplaceAll(strippedABI, "\"", "\\\""),
@@ -243,7 +242,6 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 			Events:      events,
 			Libraries:   make(map[string]string),
 		}
-
 		// Function 4-byte signatures are stored in the same sequence
 		// as types, if available.
 		if len(fsigs) > i {
