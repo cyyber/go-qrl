@@ -30,11 +30,6 @@
 /gzond*.zip.sig
 /gzond*.zip.asc
 
-
-# travis
-profile.tmp
-profile.cov
-
 # IdeaIDE
 .idea
 *.iml
