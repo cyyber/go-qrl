@@ -269,7 +269,6 @@ func Bind(types []string, abis []string, bytecodes []string, fsigs []map[string]
 		_, ok := isLib[types[i]]
 		contracts[types[i]].Library = ok
 	}
-
 	// Generate the contract template data content and render it
 	data := &tmplData{
 		Package:   pkg,

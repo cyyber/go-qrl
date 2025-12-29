@@ -61,7 +61,7 @@ var (
 	// paths with any of these prefixes will be skipped
 	skipPrefixes = []string{
 		// boring stuff
-		"vendor/", "tests/testdata/", "build/",
+		"vendor/", "build/",
 
 		// don't relicense vendored sources
 		"common/bitutil/bitutil",
