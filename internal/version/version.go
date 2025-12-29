@@ -24,6 +24,8 @@ import (
 	"strings"
 
 	"github.com/theQRL/go-zond/version"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const ourPath = "github.com/theQRL/go-zond" // Path to our module
@@ -72,8 +74,9 @@ func Archive(gitCommit string) string {
 // conventions in the QRL p2p network.
 func ClientName(clientIdentifier string) string {
 	git, _ := VCS()
+	caser := cases.Title(language.English)
 	return fmt.Sprintf("%s/v%v/%v-%v/%v",
-		strings.Title(clientIdentifier),
+		caser.String(clientIdentifier),
 		WithCommit(git.Commit, git.Date),
 		runtime.GOOS, runtime.GOARCH,
 		runtime.Version(),

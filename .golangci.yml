@@ -53,14 +53,8 @@ linters:
       - legacy
       - std-error-handling
     rules:
-      - path: internal/build/pgp.go
-        text: 'SA1019: "golang.org/x/crypto/openpgp" is deprecated: this package is unmaintained except for security fixes.'
       - path: (.+)\.go$
         text: 'SA1019: event.TypeMux is deprecated: use Feed'
-      - path: (.+)\.go$
-        text: 'SA1019: strings.Title is deprecated'
-      - path: (.+)\.go$
-        text: 'SA1019: strings.Title has been deprecated since Go 1.18 and an alternative has been available since Go 1.0: The rule Title uses for word boundaries does not handle Unicode punctuation properly. Use golang.org/x/text/cases instead.'
       - path: (.+)\.go$
         text: 'SA1029: should not use built-in type string as key for value'
     paths:

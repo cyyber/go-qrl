@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/theQRL/go-zond/internal/version"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var (
@@ -71,8 +72,9 @@ and displays information about any security vulnerabilities that affect the curr
 
 func printVersion(ctx *cli.Context) error {
 	git, _ := version.VCS()
+	caser := cases.Title(language.English)
 
-	fmt.Println(strings.Title(clientIdentifier))
+	fmt.Println(caser.String(clientIdentifier))
 	fmt.Println("Version:", version.WithMeta)
 	if git.Commit != "" {
 		fmt.Println("Git Commit:", git.Commit)
