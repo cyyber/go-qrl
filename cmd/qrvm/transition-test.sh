@@ -128,20 +128,21 @@ type AccessTuple struct {
 	Address     common.Address `json:"address"        gencodec:"required"`
 	StorageKeys []common.Hash  `json:"storageKeys"    gencodec:"required"`
 }
-// TODO(rgeraldes24)
 type DynamicFeeTx struct {
-	ChainID    *big.Int        `json:"chainId"`
-	Nonce      uint64          `json:"nonce"`
-	GasTipCap  *big.Int        `json:"maxPriorityFeePerGas"`
-	GasFeeCap  *big.Int        `json:"maxFeePerGas"`
-	Gas        uint64          `json:"gas"`
-	To         *common.Address `json:"to"`
-	Value      *big.Int        `json:"value"`
-	Data       []byte          `json:"data"`
-	AccessList AccessList      `json:"accessList"`
-	PublicKey  []byte          `json:"publicKey"`
-	Signature  []byte          `json:"signature"`
-  Seed       *common.Hash    `json:"seed"`
+	ChainID     *big.Int        `json:"chainId"`
+	Nonce       uint64          `json:"nonce"`
+	GasTipCap   *big.Int        `json:"maxPriorityFeePerGas"`
+	GasFeeCap   *big.Int        `json:"maxFeePerGas"`
+	Gas         uint64          `json:"gas"`
+	To          *common.Address `json:"to"`
+	Value       *big.Int        `json:"value"`
+	Data        []byte          `json:"data"`
+	AccessList  AccessList      `json:"accessList"`
+  Descriptor  [3]byte         `json:"descriptor"`
+  ExtraParams []byte          `json:"extraParams"`
+	PublicKey   []byte          `json:"publicKey"`
+	Signature   []byte          `json:"signature"`
+  Seed        *common.Hash    `json:"seed"`
 }
 ```
 
