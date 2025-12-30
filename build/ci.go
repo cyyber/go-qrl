@@ -24,7 +24,7 @@ Usage: go run build/ci.go <command> <command flags/arguments>
 
 Available commands are:
 
-	lint           -- runs certain pre-selected linters
+	lint                                                               -- runs certain pre-selected linters
 	install    [ -arch architecture ] [ -cc compiler ] [ packages... ] -- builds packages and executables
 	test       [ -coverage ] [ packages... ]                           -- runs the tests
 
