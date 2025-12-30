@@ -352,6 +352,7 @@ func (args *b11rInput) get(base string) []string {
 }
 
 func TestB11r(t *testing.T) {
+	// TODO(rgeraldes24)
 	t.Skip()
 	tt := new(testT8n)
 	tt.TestCmd = cmdtest.NewTestCmd(t, tt)
