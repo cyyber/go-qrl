@@ -163,8 +163,6 @@ Fatal: Passwords do not match
 }
 
 func TestAccountUpdate(t *testing.T) {
-	// TODO(rgeraldes24)
-	t.Skip()
 	t.Parallel()
 	datadir := tmpDatadirWithKeystore(t)
 	gzond := runGzond(t, "account", "update",
@@ -172,11 +170,11 @@ func TestAccountUpdate(t *testing.T) {
 		"Q2d9b972ef8219246c73363fd7c048cef81456f9d")
 	defer gzond.ExpectExit()
 	gzond.Expect(`
-Unlocking account Q2d9b972ef8219246c73363fd7c048cef81456f9d | Attempt 1/3
+Please give a NEW password. Do not forget this password.
 !! Unsupported terminal, password will be echoed.
+Password: {{.InputLine "foobar"}}
+Repeat password: {{.InputLine "foobar"}}
+Please provide the OLD password for account Q2d9B972ef8219246C73363fD7c048ceF81456F9d | Attempt 1/3
 Password: {{.InputLine "1234567890"}}
-Please give a new password. Do not forget this password.
-Password: {{.InputLine "foobar2"}}
-Repeat password: {{.InputLine "foobar2"}}
 `)
 }
