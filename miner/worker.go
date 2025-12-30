@@ -87,7 +87,6 @@ func (miner *Miner) generateWork(params *generateParams) *newPayloadResult {
 	if err != nil {
 		return &newPayloadResult{err: err}
 	}
-
 	if !params.noTxs {
 		interrupt := new(atomic.Int32)
 		timer := time.AfterFunc(miner.config.Recommit, func() {
