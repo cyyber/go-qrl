@@ -209,8 +209,7 @@ func doTest(cmdline []string) {
 		verbose  = flag.Bool("v", false, "Whether to log verbosely")
 		race     = flag.Bool("race", false, "Execute the race detector")
 		short    = flag.Bool("short", false, "Pass the 'short'-flag to go test")
-		// cachedir = flag.String("cachedir", "./build/cache", "directory for caching downloads")
-		threads = flag.Int("p", 1, "Number of CPU threads to use for testing")
+		threads  = flag.Int("p", 1, "Number of CPU threads to use for testing")
 	)
 	flag.CommandLine.Parse(cmdline)
 
@@ -225,8 +224,8 @@ func doTest(cmdline []string) {
 
 	gotest := tc.Go("test")
 
-	// CI needs a bit more time for the statetests (default 45m).
-	gotest.Args = append(gotest.Args, "-timeout=45m")
+	// CI needs a bit more time for the statetests (default 5m).
+	gotest.Args = append(gotest.Args, "-timeout=5m")
 
 	// Enable integration-tests
 	gotest.Args = append(gotest.Args, "-tags=integrationtests")

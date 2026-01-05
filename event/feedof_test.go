@@ -137,7 +137,7 @@ func TestFeedOfSubscribeBlockedPost(t *testing.T) {
 
 	// We're done when ch1 has received N times.
 	// The number of receives on ch2 depends on scheduling.
-	for i := range nsends {
+	for i := 0; i < nsends; {
 		select {
 		case <-ch1:
 			i++

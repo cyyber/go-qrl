@@ -17,7 +17,6 @@
 package catalyst
 
 import (
-	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -112,7 +111,7 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 		}
 		txs[tx.Hash()] = tx
 
-		if err := qrlService.APIBackend.SendTx(context.Background(), tx); err != nil {
+		if err := qrlService.APIBackend.SendTx(t.Context(), tx); err != nil {
 			t.Fatal("SendTx failed", err)
 		}
 	}

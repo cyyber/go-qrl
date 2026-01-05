@@ -557,7 +557,7 @@ func TestEstimateGas(t *testing.T) {
 		}, 21275, nil, nil},
 	}
 	for _, c := range cases {
-		got, err := sim.EstimateGas(context.Background(), c.message)
+		got, err := sim.EstimateGas(t.Context(), c.message)
 		if c.expectError != nil {
 			if err == nil {
 				t.Fatalf("Expect error, got nil")
@@ -651,7 +651,7 @@ func TestEstimateGasWithPrice(t *testing.T) {
 		}, params.TxGas, errors.New("gas required exceeds allowance (20999)")}, // 20999=(2.2quanta-0.1quanta-1planck)/(1e14)
 	}
 	for i, c := range cases {
-		got, err := sim.EstimateGas(context.Background(), c.message)
+		got, err := sim.EstimateGas(t.Context(), c.message)
 		if c.expectError != nil {
 			if err == nil {
 				t.Fatalf("test %d: expect error, got nil", i)

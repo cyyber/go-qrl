@@ -138,7 +138,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 		addr[0] = byte(i)
 		addr[1] = byte(i / 256)
 		filter := sys.NewRangeFilter(0, int64(cnt*sectionSize-1), []common.Address{addr}, nil)
-		if _, err := filter.Logs(context.Background()); err != nil {
+		if _, err := filter.Logs(b.Context()); err != nil {
 			b.Error("filter.Logs error:", err)
 		}
 	}

@@ -445,7 +445,7 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 	}
 
 	for i, test := range testCases {
-		if _, err := api.GetLogs(context.Background(), test); err == nil {
+		if _, err := api.GetLogs(t.Context(), test); err == nil {
 			t.Errorf("Expected Logs for case #%d to fail", i)
 		}
 	}
@@ -461,7 +461,7 @@ func TestInvalidGetRangeLogsRequest(t *testing.T) {
 		api    = NewFilterAPI(sys)
 	)
 
-	if _, err := api.GetLogs(context.Background(), FilterCriteria{FromBlock: big.NewInt(2), ToBlock: big.NewInt(1)}); err != errInvalidBlockRange {
+	if _, err := api.GetLogs(t.Context(), FilterCriteria{FromBlock: big.NewInt(2), ToBlock: big.NewInt(1)}); err != errInvalidBlockRange {
 		t.Errorf("Expected Logs for invalid range return error, but got: %v", err)
 	}
 }

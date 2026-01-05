@@ -18,7 +18,6 @@ package catalyst
 
 import (
 	"bytes"
-	"context"
 	crand "crypto/rand"
 	"fmt"
 	"math/big"
@@ -259,8 +258,6 @@ func TestInvalidPayloadTimestamp(t *testing.T) {
 }
 
 func TestNewBlock(t *testing.T) {
-	// TODO(rgeraldes24): after iteration
-	t.Skip()
 	genesis, blocks := generateChain(10)
 	n, qrlservice := startQRLService(t, genesis, blocks)
 	defer n.Close()
@@ -1014,7 +1011,7 @@ func TestWithdrawals(t *testing.T) {
 	}
 
 	// 11: verify withdrawals were processed.
-	db, _, err := qrlservice.APIBackend.StateAndHeaderByNumber(context.Background(), rpc.BlockNumber(execData.ExecutionPayload.Number))
+	db, _, err := qrlservice.APIBackend.StateAndHeaderByNumber(t.Context(), rpc.BlockNumber(execData.ExecutionPayload.Number))
 	if err != nil {
 		t.Fatalf("unable to load db: %v", err)
 	}

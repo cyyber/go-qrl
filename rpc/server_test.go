@@ -19,7 +19,6 @@ package rpc
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"net"
@@ -246,7 +245,7 @@ func TestServerWebsocketReadLimit(t *testing.T) {
 			wsURL := "ws:" + strings.TrimPrefix(httpsrv.URL, "http:")
 
 			// Connect WebSocket client
-			client, err := DialOptions(context.Background(), wsURL)
+			client, err := DialOptions(t.Context(), wsURL)
 			if err != nil {
 				t.Fatalf("can't dial: %v", err)
 			}

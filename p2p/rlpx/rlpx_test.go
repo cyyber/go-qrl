@@ -32,7 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/crypto/ecies"
-	"github.com/theQRL/go-zond/p2p/simulations/pipes"
+	"github.com/theQRL/go-zond/p2p/pipes"
 	"github.com/theQRL/go-zond/rlp"
 )
 
