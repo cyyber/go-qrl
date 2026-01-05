@@ -49,7 +49,7 @@ func TestNewSubscriptionError(t *testing.T) {
 	channel := make(chan int)
 	sub := subscribeInts(10, 2, channel)
 loop:
-	for want := 0; want < 10; want++ {
+	for want := range 10 {
 		select {
 		case got := <-channel:
 			if got != want {

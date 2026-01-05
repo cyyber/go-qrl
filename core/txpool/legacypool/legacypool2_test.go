@@ -54,7 +54,7 @@ func fillPool(t testing.TB, pool *LegacyPool) {
 	// Create a number of test accounts, fund them and make transactions
 	executableTxs := types.Transactions{}
 	nonExecutableTxs := types.Transactions{}
-	for i := 0; i < 384; i++ {
+	for range 384 {
 		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 		pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(10000000000))
 		// Add executable ones
@@ -103,7 +103,7 @@ func TestTransactionFutureAttack(t *testing.T) {
 		for j := 0; j < int(pool.config.GlobalSlots+pool.config.GlobalQueue); j++ {
 			futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(j), 100000, big.NewInt(500), big.NewInt(0), wallet))
 		}
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			pool.addRemotesSync(futureTxs)
 			newPending, newQueued := count(t, pool)
 			t.Logf("pending: %d queued: %d, all: %d\n", newPending, newQueued, pool.all.Slots())
@@ -243,7 +243,7 @@ func BenchmarkFutureAttack(b *testing.B) {
 		n++
 	}
 	b.ResetTimer()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pool.addRemotesSync(futureTxs)
 	}
 }

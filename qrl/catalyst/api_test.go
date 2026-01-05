@@ -208,10 +208,10 @@ func checkLogEvents(t *testing.T, logsCh <-chan []*types.Log, rmLogsCh <-chan co
 		t.Fatalf("wrong number of removed log events: got %d, want %d", len(rmLogsCh), wantRemoved)
 	}
 	// Drain events.
-	for i := 0; i < len(logsCh); i++ {
+	for range logsCh {
 		<-logsCh
 	}
-	for i := 0; i < len(rmLogsCh); i++ {
+	for range rmLogsCh {
 		<-rmLogsCh
 	}
 }
@@ -276,7 +276,7 @@ func TestNewBlock(t *testing.T) {
 	qrlservice.BlockChain().SubscribeLogsEvent(newLogCh)
 	qrlservice.BlockChain().SubscribeRemovedLogsEvent(rmLogsCh)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root())
 		nonce := statedb.GetNonce(testAddr)
 		signer := types.LatestSigner(qrlservice.BlockChain().Config())
@@ -331,7 +331,7 @@ func TestNewBlock(t *testing.T) {
 		head = qrlservice.BlockChain().CurrentBlock().Number.Uint64()
 	)
 	parent = blocks[len(blocks)-1]
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		execData, err := assembleBlock(api, parent.Hash(), &engine.PayloadAttributes{
 			Timestamp: parent.Time() + 6,
 		})
@@ -381,7 +381,7 @@ func TestDeepReorg(t *testing.T) {
 		if qrlservice.BlockChain().HasBlockAndState(parent.Hash(), parent.NumberU64()) {
 			t.Errorf("Block %d not pruned", parent.NumberU64())
 		}
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			execData, err := api.assembleBlock(AssembleBlockParams{
 				ParentHash: parent.Hash(),
 				Timestamp:  parent.Time() + 5,
@@ -538,7 +538,7 @@ func TestNewPayloadOnInvalidChain(t *testing.T) {
 		// This QRVM code generates a log when the contract is created.
 		logCode = common.Hex2Bytes("60606040525b7f24ec1d3ff24c2f6ff210738839dbc339cd45a5294d85c79361016243157aae7b60405180905060405180910390a15b600a8060416000396000f360606040526008565b00")
 	)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root)
 		tx := types.MustSignNewTx(testWallet, signer, &types.DynamicFeeTx{
 			Nonce:     statedb.GetNonce(testAddr),
@@ -772,7 +772,7 @@ func TestTrickRemoteBlockCache(t *testing.T) {
 
 	head := payload2
 	// create some valid payloads on top
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		payload := getNewPayload(t, apiA, commonAncestor, nil)
 		payload.ParentHash = head.BlockHash
 		payload = setBlockhash(payload)
@@ -836,7 +836,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 		api    = NewConsensusAPI(qrlservice)
 		parent = blocks[len(blocks)-1]
 	)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		execData, err := assembleBlock(api, parent.Hash(), &engine.PayloadAttributes{
 			Timestamp: parent.Time() + 5,
 		})
@@ -851,7 +851,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 				errMu   sync.Mutex
 			)
 			wg.Add(10)
-			for ii := 0; ii < 10; ii++ {
+			for range 10 {
 				go func() {
 					defer wg.Done()
 					if newResp, err := api.NewPayloadV2(*execData); err != nil {
@@ -890,7 +890,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 			)
 			wg.Add(10)
 			// Do each FCU 10 times
-			for ii := 0; ii < 10; ii++ {
+			for range 10 {
 				go func() {
 					defer wg.Done()
 					if _, err := api.ForkchoiceUpdatedV2(fcState, nil); err != nil {

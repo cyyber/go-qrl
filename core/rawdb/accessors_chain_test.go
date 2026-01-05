@@ -536,8 +536,8 @@ func TestHashesInRange(t *testing.T) {
 	db := NewMemoryDatabase()
 	// For each number, write N versions of that particular number
 	total := 0
-	for i := 0; i < 15; i++ {
-		for ii := 0; ii < i; ii++ {
+	for i := range 15 {
+		for ii := range i {
 			WriteHeader(db, mkHeader(i, ii))
 			total++
 		}
@@ -613,7 +613,7 @@ func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
 
 	// Create transactions.
 	txs := make([]*types.Transaction, txsPerBlock)
-	for i := 0; i < len(txs); i++ {
+	for i := range txs {
 		var err error
 		to := common.Address{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 		txs[i], err = types.SignNewTx(wallet, signer, &types.DynamicFeeTx{
@@ -629,7 +629,7 @@ func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
 
 	// Create the blocks.
 	blocks := make([]*types.Block, nblock)
-	for i := 0; i < nblock; i++ {
+	for i := range nblock {
 		header := &types.Header{
 			Number: big.NewInt(int64(i)),
 			Extra:  []byte("test block"),
@@ -894,7 +894,7 @@ func TestHeadersRLPStorage(t *testing.T) {
 	// Create blocks
 	var chain []*types.Block
 	var pHash common.Hash
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		block := types.NewBlockWithHeader(&types.Header{
 			Number:          big.NewInt(int64(i)),
 			Extra:           []byte("test block"),

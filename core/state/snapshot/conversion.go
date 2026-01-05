@@ -269,7 +269,7 @@ func generateTrieRoot(db qrldb.KeyValueWriter, scheme string, it Iterator, accou
 	// processing and gathering results.
 	threads := runtime.NumCPU()
 	results := make(chan error, threads)
-	for i := 0; i < threads; i++ {
+	for range threads {
 		results <- nil // fill the semaphore
 	}
 	// stop is a helper function to shutdown the background threads
@@ -277,7 +277,7 @@ func generateTrieRoot(db qrldb.KeyValueWriter, scheme string, it Iterator, accou
 	stop := func(fail error) (common.Hash, error) {
 		close(in)
 		result := <-out
-		for i := 0; i < threads; i++ {
+		for range threads {
 			if err := <-results; err != nil && fail == nil {
 				fail = err
 			}

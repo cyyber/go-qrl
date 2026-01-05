@@ -141,7 +141,7 @@ func (t *testService) handshake(rw p2p.MsgReadWriter, code uint64) error {
 	errc := make(chan error, 2)
 	go func() { errc <- p2p.SendItems(rw, code) }()
 	go func() { errc <- p2p.ExpectMsg(rw, code, struct{}{}) }()
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		if err := <-errc; err != nil {
 			return err
 		}
@@ -360,7 +360,7 @@ func startTestNetwork(t *testing.T, client *Client) []string {
 	// create two nodes
 	nodeCount := 2
 	nodeIDs := make([]string, nodeCount)
-	for i := 0; i < nodeCount; i++ {
+	for i := range nodeCount {
 		config := adapters.RandomNodeConfig()
 		node, err := client.CreateNode(config)
 		if err != nil {
@@ -613,7 +613,7 @@ func TestHTTPSnapshot(t *testing.T) {
 	client := NewClient(s.URL)
 	nodeCount := 2
 	nodes := make([]*p2p.NodeInfo, nodeCount)
-	for i := 0; i < nodeCount; i++ {
+	for i := range nodeCount {
 		config := adapters.RandomNodeConfig()
 		node, err := client.CreateNode(config)
 		if err != nil {

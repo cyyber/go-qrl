@@ -373,13 +373,13 @@ func XTestDelivery(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			time.Sleep(300 * time.Millisecond)
 			//world.tick()
 			//fmt.Printf("trying to progress\n")
 			world.progress(rand.Intn(100))
 		}
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			time.Sleep(2990 * time.Millisecond)
 		}
 	}()

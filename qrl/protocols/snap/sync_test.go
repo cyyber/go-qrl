@@ -1548,7 +1548,7 @@ func makeBoundaryAccountTrie(scheme string, n int) (string, *trie.Trie, []*kv) {
 			big.NewInt(int64(accountConcurrency)),
 		), common.Big1,
 	)
-	for i := 0; i < accountConcurrency; i++ {
+	for i := range accountConcurrency {
 		last := common.BigToHash(new(big.Int).Add(next.Big(), step))
 		if i == accountConcurrency-1 {
 			last = common.MaxHash
@@ -1760,7 +1760,7 @@ func makeBoundaryStorageTrie(owner common.Hash, n int, db *trie.Database) (commo
 			big.NewInt(int64(accountConcurrency)),
 		), common.Big1,
 	)
-	for i := 0; i < accountConcurrency; i++ {
+	for i := range accountConcurrency {
 		last := common.BigToHash(new(big.Int).Add(next.Big(), step))
 		if i == accountConcurrency-1 {
 			last = common.MaxHash
@@ -1802,7 +1802,7 @@ func makeUnevenStorageTrie(owner common.Hash, slots int, db *trie.Database) (com
 		tr, _   = trie.New(trie.StorageTrieID(types.EmptyRootHash, owner, types.EmptyRootHash), db)
 		chosen  = make(map[byte]struct{})
 	)
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		var n int
 		for {
 			n = mrand.Intn(15) // the last range is set empty deliberately

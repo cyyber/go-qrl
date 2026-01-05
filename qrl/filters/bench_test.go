@@ -100,7 +100,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 			bc.AddBloom(uint(i-sectionIdx*sectionSize), header.Bloom)
 		}
 		sectionHead := rawdb.ReadCanonicalHash(db, (sectionIdx+1)*sectionSize-1)
-		for i := 0; i < types.BloomBitLength; i++ {
+		for i := range types.BloomBitLength {
 			data, err := bc.Bitset(uint(i))
 			if err != nil {
 				b.Fatalf("failed to retrieve bitset: %v", err)
@@ -127,7 +127,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 		backend *testBackend
 		sys     *FilterSystem
 	)
-	for i := 0; i < benchFilterCnt; i++ {
+	for i := range benchFilterCnt {
 		if i%20 == 0 {
 			db.Close()
 			db, _ = rawdb.NewLevelDBDatabase(benchDataDir, 128, 1024, "", false)

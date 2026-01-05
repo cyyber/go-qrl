@@ -361,7 +361,7 @@ func BenchDatabaseSuite(b *testing.B, New func() qrldb.KeyValueStore) {
 			db := New()
 			defer db.Close()
 
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				db.Put(keys[i], vals[i])
 			}
 		}
@@ -377,13 +377,13 @@ func BenchDatabaseSuite(b *testing.B, New func() qrldb.KeyValueStore) {
 			db := New()
 			defer db.Close()
 
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				db.Put(keys[i], vals[i])
 			}
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				db.Get(keys[i])
 			}
 		}
@@ -399,7 +399,7 @@ func BenchDatabaseSuite(b *testing.B, New func() qrldb.KeyValueStore) {
 			db := New()
 			defer db.Close()
 
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				db.Put(keys[i], vals[i])
 			}
 			b.ResetTimer()
@@ -426,7 +426,7 @@ func BenchDatabaseSuite(b *testing.B, New func() qrldb.KeyValueStore) {
 			defer db.Close()
 
 			batch := db.NewBatch()
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				batch.Put(keys[i], vals[i])
 			}
 			batch.Write()

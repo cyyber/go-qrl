@@ -146,7 +146,7 @@ func setArray(dst, src reflect.Value) error {
 	if src.Len() > dst.Len() {
 		min = dst.Len()
 	}
-	for i := 0; i < min; i++ {
+	for i := range min {
 		if err := set(array.Index(i), src.Index(i)); err != nil {
 			return err
 		}
@@ -188,7 +188,7 @@ func mapArgNamesToStructFields(argNames []string, value reflect.Value) (map[stri
 	struct2abi := make(map[string]string)
 
 	// first round ~~~
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		structFieldName := typ.Field(i).Name
 
 		// skip private struct fields.

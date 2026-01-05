@@ -250,7 +250,7 @@ func TestWalletNotifierLifecycle(t *testing.T) {
 	updates := make(chan accounts.WalletEvent)
 
 	subs := make([]event.Subscription, 2)
-	for i := 0; i < len(subs); i++ {
+	for i := range subs {
 		// Create a new subscription
 		subs[i] = ks.Subscribe(updates)
 		if !waitForKsUpdating(t, ks, true, 250*time.Millisecond) {
@@ -258,7 +258,7 @@ func TestWalletNotifierLifecycle(t *testing.T) {
 		}
 	}
 	// Close all but one sub
-	for i := 0; i < len(subs)-1; i++ {
+	for i := range len(subs) - 1 {
 		// Close an existing subscription
 		subs[i].Unsubscribe()
 	}
@@ -310,7 +310,7 @@ func TestWalletNotifications(t *testing.T) {
 		live       = make(map[common.Address]accounts.Account)
 		wantEvents []walletEvent
 	)
-	for i := 0; i < 1024; i++ {
+	for range 1024 {
 		if create := len(live) == 0 || rand.Int()%4 > 0; create {
 			// Add a new account and ensure wallet notifications arrives
 			account, err := ks.NewAccount("")
@@ -407,7 +407,7 @@ func TestImportRace(t *testing.T) {
 	var atom atomic.Uint32
 	var wg sync.WaitGroup
 	wg.Add(2)
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		go func() {
 			defer wg.Done()
 			if _, err := ks2.Import(json, "new", "new"); err != nil {

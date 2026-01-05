@@ -850,7 +850,7 @@ func (srv *Server) listenLoop() {
 		tokens = srv.MaxPendingPeers
 	}
 	slots := make(chan struct{}, tokens)
-	for i := 0; i < tokens; i++ {
+	for range tokens {
 		slots <- struct{}{}
 	}
 

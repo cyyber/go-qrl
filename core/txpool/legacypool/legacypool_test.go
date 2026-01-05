@@ -724,7 +724,7 @@ func TestPostponing(t *testing.T) {
 	// Add a batch consecutive pending transactions for validation
 	txs := []*types.Transaction{}
 	for i, wallet := range wallets {
-		for j := 0; j < 100; j++ {
+		for j := range 100 {
 			var tx *types.Transaction
 			if (i+j)%2 == 0 {
 				tx = transaction(uint64(j), 25000, wallet)
@@ -1808,7 +1808,7 @@ func TestDualHeapEviction(t *testing.T) {
 	}
 
 	add := func(urgent bool) {
-		for i := 0; i < 20; i++ {
+		for i := range 20 {
 			var tx *types.Transaction
 			// Create a test accounts and fund it
 			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
@@ -1860,7 +1860,7 @@ func TestDeduplication(t *testing.T) {
 
 	// Create a batch of transactions and add a few of them
 	txs := make([]*types.Transaction, 16)
-	for i := 0; i < len(txs); i++ {
+	for i := range txs {
 		txs[i] = dynamicFeeTx(uint64(i), 100000, big.NewInt(1), big.NewInt(1), wallet)
 	}
 	var firsts []*types.Transaction
@@ -2220,7 +2220,7 @@ func benchmarkPendingDemotion(b *testing.B, size int) {
 	account := key.GetAddress()
 	testAddBalance(pool, account, big.NewInt(1000000))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		tx := transaction(uint64(i), 100000, key)
 		pool.promoteTx(account, tx.Hash(), tx)
 	}
@@ -2245,7 +2245,7 @@ func benchmarkFuturePromotion(b *testing.B, size int) {
 	account := key.GetAddress()
 	testAddBalance(pool, account, big.NewInt(1000000))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		tx := transaction(uint64(1+i), 100000, key)
 		pool.enqueueTx(tx.Hash(), tx, false, true)
 	}

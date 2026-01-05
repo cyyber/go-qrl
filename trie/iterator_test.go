@@ -393,7 +393,7 @@ func testIteratorContinueAfterError(t *testing.T, memonly bool, scheme string) {
 		}
 		it.Release()
 	}
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		// Create trie that will load all nodes from DB.
 		tr, _ := New(TrieID(tr.Hash()), tdb)
 

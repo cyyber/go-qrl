@@ -226,7 +226,7 @@ func sendMultipleSuccessfulTxs(t *utesting.T, s *Suite, txs []*types.Transaction
 	// all txs should be announced within a couple announcements.
 	recvHashes := make([]common.Hash, 0)
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		switch msg := recvConn.readAndServe(s.chain, timeout).(type) {
 		case *Transactions:
 			for _, tx := range *msg {

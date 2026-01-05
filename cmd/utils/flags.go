@@ -22,7 +22,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"net"
 	"net/http"
@@ -1355,7 +1354,7 @@ func setRequiredBlocks(ctx *cli.Context, cfg *qrlconfig.Config) {
 // specialize it further.
 func CheckExclusive(ctx *cli.Context, args ...any) {
 	set := make([]string, 0, 1)
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		// Make sure the next argument is a flag and skip if not set
 		flag, ok := args[i].(cli.Flag)
 		if !ok {
@@ -1419,7 +1418,7 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 	}
 	// Ensure Go's GC ignores the database cache for trigger percentage
 	cache := ctx.Int(CacheFlag.Name)
-	gogc := math.Max(20, math.Min(100, 100/(float64(cache)/1024)))
+	gogc := max(20, min(100, 100/(float64(cache)/1024)))
 
 	log.Debug("Sanitizing Go's GC trigger", "percent", int(gogc))
 	godebug.SetGCPercent(int(gogc))

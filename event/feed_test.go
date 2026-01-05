@@ -181,7 +181,7 @@ func TestFeedSubscribeBlockedPost(t *testing.T) {
 
 	feed.Subscribe(ch1)
 	wg.Add(nsends)
-	for i := 0; i < nsends; i++ {
+	for range nsends {
 		go func() {
 			feed.Send(99)
 			wg.Done()
@@ -193,7 +193,7 @@ func TestFeedSubscribeBlockedPost(t *testing.T) {
 
 	// We're done when ch1 has received N times.
 	// The number of receives on ch2 depends on scheduling.
-	for i := 0; i < nsends; {
+	for i := range nsends {
 		select {
 		case <-ch1:
 			i++
@@ -218,7 +218,7 @@ func TestFeedUnsubscribeBlockedPost(t *testing.T) {
 
 	// Queue up some Sends. None of these can make progress while bchan isn't read.
 	wg.Add(nsends)
-	for i := 0; i < nsends; i++ {
+	for range nsends {
 		go func() {
 			feed.Send(99)
 			wg.Done()
@@ -316,7 +316,7 @@ func BenchmarkFeedSend1000(b *testing.B) {
 		done.Done()
 	}
 	done.Add(nsubs)
-	for i := 0; i < nsubs; i++ {
+	for range nsubs {
 		ch := make(chan int, 200)
 		feed.Subscribe(ch)
 		go subscriber(ch)

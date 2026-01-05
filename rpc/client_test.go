@@ -373,7 +373,7 @@ func testClientCancel(transport string, t *testing.T) {
 	)
 	caller := func(index int) {
 		defer wg.Done()
-		for i := 0; i < nreqs; i++ {
+		for range nreqs {
 			var (
 				ctx     context.Context
 				cancel  func()
@@ -405,7 +405,7 @@ func testClientCancel(transport string, t *testing.T) {
 		}
 	}
 	wg.Add(ncallers)
-	for i := 0; i < ncallers; i++ {
+	for i := range ncallers {
 		go caller(i)
 	}
 	wg.Wait()
@@ -457,7 +457,7 @@ func TestClientSubscribe(t *testing.T) {
 	if err != nil {
 		t.Fatal("can't subscribe:", err)
 	}
-	for i := 0; i < count; i++ {
+	for i := range count {
 		if val := <-nc; val != i {
 			t.Fatalf("value mismatch: got %d, want %d", val, i)
 		}
@@ -529,7 +529,7 @@ func TestClientCloseUnsubscribeRace(t *testing.T) {
 	server := newTestServer()
 	defer server.Stop()
 
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		client := DialInProc(server)
 		nc := make(chan int)
 		sub, err := client.Subscribe(context.Background(), "nftest", nc, "someSubscription", 3, 1)
@@ -690,7 +690,7 @@ func TestClientSubscriptionChannelClose(t *testing.T) {
 	client, _ := Dial(wsURL)
 	defer client.Close()
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		ch := make(chan int, 100)
 		sub, err := client.Subscribe(context.Background(), "nftest", ch, "someSubscription", 100, 1)
 		if err != nil {
@@ -725,7 +725,7 @@ func TestClientNotificationStorm(t *testing.T) {
 		defer sub.Unsubscribe()
 
 		// Process each notification, try to run a call in between each of them.
-		for i := 0; i < count; i++ {
+		for i := range count {
 			select {
 			case val := <-nc:
 				if val != i {

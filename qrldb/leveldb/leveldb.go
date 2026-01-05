@@ -256,7 +256,7 @@ func (db *Database) Path() string {
 func (db *Database) meter(refresh time.Duration, namespace string) {
 	// Create the counters to store current and previous compaction values
 	compactions := make([][]int64, 2)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		compactions[i] = make([]int64, 4)
 	}
 	// Create storages for states and warning log tracer.

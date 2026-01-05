@@ -138,7 +138,7 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		errc <- qrlProFork.runQRLPeer(peerNoFork, func(peer *qrl.Peer) error { return nil })
 	}(errc)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case err := <-errc:
 			if err != nil {
@@ -169,7 +169,7 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		errc <- qrlProFork.runQRLPeer(peerNoFork, func(peer *qrl.Peer) error { return nil })
 	}(errc)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case err := <-errc:
 			if err != nil {
@@ -203,7 +203,7 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		}(errc)
 
 		var successes int
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			select {
 			case err := <-errc:
 				if err == nil {

@@ -477,7 +477,7 @@ func TestLimitWindow(t *testing.T) {
 	v := new(big.Int).SetBytes(common.Hex2Bytes("0429D069189E0000"))
 	h := hexutil.Big(*v)
 	// The first three should succeed
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		unsigned := dummyTx(h)
 		resp, err := r.ApproveTx(unsigned)
 		if err != nil {

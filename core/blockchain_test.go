@@ -1129,7 +1129,7 @@ func testLogRebirth(t *testing.T, scheme string) {
 	// This chain contains 10 logs.
 	genDb, chain, _ := GenerateChainWithGenesis(gspec, engine, 3, func(i int, gen *BlockGen) {
 		if i < 2 {
-			for ii := 0; ii < 5; ii++ {
+			for range 5 {
 				tx, err := types.SignNewTx(wallet1, signer, &types.DynamicFeeTx{
 					Nonce:     gen.TxNonce(addr1),
 					GasFeeCap: gen.header.BaseFee,
@@ -1155,7 +1155,7 @@ func testLogRebirth(t *testing.T, scheme string) {
 			// The last (head) block is not part of the reorg-chain, we can ignore it
 			return
 		}
-		for ii := 0; ii < 5; ii++ {
+		for range 5 {
 			tx, err := types.SignNewTx(wallet1, signer, &types.DynamicFeeTx{
 				Nonce:     gen.TxNonce(addr1),
 				GasFeeCap: gen.header.BaseFee,
@@ -1530,7 +1530,7 @@ func TestTrieForkGC(t *testing.T) {
 		}
 	}
 	// Dereference all the recent tries and ensure no past trie is left in
-	for i := 0; i < TriesInMemory; i++ {
+	for i := range TriesInMemory {
 		chain.TrieDB().Dereference(blocks[len(blocks)-1-i].Root())
 		chain.TrieDB().Dereference(forks[len(blocks)-1-i].Root())
 	}
@@ -2240,7 +2240,7 @@ func benchmarkLargeNumberOfValueToNonexisting(b *testing.B, numTxs, numBlocks in
 
 	blockGenerator := func(i int, block *BlockGen) {
 		block.SetCoinbase(common.Address{1})
-		for txi := 0; txi < numTxs; txi++ {
+		for txi := range numTxs {
 			uniq := uint64(i*numTxs + txi)
 			recipient := recipientFn(uniq)
 			tx := types.NewTx(&types.DynamicFeeTx{

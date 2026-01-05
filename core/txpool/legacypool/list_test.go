@@ -32,7 +32,7 @@ func TestStrictListAdd(t *testing.T) {
 	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 
 	txs := make(types.Transactions, 1024)
-	for i := 0; i < len(txs); i++ {
+	for i := range txs {
 		txs[i] = transaction(uint64(i), 0, wallet)
 	}
 	// Insert the transactions in a random order
@@ -56,7 +56,7 @@ func BenchmarkListAdd(b *testing.B) {
 	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 
 	txs := make(types.Transactions, 100000)
-	for i := 0; i < len(txs); i++ {
+	for i := range txs {
 		txs[i] = transaction(uint64(i), 0, wallet)
 	}
 	// Insert the transactions in a random order

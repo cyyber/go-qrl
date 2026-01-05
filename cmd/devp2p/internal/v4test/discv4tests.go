@@ -94,7 +94,7 @@ func (te *testenv) checkPingPong(pingHash []byte) error {
 		pings int
 		pongs int
 	)
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		reply, _, err := te.read(te.l1)
 		if err != nil {
 			return err

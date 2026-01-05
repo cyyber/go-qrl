@@ -40,7 +40,7 @@ func TestFreezerModify(t *testing.T) {
 	// Create test data.
 	var valuesRaw [][]byte
 	var valuesRLP []*big.Int
-	for x := 0; x < 100; x++ {
+	for x := range 100 {
 		v := getChunk(256, x)
 		valuesRaw = append(valuesRaw, v)
 		iv := big.NewInt(int64(x))
@@ -154,7 +154,7 @@ func TestFreezerConcurrentModifyRetrieve(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			for i := 0; i < numReaders; i++ {
+			for range numReaders {
 				written <- item + writeBatchSize
 			}
 		}
@@ -162,11 +162,11 @@ func TestFreezerConcurrentModifyRetrieve(t *testing.T) {
 
 	// Launch the readers. They read random items from the freezer up to the
 	// current frozen item count.
-	for i := 0; i < numReaders; i++ {
+	for range numReaders {
 		go func() {
 			defer wg.Done()
 			for frozen := range written {
-				for rc := 0; rc < 80; rc++ {
+				for range 80 {
 					num := uint64(rand.Intn(int(frozen)))
 					value, err := f.Ancient("test", num)
 					if err != nil {
@@ -190,7 +190,7 @@ func TestFreezerConcurrentModifyTruncate(t *testing.T) {
 
 	var item = make([]byte, 256)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		// First reset and write 100 items.
 		if _, err := f.TruncateHead(0); err != nil {
 			t.Fatal("truncate failed:", err)

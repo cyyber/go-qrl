@@ -227,7 +227,7 @@ func TestNewContextWithHeaders(t *testing.T) {
 
 	expectedHeaders := 0
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		for i := 0; i < expectedHeaders; i++ {
+		for i := range expectedHeaders {
 			key, want := fmt.Sprintf("key-%d", i), fmt.Sprintf("val-%d", i)
 			if have := request.Header.Get(key); have != want {
 				t.Errorf("wrong request headers for %s, want: %s, have: %s", key, want, have)

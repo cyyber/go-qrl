@@ -247,7 +247,7 @@ func TestDBSeedQuery(t *testing.T) {
 	// times to avoid flakes.
 	const attempts = 15
 	var err error
-	for i := 0; i < attempts; i++ {
+	for range attempts {
 		if err = testSeedQuery(); err == nil {
 			return
 		}

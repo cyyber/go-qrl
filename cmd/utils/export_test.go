@@ -71,7 +71,7 @@ func testExport(t *testing.T, f string) {
 		t.Fatal(err)
 	}
 	// verify
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		v, err := db.Get(fmt.Appendf(nil, "key-%04d", i))
 		if (i < 5 || i == 42) && err == nil {
 			t.Fatalf("expected no element at idx %d, got '%v'", i, string(v))
@@ -131,14 +131,14 @@ func testDeletion(t *testing.T, f string) {
 		t.Fatal(err)
 	}
 	db := rawdb.NewMemoryDatabase()
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		db.Put(fmt.Appendf(nil, "key-%04d", i), fmt.Appendf(nil, "value %d", i))
 	}
 	err = ImportLDBData(db, f, 5, make(chan struct{}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		v, err := db.Get(fmt.Appendf(nil, "key-%04d", i))
 		if i < 5 || i == 42 {
 			if err != nil {

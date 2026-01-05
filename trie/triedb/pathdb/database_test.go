@@ -141,7 +141,7 @@ func (t *tester) generateStorage(ctx *genctx, addr common.Address) common.Hash {
 		storage  = make(map[common.Hash][]byte)
 		origin   = make(map[common.Hash][]byte)
 	)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		v, _ := rlp.EncodeToBytes(common.TrimLeftZeroes(testutil.RandBytes(32)))
 		hash := testutil.RandomHash()
 
@@ -170,7 +170,7 @@ func (t *tester) mutateStorage(ctx *genctx, addr common.Address, root common.Has
 			break
 		}
 	}
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		v, _ := rlp.EncodeToBytes(common.TrimLeftZeroes(testutil.RandBytes(32)))
 		hash := testutil.RandomHash()
 
@@ -210,7 +210,7 @@ func (t *tester) generate(parent common.Hash) (common.Hash, *trienode.MergedNode
 		ctx     = newCtx()
 		dirties = make(map[common.Hash]struct{})
 	)
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		switch rand.Intn(opLen) {
 		case createAccountOp:
 			// account creation

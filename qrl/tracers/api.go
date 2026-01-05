@@ -253,7 +253,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 		resCh   = make(chan *blockTraceTask, threads)
 		tracker = newStateTracker(maximumPendingTraceStates, start.NumberU64())
 	)
-	for th := 0; th < threads; th++ {
+	for range threads {
 		pend.Add(1)
 		go func() {
 			defer pend.Done()
@@ -637,7 +637,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 		threads = len(txs)
 	}
 	jobs := make(chan *txTraceTask, threads)
-	for th := 0; th < threads; th++ {
+	for range threads {
 		pend.Add(1)
 		go func() {
 			defer pend.Done()

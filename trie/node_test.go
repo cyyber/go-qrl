@@ -26,7 +26,7 @@ import (
 
 func newTestFullNode(v []byte) []any {
 	fullNodeData := []any{}
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		k := bytes.Repeat([]byte{byte(i + 1)}, 32)
 		fullNodeData = append(fullNodeData, k)
 	}
@@ -38,7 +38,7 @@ func TestDecodeNestedNode(t *testing.T) {
 	fullNodeData := newTestFullNode([]byte("fullnode"))
 
 	data := [][]byte{}
-	for i := 0; i < 16; i++ {
+	for range 16 {
 		data = append(data, nil)
 	}
 	data = append(data, []byte("subnode"))
@@ -68,7 +68,7 @@ func TestDecodeFullNodeWrongNestedFullNode(t *testing.T) {
 	fullNodeData := newTestFullNode([]byte("fullnode"))
 
 	data := [][]byte{}
-	for i := 0; i < 16; i++ {
+	for range 16 {
 		data = append(data, []byte("123456"))
 	}
 	data = append(data, []byte("subnode"))
@@ -119,7 +119,7 @@ func BenchmarkEncodeShortNode(b *testing.B) {
 // BenchmarkEncodeFullNode-8   	 4323273	       284.4 ns/op	     576 B/op	       1 allocs/op
 func BenchmarkEncodeFullNode(b *testing.B) {
 	node := &fullNode{}
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		node.Children[i] = hashNode(randBytes(32))
 	}
 	b.ResetTimer()
@@ -179,7 +179,7 @@ func BenchmarkDecodeShortNodeUnsafe(b *testing.B) {
 // BenchmarkDecodeFullNode-8   	 1597462	       761.9 ns/op	    1280 B/op	      18 allocs/op
 func BenchmarkDecodeFullNode(b *testing.B) {
 	node := &fullNode{}
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		node.Children[i] = hashNode(randBytes(32))
 	}
 	blob := nodeToBytes(node)
@@ -200,7 +200,7 @@ func BenchmarkDecodeFullNode(b *testing.B) {
 // BenchmarkDecodeFullNodeUnsafe-8   	 1789070	       687.1 ns/op	     704 B/op	      17 allocs/op
 func BenchmarkDecodeFullNodeUnsafe(b *testing.B) {
 	node := &fullNode{}
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		node.Children[i] = hashNode(randBytes(32))
 	}
 	blob := nodeToBytes(node)

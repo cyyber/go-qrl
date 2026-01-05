@@ -7,7 +7,6 @@ import (
 
 func BenchmarkCounterFloat64(b *testing.B) {
 	c := NewCounterFloat64()
-	b.ResetTimer()
 	for b.Loop() {
 		c.Inc(1.0)
 	}
@@ -15,9 +14,8 @@ func BenchmarkCounterFloat64(b *testing.B) {
 
 func BenchmarkCounterFloat64Parallel(b *testing.B) {
 	c := NewCounterFloat64()
-	b.ResetTimer()
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		wg.Add(1)
 		go func() {
 			for b.Loop() {

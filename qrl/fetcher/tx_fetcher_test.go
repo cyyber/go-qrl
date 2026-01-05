@@ -1007,7 +1007,7 @@ func TestTransactionFetcherTimeoutTimerResets(t *testing.T) {
 func TestTransactionFetcherRateLimiting(t *testing.T) {
 	// Create a slew of transactions and announce them
 	var hashes []common.Hash
-	for i := 0; i < maxTxAnnounces; i++ {
+	for i := range maxTxAnnounces {
 		hashes = append(hashes, common.Hash{byte(i / 256), byte(i % 256)})
 	}
 	testTransactionFetcherParallel(t, txFetcherTest{
@@ -1104,11 +1104,11 @@ func TestTransactionFetcherBandwidthLimiting(t *testing.T) {
 func TestTransactionFetcherDoSProtection(t *testing.T) {
 	// Create a slew of transactions and to announce them
 	var hashesA []common.Hash
-	for i := 0; i < maxTxAnnounces+1; i++ {
+	for i := range maxTxAnnounces + 1 {
 		hashesA = append(hashesA, common.Hash{0x01, byte(i / 256), byte(i % 256)})
 	}
 	var hashesB []common.Hash
-	for i := 0; i < maxTxAnnounces+1; i++ {
+	for i := range maxTxAnnounces + 1 {
 		hashesB = append(hashesB, common.Hash{0x02, byte(i / 256), byte(i % 256)})
 	}
 	testTransactionFetcherParallel(t, txFetcherTest{
@@ -1175,7 +1175,7 @@ func TestTransactionFetcherUnderpricedDedup(t *testing.T) {
 				func(common.Hash) bool { return false },
 				func(txs []*types.Transaction) []error {
 					errs := make([]error, len(txs))
-					for i := 0; i < len(errs); i++ {
+					for i := range errs {
 						if i%2 == 0 {
 							errs[i] = txpool.ErrUnderpriced
 						} else {
@@ -1250,7 +1250,7 @@ func TestTransactionFetcherUnderpricedDoSProtection(t *testing.T) {
 				func(common.Hash) bool { return false },
 				func(txs []*types.Transaction) []error {
 					errs := make([]error, len(txs))
-					for i := 0; i < len(errs); i++ {
+					for i := range errs {
 						errs[i] = txpool.ErrUnderpriced
 					}
 					return errs
@@ -1999,7 +1999,7 @@ func TestTransactionForgotten(t *testing.T) {
 		func(common.Hash) bool { return false },
 		func(txs []*types.Transaction) []error {
 			errs := make([]error, len(txs))
-			for i := 0; i < len(errs); i++ {
+			for i := range errs {
 				errs[i] = txpool.ErrUnderpriced
 			}
 			return errs

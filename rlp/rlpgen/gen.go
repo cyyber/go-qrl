@@ -549,7 +549,7 @@ type structField struct {
 func (bctx *buildContext) makeStructOp(named *types.Named, typ *types.Struct) (op, error) {
 	// Convert fields to []rlpstruct.Field.
 	var allStructFields []rlpstruct.Field
-	for i := 0; i < typ.NumFields(); i++ {
+	for i := range typ.NumFields() {
 		f := typ.Field(i)
 		allStructFields = append(allStructFields, rlpstruct.Field{
 			Name:     f.Name(),

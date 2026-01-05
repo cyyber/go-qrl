@@ -839,7 +839,7 @@ func newStates(keys []common.Hash, vals []common.Hash) *map[common.Hash]common.H
 		panic("invalid input")
 	}
 	m := make(map[common.Hash]common.Hash)
-	for i := 0; i < len(keys); i++ {
+	for i := range keys {
 		m[keys[i]] = vals[i]
 	}
 	return &m

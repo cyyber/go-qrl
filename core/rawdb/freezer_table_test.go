@@ -56,7 +56,7 @@ func TestFreezerBasics(t *testing.T) {
 	//db[1] =  010101010101010101010101010101
 	//db[2] =  020202020202020202020202020202
 
-	for y := 0; y < 255; y++ {
+	for y := range 255 {
 		exp := getChunk(15, y)
 		got, err := f.Retrieve(uint64(y))
 		if err != nil {
@@ -91,7 +91,7 @@ func TestFreezerBasicsClosing(t *testing.T) {
 
 	// Write 15 bytes 255 times, results in 85 files.
 	// In-between writes, the table is closed and re-opened.
-	for x := 0; x < 255; x++ {
+	for x := range 255 {
 		data := getChunk(15, x)
 		batch := f.newBatch()
 		require.NoError(t, batch.AppendRaw(uint64(x), data))
@@ -105,7 +105,7 @@ func TestFreezerBasicsClosing(t *testing.T) {
 	}
 	defer f.Close()
 
-	for y := 0; y < 255; y++ {
+	for y := range 255 {
 		exp := getChunk(15, y)
 		got, err := f.Retrieve(uint64(y))
 		if err != nil {
@@ -507,7 +507,7 @@ func TestFreezerReadAndTruncate(t *testing.T) {
 
 		// Write the data again
 		batch := f.newBatch()
-		for x := 0; x < 30; x++ {
+		for x := range 30 {
 			require.NoError(t, batch.AppendRaw(uint64(x), getChunk(15, ^x)))
 		}
 		require.NoError(t, batch.commit())
@@ -546,7 +546,7 @@ func TestFreezerOffset(t *testing.T) {
 	// Now crop it.
 	{
 		// delete files 0 and 1
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			p := filepath.Join(os.TempDir(), fmt.Sprintf("%v.%04d.rdat", fname, i))
 			if err := os.Remove(p); err != nil {
 				t.Fatal(err)
@@ -1195,7 +1195,7 @@ func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
 	)
 
 	var steps randTest
-	for i := 0; i < size; i++ {
+	for range size {
 		step := randTestStep{op: r.Intn(opMax)}
 		switch step.op {
 		case opReload, opCheckAll:

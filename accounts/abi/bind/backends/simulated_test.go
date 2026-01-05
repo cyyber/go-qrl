@@ -1277,7 +1277,7 @@ func TestFork(t *testing.T) {
 	// 4.
 	sim.Fork(context.Background(), parent.Hash())
 	// 5.
-	for i := 0; i < n+1; i++ {
+	for range n + 1 {
 		sim.Commit()
 	}
 	// 6.

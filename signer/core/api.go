@@ -285,7 +285,7 @@ func (api *SignerAPI) newAccount() (common.Address, error) {
 		return common.Address{}, errors.New("password based accounts not supported")
 	}
 	// Three retries to get a valid password
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		resp, err := api.UI.OnInputRequired(UserInputRequest{
 			"New account password",
 			fmt.Sprintf("Please enter a password for the new account to be created (attempt %d of 3)", i),

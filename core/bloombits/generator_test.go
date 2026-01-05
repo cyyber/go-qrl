@@ -31,7 +31,7 @@ func TestGenerator(t *testing.T) {
 	// Generate the input and the rotated output
 	var input, output [types.BloomBitLength][types.BloomByteLength]byte
 
-	for i := 0; i < types.BloomBitLength; i++ {
+	for i := range types.BloomBitLength {
 		for j := 0; j < types.BloomBitLength; j++ {
 			bit := byte(rand.Int() % 2)
 

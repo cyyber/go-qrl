@@ -107,7 +107,7 @@ func BenchmarkDeriveSha200(b *testing.B) {
 func TestFuzzDeriveSha(t *testing.T) {
 	// increase this for longer runs -- it's set to quite low for travis
 	rndSeed := mrand.Int()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		seed := rndSeed + i
 		exp := types.DeriveSha(newDummy(i), trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), nil)))
 		got := types.DeriveSha(newDummy(i), trie.NewStackTrie(nil))

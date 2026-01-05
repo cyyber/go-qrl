@@ -37,7 +37,7 @@ func TestAccountIteratorBasics(t *testing.T) {
 		storage   = make(map[common.Hash]map[common.Hash][]byte)
 	)
 	// Fill up a parent
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		h := randomHash()
 		data := randomAccount()
 
@@ -71,7 +71,7 @@ func TestStorageIteratorBasics(t *testing.T) {
 		storage    = make(map[common.Hash]map[common.Hash][]byte)
 	)
 	// Fill some random data
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		h := randomHash()
 		accounts[h] = randomAccount()
 
@@ -79,7 +79,7 @@ func TestStorageIteratorBasics(t *testing.T) {
 		value := make([]byte, 32)
 
 		var nilstorage int
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			crand.Read(value)
 			if rand.Intn(2) == 0 {
 				accStorage[randomHash()] = common.CopyBytes(value)
@@ -504,7 +504,7 @@ func TestAccountIteratorLargeTraversal(t *testing.T) {
 	// Create a custom account factory to recreate the same addresses
 	makeAccounts := func(num int) map[common.Hash][]byte {
 		accounts := make(map[common.Hash][]byte)
-		for i := 0; i < num; i++ {
+		for i := range num {
 			h := common.Hash{}
 			binary.BigEndian.PutUint64(h[:], uint64(i+1))
 			accounts[h] = randomAccount()
@@ -830,7 +830,7 @@ func BenchmarkAccountIteratorTraversal(b *testing.B) {
 	// Create a custom account factory to recreate the same addresses
 	makeAccounts := func(num int) map[common.Hash][]byte {
 		accounts := make(map[common.Hash][]byte)
-		for i := 0; i < num; i++ {
+		for i := range num {
 			h := common.Hash{}
 			binary.BigEndian.PutUint64(h[:], uint64(i+1))
 			accounts[h] = randomAccount()
@@ -926,7 +926,7 @@ func BenchmarkAccountIteratorLargeBaselayer(b *testing.B) {
 	// Create a custom account factory to recreate the same addresses
 	makeAccounts := func(num int) map[common.Hash][]byte {
 		accounts := make(map[common.Hash][]byte)
-		for i := 0; i < num; i++ {
+		for i := range num {
 			h := common.Hash{}
 			binary.BigEndian.PutUint64(h[:], uint64(i+1))
 			accounts[h] = randomAccount()

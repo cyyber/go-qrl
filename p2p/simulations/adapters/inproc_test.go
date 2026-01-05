@@ -34,7 +34,7 @@ func TestTCPPipe(t *testing.T) {
 
 	msgs := 50
 	size := 1024
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		msg := make([]byte, size)
 		binary.PutUvarint(msg, uint64(i))
 		if _, err := c1.Write(msg); err != nil {
@@ -42,7 +42,7 @@ func TestTCPPipe(t *testing.T) {
 		}
 	}
 
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		msg := make([]byte, size)
 		binary.PutUvarint(msg, uint64(i))
 		out := make([]byte, size)
@@ -63,14 +63,14 @@ func TestTCPPipeBidirections(t *testing.T) {
 
 	msgs := 50
 	size := 7
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		msg := []byte(fmt.Sprintf("ping %02d", i))
 		if _, err := c1.Write(msg); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		expected := []byte(fmt.Sprintf("ping %02d", i))
 		out := make([]byte, size)
 		if _, err := c2.Read(out); err != nil {
@@ -87,7 +87,7 @@ func TestTCPPipeBidirections(t *testing.T) {
 		}
 	}
 
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		expected := []byte(fmt.Sprintf("pong %02d", i))
 		out := make([]byte, size)
 		if _, err := c1.Read(out); err != nil {
@@ -115,7 +115,7 @@ func TestNetPipe(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		for i := 0; i < msgs; i++ {
+		for i := range msgs {
 			msg := make([]byte, size)
 			binary.PutUvarint(msg, uint64(i))
 			if _, err := c1.Write(msg); err != nil {
@@ -124,7 +124,7 @@ func TestNetPipe(t *testing.T) {
 		}
 	}()
 
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		msg := make([]byte, size)
 		binary.PutUvarint(msg, uint64(i))
 		out := make([]byte, size)
@@ -155,7 +155,7 @@ func TestNetPipeBidirections(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		for i := 0; i < msgs; i++ {
+		for i := range msgs {
 			msg := []byte(fmt.Sprintf(pingTemplate, i))
 			if _, err := c1.Write(msg); err != nil {
 				t.Error(err)
@@ -168,7 +168,7 @@ func TestNetPipeBidirections(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		for i := 0; i < msgs; i++ {
+		for i := range msgs {
 			expected := []byte(fmt.Sprintf(pongTemplate, i))
 			out := make([]byte, size)
 			if _, err := c1.Read(out); err != nil {
@@ -181,7 +181,7 @@ func TestNetPipeBidirections(t *testing.T) {
 	}()
 
 	// expect to read pings, and respond with pongs to the alternate connection
-	for i := 0; i < msgs; i++ {
+	for i := range msgs {
 		expected := []byte(fmt.Sprintf(pingTemplate, i))
 
 		out := make([]byte, size)

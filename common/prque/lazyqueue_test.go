@@ -94,7 +94,7 @@ func TestLazyQueue(t *testing.T) {
 		}
 	}()
 
-	for c := 0; c < testSteps; c++ {
+	for range testSteps {
 		i := rand.Intn(testItems)
 		lock.Lock()
 		items[i].p += rand.Int63n(testPriorityStep*2-1) + 1

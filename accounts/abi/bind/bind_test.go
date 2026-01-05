@@ -1000,11 +1000,11 @@ var bindTests = []struct {
 
 			//Create coordinate-filled array, for testing purposes.
 			testArr := [5][4][3]uint64{}
-			for i := 0; i < 5; i++ {
+			for i := range 5 {
 				testArr[i] = [4][3]uint64{}
-				for j := 0; j < 4; j++ {
+				for j := range 4 {
 					testArr[i][j] = [3]uint64{}
-					for k := 0; k < 3; k++ {
+					for k := range 3 {
 						//pack the coordinates, each array value will be unique, and can be validated easily.
 						testArr[i][j][k] = uint64(i) << 16 | uint64(j) << 8 | uint64(k)
 					}

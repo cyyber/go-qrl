@@ -80,7 +80,7 @@ func TestCallback(t *testing.T) {
 	ns.SetState(testNode(1), flags[1], Flags{}, time.Second)
 	ns.SetState(testNode(1), flags[2], Flags{}, 2*time.Second)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		select {
 		case <-set0:
 		case <-set1:
@@ -117,7 +117,7 @@ func TestPersistentFlags(t *testing.T) {
 	}
 	ns.Stop()
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case <-saveNode:
 		case <-time.After(time.Second):

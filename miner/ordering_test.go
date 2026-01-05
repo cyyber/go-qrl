@@ -41,7 +41,7 @@ func TestTransactionPriceNonceSort1559(t *testing.T) {
 func testTransactionPriceNonceSort(t *testing.T, baseFee *big.Int) {
 	// Generate a batch of accounts to start with
 	wallets := make([]wallet.Wallet, 25)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 	}
 	signer := types.LatestSignerForChainID(common.Big1)
@@ -52,7 +52,7 @@ func testTransactionPriceNonceSort(t *testing.T, baseFee *big.Int) {
 	for start, wallet := range wallets {
 		addr := wallet.GetAddress()
 		count := 25
-		for i := 0; i < 25; i++ {
+		for i := range 25 {
 			var tx *types.Transaction
 			gasFeeCap := rand.Intn(50)
 			tx = types.NewTx(&types.DynamicFeeTx{
@@ -125,7 +125,7 @@ func TestTransactionTimeSort(t *testing.T) {
 	t.Parallel()
 	// Generate a batch of accounts to start with
 	wallets := make([]wallet.Wallet, 5)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 	}
 	signer := types.ShanghaiSigner{ChainId: big.NewInt(0)}

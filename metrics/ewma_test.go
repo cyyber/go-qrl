@@ -83,7 +83,7 @@ func TestEWMA15(t *testing.T) {
 }
 
 func elapseMinute(a EWMA) {
-	for i := 0; i < 12; i++ {
+	for range 12 {
 		a.Tick()
 	}
 }

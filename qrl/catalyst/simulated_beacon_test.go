@@ -96,7 +96,7 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 	defer subscription.Unsubscribe()
 
 	// generate some withdrawals
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		withdrawals = append(withdrawals, types.Withdrawal{Index: uint64(i)})
 		if err := mock.withdrawals.add(&withdrawals[i]); err != nil {
 			t.Fatal("addWithdrawal failed", err)
@@ -105,7 +105,7 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 
 	// generate a bunch of transactions
 	signer := types.NewShanghaiSigner(qrlService.BlockChain().Config().ChainID)
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &common.Address{}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, testWallet)
 		if err != nil {
 			t.Fatalf("error signing transaction, err=%v", err)

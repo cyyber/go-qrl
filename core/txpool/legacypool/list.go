@@ -664,7 +664,7 @@ func (l *pricedList) Reheap() {
 	// if the floating queue was empty.
 	floatingCount := len(l.urgent.list) * floatingRatio / (urgentRatio + floatingRatio)
 	l.floating.list = make([]*types.Transaction, floatingCount)
-	for i := 0; i < floatingCount; i++ {
+	for i := range floatingCount {
 		l.floating.list[i] = heap.Pop(&l.urgent).(*types.Transaction)
 	}
 	heap.Init(&l.floating)

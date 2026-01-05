@@ -47,7 +47,7 @@ func NewGenerator(sections uint) (*Generator, error) {
 		return nil, errors.New("section count not multiple of 8")
 	}
 	b := &Generator{sections: sections}
-	for i := 0; i < types.BloomBitLength; i++ {
+	for i := range types.BloomBitLength {
 		b.blooms[i] = make([]byte, sections/8)
 	}
 	return b, nil

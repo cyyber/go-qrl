@@ -117,13 +117,13 @@ func TestStateTrieConcurrency(t *testing.T) {
 
 	threads := runtime.NumCPU()
 	tries := make([]*StateTrie, threads)
-	for i := 0; i < threads; i++ {
+	for i := range threads {
 		tries[i] = trie.Copy()
 	}
 	// Start a batch of goroutines interacting with the trie
 	pend := new(sync.WaitGroup)
 	pend.Add(threads)
-	for i := 0; i < threads; i++ {
+	for i := range threads {
 		go func(index int) {
 			defer pend.Done()
 

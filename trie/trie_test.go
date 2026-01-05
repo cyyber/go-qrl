@@ -195,7 +195,7 @@ func TestGet(t *testing.T) {
 	updateString(trie, "dog", "puppy")
 	updateString(trie, "dogglesworth", "cat")
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		res := getString(trie, "dog")
 		if !bytes.Equal(res, []byte("puppy")) {
 			t.Errorf("expected puppy got %x", res)
@@ -403,7 +403,7 @@ func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
 	}
 
 	var steps randTest
-	for i := 0; i < size; i++ {
+	for i := range size {
 		step := randTestStep{op: r.Intn(opMax)}
 		switch step.op {
 		case opUpdate:
@@ -612,7 +612,7 @@ func benchGet(b *testing.B) {
 	triedb := NewDatabase(rawdb.NewMemoryDatabase(), nil)
 	trie := NewEmpty(triedb)
 	k := make([]byte, 32)
-	for i := 0; i < benchElemCount; i++ {
+	for i := range benchElemCount {
 		binary.LittleEndian.PutUint64(k, uint64(i))
 		trie.MustUpdate(k, k)
 	}
@@ -690,7 +690,7 @@ func benchmarkCommitAfterHash(b *testing.B, collectLeaf bool) {
 	// Make the random benchmark deterministic
 	addresses, accounts := makeAccounts(b.N)
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
-	for i := 0; i < len(addresses); i++ {
+	for i := range addresses {
 		trie.MustUpdate(crypto.Keccak256(addresses[i][:]), accounts[i])
 	}
 	// Insert the accounts into the trie and hash it
@@ -730,7 +730,7 @@ func TestCommitAfterHash(t *testing.T) {
 	// Create a realistic account trie to hash
 	addresses, accounts := makeAccounts(1000)
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
-	for i := 0; i < len(addresses); i++ {
+	for i := range addresses {
 		trie.MustUpdate(crypto.Keccak256(addresses[i][:]), accounts[i])
 	}
 	// Insert the accounts into the trie and hash it
@@ -752,13 +752,13 @@ func makeAccounts(size int) (addresses [][20]byte, accounts [][]byte) {
 	random := rand.New(rand.NewSource(0))
 	// Create a realistic account trie to hash
 	addresses = make([][20]byte, size)
-	for i := 0; i < len(addresses); i++ {
+	for i := range addresses {
 		data := make([]byte, 20)
 		random.Read(data)
 		copy(addresses[i][:], data)
 	}
 	accounts = make([][]byte, len(addresses))
-	for i := 0; i < len(accounts); i++ {
+	for i := range accounts {
 		var (
 			nonce = uint64(random.Int63())
 			root  = types.EmptyRootHash
@@ -845,7 +845,7 @@ func TestCommitSequence(t *testing.T) {
 		db := NewDatabase(rawdb.NewDatabase(s), nil)
 		trie := NewEmpty(db)
 		// Fill the trie with elements
-		for i := 0; i < tc.count; i++ {
+		for i := range tc.count {
 			trie.MustUpdate(crypto.Keccak256(addresses[i][:]), accounts[i])
 		}
 		// Flush trie -> database
@@ -876,7 +876,7 @@ func TestCommitSequenceRandomBlobs(t *testing.T) {
 		db := NewDatabase(rawdb.NewDatabase(s), nil)
 		trie := NewEmpty(db)
 		// Fill the trie with elements
-		for i := 0; i < tc.count; i++ {
+		for range tc.count {
 			key := make([]byte, 32)
 			var val []byte
 			// 50% short elements, 50% large elements
@@ -913,7 +913,7 @@ func TestCommitSequenceStackTrie(t *testing.T) {
 			rawdb.WriteTrieNode(stackTrieSponge, owner, path, hash, blob, db.Scheme())
 		})
 		// Fill the trie with elements
-		for i := 0; i < count; i++ {
+		for i := range count {
 			// For the stack trie, we need to do inserts in proper order
 			key := make([]byte, 32)
 			binary.BigEndian.PutUint64(key, uint64(i))
@@ -1042,7 +1042,7 @@ func BenchmarkHashFixedSize(b *testing.B) {
 func benchmarkHashFixedSize(b *testing.B, addresses [][20]byte, accounts [][]byte) {
 	b.ReportAllocs()
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
-	for i := 0; i < len(addresses); i++ {
+	for i := range addresses {
 		trie.MustUpdate(crypto.Keccak256(addresses[i][:]), accounts[i])
 	}
 	// Insert the accounts into the trie and hash it
@@ -1093,7 +1093,7 @@ func BenchmarkCommitAfterHashFixedSize(b *testing.B) {
 func benchmarkCommitAfterHashFixedSize(b *testing.B, addresses [][20]byte, accounts [][]byte) {
 	b.ReportAllocs()
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
-	for i := 0; i < len(addresses); i++ {
+	for i := range addresses {
 		trie.MustUpdate(crypto.Keccak256(addresses[i][:]), accounts[i])
 	}
 	// Insert the accounts into the trie and hash it
@@ -1146,7 +1146,7 @@ func benchmarkDerefRootFixedSize(b *testing.B, addresses [][20]byte, accounts []
 	b.ReportAllocs()
 	triedb := NewDatabase(rawdb.NewMemoryDatabase(), nil)
 	trie := NewEmpty(triedb)
-	for i := 0; i < len(addresses); i++ {
+	for i := range addresses {
 		trie.MustUpdate(crypto.Keccak256(addresses[i][:]), accounts[i])
 	}
 	h := trie.Hash()
@@ -1176,7 +1176,7 @@ func TestDecodeNode(t *testing.T) {
 		hash  = make([]byte, 20)
 		elems = make([]byte, 20)
 	)
-	for i := 0; i < 5000000; i++ {
+	for range 5000000 {
 		prng.Read(hash)
 		prng.Read(elems)
 		decodeNode(hash, elems)

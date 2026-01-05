@@ -61,7 +61,7 @@ func TestSnapshot(t *testing.T) {
 	// create and start nodes
 	nodeCount := 20
 	ids := make([]qnode.ID, nodeCount)
-	for i := 0; i < nodeCount; i++ {
+	for i := range nodeCount {
 		conf := adapters.RandomNodeConfig()
 		node, err := network.NewNodeWithConfig(conf)
 		if err != nil {
@@ -295,7 +295,7 @@ func TestNetworkSimulation(t *testing.T) {
 	defer network.Shutdown()
 	nodeCount := 20
 	ids := make([]qnode.ID, nodeCount)
-	for i := 0; i < nodeCount; i++ {
+	for i := range nodeCount {
 		conf := adapters.RandomNodeConfig()
 		node, err := network.NewNodeWithConfig(conf)
 		if err != nil {
@@ -396,7 +396,7 @@ func TestNetworkSimulation(t *testing.T) {
 }
 
 func createTestNodes(count int, network *Network) (nodes []*Node, err error) {
-	for i := 0; i < count; i++ {
+	for range count {
 		nodeConf := adapters.RandomNodeConfig()
 		node, err := network.NewNodeWithConfig(nodeConf)
 		if err != nil {
@@ -413,7 +413,7 @@ func createTestNodes(count int, network *Network) (nodes []*Node, err error) {
 }
 
 func createTestNodesWithProperty(property string, count int, network *Network) (propertyNodes []*Node, err error) {
-	for i := 0; i < count; i++ {
+	for range count {
 		nodeConf := adapters.RandomNodeConfig()
 		nodeConf.Properties = append(nodeConf.Properties, property)
 

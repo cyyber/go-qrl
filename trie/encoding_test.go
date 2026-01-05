@@ -94,7 +94,7 @@ func TestHexToCompactInPlace(t *testing.T) {
 }
 
 func TestHexToCompactInPlaceRandom(t *testing.T) {
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		l := rand.Intn(128)
 		key := make([]byte, l)
 		crand.Read(key)
