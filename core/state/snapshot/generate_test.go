@@ -638,7 +638,7 @@ func testGenerateWithManyExtraAccounts(t *testing.T, scheme string) {
 		for i := range 1000 {
 			acc := &types.StateAccount{Balance: big.NewInt(int64(i)), Root: types.EmptyRootHash, CodeHash: types.EmptyCodeHash.Bytes()}
 			val, _ := rlp.EncodeToBytes(acc)
-			key := hashData([]byte(fmt.Sprintf("acc-%d", i)))
+			key := hashData(fmt.Appendf(nil, "acc-%d", i))
 			rawdb.WriteAccountSnapshot(helper.diskdb, key, val)
 		}
 	}
@@ -762,7 +762,7 @@ func testGenerateFromEmptySnap(t *testing.T, scheme string) {
 	helper := newHelper(scheme)
 	// Add 1K accounts to the trie
 	for i := range 400 {
-		stRoot := helper.makeStorageTrie(hashData([]byte(fmt.Sprintf("acc-%d", i))), []string{"key-1", "key-2", "key-3"}, []string{"val-1", "val-2", "val-3"}, true)
+		stRoot := helper.makeStorageTrie(hashData(fmt.Appendf(nil, "acc-%d", i)), []string{"key-1", "key-2", "key-3"}, []string{"val-1", "val-2", "val-3"}, true)
 		helper.addTrieAccount(fmt.Sprintf("acc-%d", i),
 			&types.StateAccount{Balance: big.NewInt(1), Root: stRoot, CodeHash: types.EmptyCodeHash.Bytes()})
 	}
