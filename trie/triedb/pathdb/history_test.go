@@ -37,7 +37,7 @@ func randomStateSet(n int) *triestate.Set {
 		accounts = make(map[common.Address][]byte)
 		storages = make(map[common.Address]map[common.Hash][]byte)
 	)
-	for i := 0; i < n; i++ {
+	for range n {
 		addr := testutil.RandomAddress()
 		storages[addr] = make(map[common.Hash][]byte)
 		for j := 0; j < 3; j++ {
@@ -59,7 +59,7 @@ func makeHistories(n int) []*history {
 		parent = types.EmptyRootHash
 		result []*history
 	)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		root := testutil.RandomHash()
 		h := newHistory(root, parent, uint64(i), randomStateSet(3))
 		parent = root

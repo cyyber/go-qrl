@@ -135,7 +135,7 @@ func (tt *TestCmd) matchExactOutput(want []byte) error {
 		buf = append(buf, make([]byte, tt.stdout.Buffered())...)
 		tt.stdout.Read(buf[n:])
 		// Find the mismatch position.
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if want[i] != buf[i] {
 				return fmt.Errorf("output mismatch at ◊:\n---------------- (stdout text)\n%s◊%s\n---------------- (expected text)\n%s",
 					buf[:i], buf[i:n], want)

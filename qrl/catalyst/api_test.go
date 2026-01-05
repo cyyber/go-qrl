@@ -474,7 +474,7 @@ func TestFullAPI(t *testing.T) {
 func setupBlocks(t *testing.T, qrlservice *qrl.QRL, n int, parent *types.Header, callback func(parent *types.Header), withdrawals [][]*types.Withdrawal) []*types.Header {
 	api := NewConsensusAPI(qrlservice)
 	var blocks []*types.Header
-	for i := 0; i < n; i++ {
+	for i := range n {
 		callback(parent)
 		var w []*types.Withdrawal
 		if withdrawals != nil {

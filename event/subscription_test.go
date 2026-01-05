@@ -29,7 +29,7 @@ var errInts = errors.New("error in subscribeInts")
 
 func subscribeInts(max, fail int, c chan<- int) Subscription {
 	return NewSubscription(func(quit <-chan struct{}) error {
-		for i := 0; i < max; i++ {
+		for i := range max {
 			if i >= fail {
 				return errInts
 			}

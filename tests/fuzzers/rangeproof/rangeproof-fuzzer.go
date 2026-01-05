@@ -72,7 +72,7 @@ func (f *fuzzer) randomTrie(n int) (*trie.Trie, map[string]*kv) {
 		return nil, nil
 	}
 	// And now fill with some random
-	for i := 0; i < n; i++ {
+	for range n {
 		k := f.randBytes(32)
 		v := f.randBytes(20)
 		value := &kv{k, v, false}

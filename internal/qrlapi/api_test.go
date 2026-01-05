@@ -660,7 +660,7 @@ type Account struct {
 }
 
 func newAccounts(n int) (accounts []Account) {
-	for i := 0; i < n; i++ {
+	for range n {
 		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 		accounts = append(accounts, Account{wallet: wallet, addr: wallet.GetAddress()})
 	}

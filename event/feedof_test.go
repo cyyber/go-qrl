@@ -57,7 +57,7 @@ func TestFeedOf(t *testing.T) {
 	const n = 1000
 	done.Add(n)
 	subscribed.Add(n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go subscriber(i)
 	}
 	subscribed.Wait()
@@ -86,7 +86,7 @@ func TestFeedOfSubscribeSameChannel(t *testing.T) {
 		done.Done()
 	}
 	expectRecv := func(wantValue, n int) {
-		for i := 0; i < n; i++ {
+		for range n {
 			if v := <-ch; v != wantValue {
 				t.Errorf("received %d, want %d", v, wantValue)
 			}
@@ -267,11 +267,12 @@ func BenchmarkFeedOfSend1000(b *testing.B) {
 	}
 
 	// The actual benchmark.
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	var i int
+	for b.Loop() {
 		if feed.Send(i) != nsubs {
 			panic("wrong number of sends")
 		}
+		i++
 	}
 
 	b.StopTimer()

@@ -875,7 +875,7 @@ func writeChunks(t *testing.T, ft *freezerTable, n int, length int) {
 	t.Helper()
 
 	batch := ft.newBatch()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if err := batch.AppendRaw(uint64(i), getChunk(length, i)); err != nil {
 			t.Fatalf("AppendRaw(%d, ...) returned error: %v", i, err)
 		}
@@ -1152,7 +1152,7 @@ const (
 
 func getVals(first uint64, n int) [][]byte {
 	var ret [][]byte
-	for i := 0; i < n; i++ {
+	for i := range n {
 		val := make([]byte, 8)
 		binary.BigEndian.PutUint64(val, first+uint64(i))
 		ret = append(ret, val)
@@ -1186,7 +1186,7 @@ func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
 				first = items[len(items)-1] + 1
 			}
 			var ret []uint64
-			for i := 0; i < n; i++ {
+			for i := range n {
 				ret = append(ret, first+uint64(i))
 			}
 			items = append(items, ret...)

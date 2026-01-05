@@ -364,7 +364,7 @@ func generateTxs(s *Suite, numTxs int) (map[common.Hash]common.Hash, []*types.Tr
 
 	nonce = nonce + 1
 	// generate txs
-	for i := 0; i < numTxs; i++ {
+	for i := range numTxs {
 		tx := generateTx(s.chain.chainConfig, nonce, gas)
 		if tx == nil {
 			return nil, nil, errors.New("failed to get the next transaction")

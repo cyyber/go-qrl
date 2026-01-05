@@ -77,7 +77,7 @@ func (t *NoopService) Stop() error {
 func VerifyRing(t *testing.T, net *Network, ids []qnode.ID) {
 	t.Helper()
 	n := len(ids)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		for j := i + 1; j < n; j++ {
 			c := net.GetConn(ids[i], ids[j])
 			if i == j-1 || (i == 0 && j == n-1) {
@@ -96,7 +96,7 @@ func VerifyRing(t *testing.T, net *Network, ids []qnode.ID) {
 func VerifyChain(t *testing.T, net *Network, ids []qnode.ID) {
 	t.Helper()
 	n := len(ids)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		for j := i + 1; j < n; j++ {
 			c := net.GetConn(ids[i], ids[j])
 			if i == j-1 {
@@ -133,7 +133,7 @@ func VerifyFull(t *testing.T, net *Network, ids []qnode.ID) {
 func VerifyStar(t *testing.T, net *Network, ids []qnode.ID, centerIndex int) {
 	t.Helper()
 	n := len(ids)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		for j := i + 1; j < n; j++ {
 			c := net.GetConn(ids[i], ids[j])
 			if i == centerIndex || j == centerIndex {

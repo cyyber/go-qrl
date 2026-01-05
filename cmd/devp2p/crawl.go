@@ -95,7 +95,7 @@ func (c *crawler) run(timeout time.Duration, nthreads int) nodeSet {
 		wg      sync.WaitGroup
 	)
 	wg.Add(nthreads)
-	for i := 0; i < nthreads; i++ {
+	for range nthreads {
 		go func() {
 			defer wg.Done()
 			for {

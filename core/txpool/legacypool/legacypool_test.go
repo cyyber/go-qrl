@@ -2274,11 +2274,13 @@ func benchmarkBatchInsert(b *testing.B, size int, local bool) {
 	testAddBalance(pool, account, big.NewInt(1000000000000000000))
 
 	batches := make([]types.Transactions, b.N)
-	for i := 0; i < b.N; i++ {
+	var i int
+	for b.Loop() {
 		batches[i] = make(types.Transactions, size)
-		for j := 0; j < size; j++ {
+		for j := range size {
 			batches[i][j] = transaction(uint64(size*i+j), 100000, key)
 		}
+		i++
 	}
 	// Benchmark importing the transactions into the queue
 	b.ResetTimer()
@@ -2333,12 +2335,14 @@ func BenchmarkMultiAccountBatchInsert(b *testing.B) {
 	defer pool.Close()
 	b.ReportAllocs()
 	batches := make(types.Transactions, b.N)
-	for i := 0; i < b.N; i++ {
+	var i int
+	for b.Loop() {
 		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 		account := wallet.GetAddress()
 		pool.currentState.AddBalance(account, big.NewInt(1000000))
 		tx := transaction(uint64(0), 100000, wallet)
 		batches[i] = tx
+		i++
 	}
 	// Benchmark importing the transactions into the queue
 	b.ResetTimer()

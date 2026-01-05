@@ -144,7 +144,7 @@ func TestRandomMessagesWithRandomKeys(t *testing.T) {
 }
 
 func signAndRecoverWithRandomMessages(t *testing.T, keys func() ([]byte, []byte)) {
-	for i := 0; i < TestCount; i++ {
+	for range TestCount {
 		pubkey1, seckey := keys()
 		msg := csprngEntropy(32)
 		sig, err := Sign(msg, seckey)

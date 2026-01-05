@@ -17,7 +17,7 @@ const epsilonPercentile = .00000000001
 func BenchmarkCompute1000(b *testing.B) {
 	s := make([]int64, 1000)
 	var sum int64
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 		sum += int64(i)
 	}
@@ -30,7 +30,7 @@ func BenchmarkCompute1000(b *testing.B) {
 func BenchmarkCompute1000000(b *testing.B) {
 	s := make([]int64, 1000000)
 	var sum int64
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 		sum += int64(i)
 	}
@@ -42,7 +42,7 @@ func BenchmarkCompute1000000(b *testing.B) {
 }
 func BenchmarkCopy1000(b *testing.B) {
 	s := make([]int64, 1000)
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 	}
 	b.ResetTimer()
@@ -53,7 +53,7 @@ func BenchmarkCopy1000(b *testing.B) {
 }
 func BenchmarkCopy1000000(b *testing.B) {
 	s := make([]int64, 1000000)
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 	}
 	b.ResetTimer()
@@ -210,7 +210,7 @@ func TestUniformSample(t *testing.T) {
 func TestUniformSampleIncludesTail(t *testing.T) {
 	sw := NewUniformSample(100)
 	max := 100
-	for i := 0; i < max; i++ {
+	for i := range max {
 		sw.Update(int64(i))
 	}
 	s := sw.Snapshot()

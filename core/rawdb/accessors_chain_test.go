@@ -582,13 +582,12 @@ func BenchmarkWriteAncientBlocks(b *testing.B) {
 	const blockTxs = 20
 	allBlocks := makeTestBlocks(b.N, blockTxs)
 	batchReceipts := makeTestReceipts(batchSize, blockTxs)
-	b.ResetTimer()
 
 	// The benchmark loop writes batches of blocks, but note that the total block count is
 	// b.N. This means the resulting ns/op measurement is the time it takes to write a
 	// single block and its associated data.
 	var totalSize int64
-	for i := 0; i < b.N; i += batchSize {
+	for i := 0; b.Loop(); i += batchSize {
 		length := batchSize
 		if i+batchSize > b.N {
 			length = b.N - i
@@ -652,7 +651,7 @@ func makeTestReceipts(n int, nPerBlock int) []types.Receipts {
 		}
 	}
 	allReceipts := make([]types.Receipts, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		allReceipts[i] = receipts
 	}
 	return allReceipts
