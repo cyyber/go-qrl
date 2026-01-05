@@ -939,13 +939,14 @@ func BenchmarkProve(b *testing.B) {
 		keys = append(keys, k)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	var i int
+	for b.Loop() {
 		kv := vals[keys[i%len(keys)]]
 		proofs := memorydb.New()
 		if trie.Prove(kv.k, proofs); proofs.Len() == 0 {
 			b.Fatalf("zero length proof for %x", kv.k)
 		}
+		i++
 	}
 }
 
@@ -961,12 +962,13 @@ func BenchmarkVerifyProof(b *testing.B) {
 		proofs = append(proofs, proof)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	var i int
+	for b.Loop() {
 		im := i % len(keys)
 		if _, err := VerifyProof(root, []byte(keys[im]), proofs[im]); err != nil {
 			b.Fatalf("key %x: %v", keys[im], err)
 		}
+		i++
 	}
 }
 
@@ -999,12 +1001,13 @@ func benchmarkVerifyRangeProof(b *testing.B, size int) {
 		values = append(values, entries[i].v)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	var i uint64
+	for b.Loop() {
 		_, err := VerifyRangeProof(trie.Hash(), keys[0], keys[len(keys)-1], keys, values, proof)
 		if err != nil {
 			b.Fatalf("Case %d(%d->%d) expect no error, got %v", i, start, end-1, err)
 		}
+		i++
 	}
 }
 
@@ -1046,7 +1049,7 @@ func randomTrie(n int) (*Trie, map[string]*kv) {
 		vals[string(value.k)] = value
 		vals[string(value2.k)] = value2
 	}
-	for i := 0; i < n; i++ {
+	for range n {
 		value := &kv{randBytes(32), randBytes(20), false}
 		trie.MustUpdate(value.k, value.v)
 		vals[string(value.k)] = value

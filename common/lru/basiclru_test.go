@@ -206,24 +206,27 @@ func BenchmarkLRU(b *testing.B) {
 
 	b.Run("Add/BasicLRU", func(b *testing.B) {
 		cache := NewBasicLRU[int, int](capacity)
-		for i := 0; i < b.N; i++ {
+		var i int
+		for b.Loop() {
 			cache.Add(i, i)
+			i++
 		}
 	})
 	b.Run("Get/BasicLRU", func(b *testing.B) {
 		cache := NewBasicLRU[string, []byte](capacity)
-		for i := 0; i < capacity; i++ {
+		for i := range capacity {
 			index := indexes[i]
 			cache.Add(keys[index], values[index])
 		}
 
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		var i int
+		for b.Loop() {
 			k := keys[indexes[i%len(indexes)]]
 			v, ok := cache.Get(k)
 			if ok {
 				sink = v
 			}
+			i++
 		}
 	})
 

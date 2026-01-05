@@ -7,9 +7,10 @@ import (
 
 func BenchmarkGaugeFloat64(b *testing.B) {
 	g := NewGaugeFloat64()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	var i uint64
+	for b.Loop() {
 		g.Update(float64(i))
+		i++
 	}
 }
 

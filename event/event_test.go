@@ -209,10 +209,12 @@ func BenchmarkChanSend(b *testing.B) {
 		}
 	}()
 
-	for i := 0; i < b.N; i++ {
+	var i int
+	for b.Loop() {
 		select {
 		case c <- i:
 		case <-closed:
 		}
+		i++
 	}
 }

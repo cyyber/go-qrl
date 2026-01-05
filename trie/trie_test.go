@@ -629,9 +629,11 @@ func benchUpdate(b *testing.B, e binary.ByteOrder) *Trie {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	k := make([]byte, 32)
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		e.PutUint64(k, uint64(i))
+	var i uint64
+	for b.Loop() {
+		e.PutUint64(k, i)
 		trie.MustUpdate(k, k)
+		i++
 	}
 	return trie
 }
