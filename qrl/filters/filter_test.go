@@ -105,7 +105,7 @@ func BenchmarkFilters(b *testing.B) {
 	filter := sys.NewRangeFilter(0, -1, []common.Address{addr1, addr2, addr3, addr4}, nil)
 
 	for b.Loop() {
-		logs, _ := filter.Logs(context.Background())
+		logs, _ := filter.Logs(b.Context())
 		if len(logs) != 4 {
 			b.Fatal("expected 4 logs, got", len(logs))
 		}
@@ -365,7 +365,7 @@ func TestFilters(t *testing.T) {
 			err: errPendingLogsUnsupported.Error(),
 		},
 	} {
-		logs, err := tc.f.Logs(context.Background())
+		logs, err := tc.f.Logs(t.Context())
 		if err == nil && tc.err != "" {
 			t.Fatalf("test %d, expected error %q, got nil", i, tc.err)
 		} else if err != nil && err.Error() != tc.err {
@@ -385,7 +385,7 @@ func TestFilters(t *testing.T) {
 
 	t.Run("timeout", func(t *testing.T) {
 		f := sys.NewRangeFilter(0, rpc.LatestBlockNumber.Int64(), nil, nil)
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Hour))
+		ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Hour))
 		defer cancel()
 		_, err := f.Logs(ctx)
 		if err == nil {

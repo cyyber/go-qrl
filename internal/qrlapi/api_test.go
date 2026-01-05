@@ -464,7 +464,7 @@ func TestEstimateGas(t *testing.T) {
 		},
 	}
 	for i, tc := range testSuite {
-		result, err := api.EstimateGas(context.Background(), tc.call, &rpc.BlockNumberOrHash{BlockNumber: &tc.blockNumber}, &tc.overrides)
+		result, err := api.EstimateGas(t.Context(), tc.call, &rpc.BlockNumberOrHash{BlockNumber: &tc.blockNumber}, &tc.overrides)
 		if tc.expectErr != nil {
 			if err == nil {
 				t.Errorf("test %d: want error %v, have nothing", i, tc.expectErr)
@@ -630,7 +630,7 @@ func TestCall(t *testing.T) {
 		},
 	}
 	for i, tc := range testSuite {
-		result, err := api.Call(context.Background(), tc.call, rpc.BlockNumberOrHash{BlockNumber: &tc.blockNumber}, &tc.overrides, &tc.blockOverrides)
+		result, err := api.Call(t.Context(), tc.call, rpc.BlockNumberOrHash{BlockNumber: &tc.blockNumber}, &tc.overrides, &tc.blockOverrides)
 		if tc.expectErr != nil {
 			if err == nil {
 				t.Errorf("test %d: want error %v, have nothing", i, tc.expectErr)
@@ -936,9 +936,8 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 	backend.setPendingBlock(pending)
 	api := NewBlockChainAPI(backend)
 	blockHashes := make([]common.Hash, genBlocks+1)
-	ctx := context.Background()
 	for i := 0; i <= genBlocks; i++ {
-		header, err := backend.HeaderByNumber(ctx, rpc.BlockNumber(i))
+		header, err := backend.HeaderByNumber(t.Context(), rpc.BlockNumber(i))
 		if err != nil {
 			t.Errorf("failed to get block: %d err: %v", i, err)
 		}
@@ -1112,18 +1111,18 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 		)
 		if tt.blockHash != nil {
 			if tt.reqHeader {
-				result = api.GetHeaderByHash(context.Background(), *tt.blockHash)
+				result = api.GetHeaderByHash(t.Context(), *tt.blockHash)
 				rpc = "qrl_getHeaderByHash"
 			} else {
-				result, err = api.GetBlockByHash(context.Background(), *tt.blockHash, tt.fullTx)
+				result, err = api.GetBlockByHash(t.Context(), *tt.blockHash, tt.fullTx)
 				rpc = "qrl_getBlockByHash"
 			}
 		} else {
 			if tt.reqHeader {
-				result, err = api.GetHeaderByNumber(context.Background(), tt.blockNumber)
+				result, err = api.GetHeaderByNumber(t.Context(), tt.blockNumber)
 				rpc = "qrl_getHeaderByNumber"
 			} else {
-				result, err = api.GetBlockByNumber(context.Background(), tt.blockNumber, tt.fullTx)
+				result, err = api.GetBlockByNumber(t.Context(), tt.blockNumber, tt.fullTx)
 				rpc = "qrl_getBlockByNumber"
 			}
 		}
@@ -1288,7 +1287,7 @@ func TestRPCGetTransactionReceipt(t *testing.T) {
 			result any
 			err    error
 		)
-		result, err = api.GetTransactionReceipt(context.Background(), tt.txHash)
+		result, err = api.GetTransactionReceipt(t.Context(), tt.txHash)
 		if err != nil {
 			t.Errorf("test %d: want no error, have %v", i, err)
 			continue
@@ -1308,9 +1307,8 @@ func TestRPCGetBlockReceipts(t *testing.T) {
 		api        = NewBlockChainAPI(backend)
 	)
 	blockHashes := make([]common.Hash, genBlocks+1)
-	ctx := context.Background()
 	for i := 0; i <= genBlocks; i++ {
-		header, err := backend.HeaderByNumber(ctx, rpc.BlockNumber(i))
+		header, err := backend.HeaderByNumber(t.Context(), rpc.BlockNumber(i))
 		if err != nil {
 			t.Errorf("failed to get block: %d err: %v", i, err)
 		}
@@ -1383,7 +1381,7 @@ func TestRPCGetBlockReceipts(t *testing.T) {
 			result any
 			err    error
 		)
-		result, err = api.GetBlockReceipts(context.Background(), tt.test)
+		result, err = api.GetBlockReceipts(t.Context(), tt.test)
 		if err != nil {
 			t.Errorf("test %d: want no error, have %v", i, err)
 			continue

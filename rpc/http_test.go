@@ -17,7 +17,6 @@
 package rpc
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -249,7 +248,7 @@ func TestNewContextWithHeaders(t *testing.T) {
 		header.Set(k, v)
 		return header
 	}
-	ctx1 := NewContextWithHeaders(context.Background(), newHdr("key-0", "val-0"))
+	ctx1 := NewContextWithHeaders(t.Context(), newHdr("key-0", "val-0"))
 	ctx2 := NewContextWithHeaders(ctx1, newHdr("key-1", "val-1"))
 	ctx3 := NewContextWithHeaders(ctx2, newHdr("key-2", "val-2"))
 

@@ -17,7 +17,6 @@
 package bloombits
 
 import (
-	"context"
 	"math/rand"
 	"sync/atomic"
 	"testing"
@@ -166,7 +165,7 @@ func testMatcher(t *testing.T, filter [][]bloomIndexes, start, blocks uint64, in
 	quit := make(chan struct{})
 	matches := make(chan uint64, 16)
 
-	session, err := matcher.Start(context.Background(), start, blocks-1, matches)
+	session, err := matcher.Start(t.Context(), start, blocks-1, matches)
 	if err != nil {
 		t.Fatalf("failed to stat matcher session: %v", err)
 	}
@@ -191,7 +190,7 @@ func testMatcher(t *testing.T, filter [][]bloomIndexes, start, blocks uint64, in
 				quit = make(chan struct{})
 				matches = make(chan uint64, 16)
 
-				session, err = matcher.Start(context.Background(), i+1, blocks-1, matches)
+				session, err = matcher.Start(t.Context(), i+1, blocks-1, matches)
 				if err != nil {
 					t.Fatalf("failed to stat matcher session: %v", err)
 				}

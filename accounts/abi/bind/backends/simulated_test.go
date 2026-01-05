@@ -18,7 +18,6 @@ package backends
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"math/big"
 	"math/rand"
@@ -49,7 +48,7 @@ func TestSimulatedBackend(t *testing.T) {
 
 	// should return an error if the tx is not found
 	txHash := common.HexToHash("2")
-	_, isPending, err := sim.TransactionByHash(context.Background(), txHash)
+	_, isPending, err := sim.TransactionByHash(t.Context(), txHash)
 
 	if isPending {
 		t.Fatal("transaction should not be pending")
@@ -59,7 +58,7 @@ func TestSimulatedBackend(t *testing.T) {
 	}
 
 	// generate a transaction and confirm you can retrieve it
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	code := `6060604052600a8060106000396000f360606040526008565b00`
@@ -73,13 +72,13 @@ func TestSimulatedBackend(t *testing.T) {
 	})
 	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, wallet)
 
-	err = sim.SendTransaction(context.Background(), tx)
+	err = sim.SendTransaction(t.Context(), tx)
 	if err != nil {
 		t.Fatal("error sending transaction")
 	}
 
 	txHash = tx.Hash()
-	_, isPending, err = sim.TransactionByHash(context.Background(), txHash)
+	_, isPending, err = sim.TransactionByHash(t.Context(), txHash)
 	if err != nil {
 		t.Fatalf("error getting transaction with hash: %v", txHash.String())
 	}
@@ -88,7 +87,7 @@ func TestSimulatedBackend(t *testing.T) {
 	}
 
 	sim.Commit()
-	_, isPending, err = sim.TransactionByHash(context.Background(), txHash)
+	_, isPending, err = sim.TransactionByHash(t.Context(), txHash)
 	if err != nil {
 		t.Fatalf("error getting transaction with hash: %v", txHash.String())
 	}
@@ -170,7 +169,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 	defer sim.blockchain.Stop()
 
 	// Create tx and send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -185,7 +184,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
-	if err := sim.SendTransaction(context.Background(), signedTx); err != nil {
+	if err := sim.SendTransaction(t.Context(), signedTx); err != nil {
 		t.Error(err)
 	}
 	// AdjustTime should fail on non-empty block
@@ -215,7 +214,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
-	if err := sim.SendTransaction(context.Background(), signedTx2); err != nil {
+	if err := sim.SendTransaction(t.Context(), signedTx2); err != nil {
 		t.Error(err)
 	}
 	sim.Commit()
@@ -230,7 +229,7 @@ func TestBalanceAt(t *testing.T) {
 	expectedBal := big.NewInt(10000000000000000)
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	bal, err := sim.BalanceAt(bgCtx, testAddr, nil)
 	if err != nil {
@@ -247,7 +246,7 @@ func TestBlockByHash(t *testing.T) {
 		core.GenesisAlloc{}, 10000000,
 	)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	block, err := sim.BlockByNumber(bgCtx, nil)
 	if err != nil {
@@ -268,7 +267,7 @@ func TestBlockByNumber(t *testing.T) {
 		core.GenesisAlloc{}, 10000000,
 	)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	block, err := sim.BlockByNumber(bgCtx, nil)
 	if err != nil {
@@ -303,7 +302,7 @@ func TestNonceAt(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	nonce, err := sim.NonceAt(bgCtx, testAddr, big.NewInt(0))
 	if err != nil {
@@ -315,7 +314,7 @@ func TestNonceAt(t *testing.T) {
 	}
 
 	// create a signed transaction to send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -363,10 +362,10 @@ func TestSendTransaction(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	// create a signed transaction to send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -408,10 +407,10 @@ func TestTransactionByHash(t *testing.T) {
 		}, 10000000,
 	)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	// create a signed transaction to send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -675,13 +674,12 @@ func TestHeaderByHash(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
 
-	header, err := sim.HeaderByNumber(bgCtx, nil)
+	header, err := sim.HeaderByNumber(t.Context(), nil)
 	if err != nil {
 		t.Errorf("could not get recent block: %v", err)
 	}
-	headerByHash, err := sim.HeaderByHash(bgCtx, header.Hash())
+	headerByHash, err := sim.HeaderByHash(t.Context(), header.Hash())
 	if err != nil {
 		t.Errorf("could not get recent block: %v", err)
 	}
@@ -696,7 +694,7 @@ func TestHeaderByNumber(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	latestBlockHeader, err := sim.HeaderByNumber(bgCtx, nil)
 	if err != nil {
@@ -742,7 +740,7 @@ func TestTransactionCount(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 	currentBlock, err := sim.BlockByNumber(bgCtx, nil)
 	if err != nil || currentBlock == nil {
 		t.Error("could not get current block")
@@ -757,7 +755,7 @@ func TestTransactionCount(t *testing.T) {
 		t.Errorf("expected transaction count of %v does not match actual count of %v", 0, count)
 	}
 	// create a signed transaction to send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -801,7 +799,7 @@ func TestTransactionInBlock(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	transaction, err := sim.TransactionInBlock(bgCtx, sim.pendingBlock.Hash(), uint(0))
 	if err == nil && err != errTransactionDoesNotExist {
@@ -821,7 +819,7 @@ func TestTransactionInBlock(t *testing.T) {
 		t.Errorf("expected pending nonce of 0 got %v", pendingNonce)
 	}
 	// create a signed transaction to send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -873,7 +871,7 @@ func TestPendingNonceAt(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	// expect pending nonce to be 0 since account has not been used
 	pendingNonce, err := sim.PendingNonceAt(bgCtx, testAddr)
@@ -886,7 +884,7 @@ func TestPendingNonceAt(t *testing.T) {
 	}
 
 	// create a signed transaction to send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -952,10 +950,10 @@ func TestTransactionReceipt(t *testing.T) {
 
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	// create a signed transaction to send
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	tx := types.NewTx(&types.DynamicFeeTx{
@@ -994,7 +992,7 @@ func TestSuggestGasPrice(t *testing.T) {
 		10000000,
 	)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 	gasPrice, err := sim.SuggestGasPrice(bgCtx)
 	if err != nil {
 		t.Errorf("could not get gas price: %v", err)
@@ -1008,7 +1006,7 @@ func TestPendingCodeAt(t *testing.T) {
 	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 	code, err := sim.CodeAt(bgCtx, testAddr, nil)
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
@@ -1044,7 +1042,7 @@ func TestCodeAt(t *testing.T) {
 	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 	code, err := sim.CodeAt(bgCtx, testAddr, nil)
 	if err != nil {
 		t.Errorf("could not get code at test addr: %v", err)
@@ -1084,7 +1082,7 @@ func TestPendingAndCallContract(t *testing.T) {
 	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	parsed, err := abi.JSON(strings.NewReader(abiJSON))
 	if err != nil {
@@ -1168,7 +1166,7 @@ func TestCallContractRevert(t *testing.T) {
 	testAddr := testWallet.GetAddress()
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
-	bgCtx := context.Background()
+	bgCtx := t.Context()
 
 	reverterABI := `[{"inputs": [],"name": "noRevert","outputs": [],"stateMutability": "pure","type": "function"},{"inputs": [],"name": "revertASM","outputs": [],"stateMutability": "pure","type": "function"},{"inputs": [],"name": "revertNoString","outputs": [],"stateMutability": "pure","type": "function"},{"inputs": [],"name": "revertString","outputs": [],"stateMutability": "pure","type": "function"}]`
 	reverterBin := "608060405234801561001057600080fd5b506101d3806100206000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c80634b409e01146100515780639b340e361461005b5780639bd6103714610065578063b7246fc11461006f575b600080fd5b610059610079565b005b6100636100ca565b005b61006d6100cf565b005b610077610145565b005b60006100c8576040517f08c379a0000000000000000000000000000000000000000000000000000000008152600401808060200182810382526000815260200160200191505060405180910390fd5b565b600080fd5b6000610143576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252600a8152602001807f736f6d65206572726f720000000000000000000000000000000000000000000081525060200191505060405180910390fd5b565b7f08c379a0000000000000000000000000000000000000000000000000000000006000526020600452600a6024527f736f6d65206572726f720000000000000000000000000000000000000000000060445260646000f3fea2646970667358221220cdd8af0609ec4996b7360c7c780bad5c735740c64b1fffc3445aa12d37f07cb164736f6c63430006070033"
@@ -1275,7 +1273,7 @@ func TestFork(t *testing.T) {
 		t.Error("wrong chain length")
 	}
 	// 4.
-	sim.Fork(context.Background(), parent.Hash())
+	sim.Fork(t.Context(), parent.Hash())
 	// 5.
 	for range n + 1 {
 		sim.Commit()
@@ -1348,7 +1346,7 @@ func TestForkLogsReborn(t *testing.T) {
 		t.Error("Event should be included")
 	}
 	// 6.
-	if err := sim.Fork(context.Background(), parent.Hash()); err != nil {
+	if err := sim.Fork(t.Context(), parent.Hash()); err != nil {
 		t.Errorf("forking: %v", err)
 	}
 	// 7.
@@ -1363,7 +1361,7 @@ func TestForkLogsReborn(t *testing.T) {
 		t.Error("Event should be removed")
 	}
 	// 9.
-	if err := sim.SendTransaction(context.Background(), tx); err != nil {
+	if err := sim.SendTransaction(t.Context(), tx); err != nil {
 		t.Errorf("sending transaction: %v", err)
 	}
 	sim.Commit()
@@ -1393,7 +1391,7 @@ func TestForkResendTx(t *testing.T) {
 	// 1.
 	parent := sim.blockchain.CurrentBlock()
 	// 2.
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	_tx := types.NewTx(&types.DynamicFeeTx{
@@ -1405,25 +1403,25 @@ func TestForkResendTx(t *testing.T) {
 		Data:      nil,
 	})
 	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
-	sim.SendTransaction(context.Background(), tx)
+	sim.SendTransaction(t.Context(), tx)
 	sim.Commit()
 	// 3.
-	receipt, _ := sim.TransactionReceipt(context.Background(), tx.Hash())
+	receipt, _ := sim.TransactionReceipt(t.Context(), tx.Hash())
 	if h := receipt.BlockNumber.Uint64(); h != 1 {
 		t.Errorf("TX included in wrong block: %d", h)
 	}
 	// 4.
-	if err := sim.Fork(context.Background(), parent.Hash()); err != nil {
+	if err := sim.Fork(t.Context(), parent.Hash()); err != nil {
 		t.Errorf("forking: %v", err)
 	}
 	// 5.
 	sim.Commit()
-	if err := sim.SendTransaction(context.Background(), tx); err != nil {
+	if err := sim.SendTransaction(t.Context(), tx); err != nil {
 		t.Errorf("sending transaction: %v", err)
 	}
 	sim.Commit()
 	// 6.
-	receipt, _ = sim.TransactionReceipt(context.Background(), tx.Hash())
+	receipt, _ = sim.TransactionReceipt(t.Context(), tx.Hash())
 	if h := receipt.BlockNumber.Uint64(); h != 2 {
 		t.Errorf("TX included in wrong block: %d", h)
 	}
@@ -1443,7 +1441,7 @@ func TestCommitReturnValue(t *testing.T) {
 	}
 
 	// Create a block in the original chain (containing a transaction to force different block hashes)
-	head, _ := sim.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := sim.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 	_tx := types.NewTx(&types.DynamicFeeTx{
 		Nonce:     uint64(0),
@@ -1454,14 +1452,14 @@ func TestCommitReturnValue(t *testing.T) {
 		Data:      nil,
 	})
 	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
-	sim.SendTransaction(context.Background(), tx)
+	sim.SendTransaction(t.Context(), tx)
 	h2 := sim.Commit()
 
 	// Create another block in the original chain
 	sim.Commit()
 
 	// Fork at the first bock
-	if err := sim.Fork(context.Background(), h1); err != nil {
+	if err := sim.Fork(t.Context(), h1); err != nil {
 		t.Errorf("forking: %v", err)
 	}
 
@@ -1485,7 +1483,7 @@ func TestAdjustTimeAfterFork(t *testing.T) {
 	sim.Commit() // h1
 	h1 := sim.blockchain.CurrentHeader().Hash()
 	sim.Commit() // h2
-	sim.Fork(context.Background(), h1)
+	sim.Fork(t.Context(), h1)
 	sim.AdjustTime(1 * time.Second)
 	sim.Commit()
 

@@ -17,7 +17,6 @@
 package filters
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -181,7 +180,7 @@ func BenchmarkNoBloomBits(b *testing.B) {
 	b.Log("Running filter benchmarks...")
 	start := time.Now()
 	filter := sys.NewRangeFilter(0, int64(*headNum), []common.Address{{}}, nil)
-	filter.Logs(context.Background())
+	filter.Logs(b.Context())
 	d := time.Since(start)
 	b.Log("Finished running filter benchmarks")
 	b.Log(" ", d, "total  ", d*time.Duration(1000000)/time.Duration(*headNum+1), "per million blocks")

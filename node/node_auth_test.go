@@ -17,7 +17,6 @@
 package node
 
 import (
-	"context"
 	crand "crypto/rand"
 	"fmt"
 	"net/http"
@@ -47,7 +46,7 @@ type authTest struct {
 }
 
 func (at *authTest) Run(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	cl, err := rpc.DialOptions(ctx, at.endpoint, rpc.WithHTTPAuth(at.prov))
 	if at.expectDialFail {
 		if err == nil {

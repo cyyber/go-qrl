@@ -213,7 +213,7 @@ func TestClientBatchRequest_len(t *testing.T) {
 			{Method: "bar", Result: new(string)},
 			{Method: "baz", Result: new(string)},
 		}
-		ctx, cancelFn := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancelFn := context.WithTimeout(t.Context(), time.Second)
 		defer cancelFn()
 
 		if err := client.BatchCallContext(ctx, batch); err != nil {
@@ -243,7 +243,7 @@ func TestClientBatchRequest_len(t *testing.T) {
 		batch := []BatchElem{
 			{Method: "foo", Result: new(string)},
 		}
-		ctx, cancelFn := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancelFn := context.WithTimeout(t.Context(), time.Second)
 		defer cancelFn()
 
 		if err := client.BatchCallContext(ctx, batch); err != nil {
@@ -310,7 +310,7 @@ func TestClientNotify(t *testing.T) {
 	client := DialInProc(server)
 	defer client.Close()
 
-	if err := client.Notify(context.Background(), "test_echo", "hello", 10, &echoArgs{"world"}); err != nil {
+	if err := client.Notify(t.Context(), "test_echo", "hello", 10, &echoArgs{"world"}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -382,13 +382,13 @@ func testClientCancel(transport string, t *testing.T) {
 			if index < ncallers/2 {
 				// For half of the callers, create a context without deadline
 				// and cancel it later.
-				ctx, cancel = context.WithCancel(context.Background())
+				ctx, cancel = context.WithCancel(t.Context())
 				time.AfterFunc(timeout, cancel)
 			} else {
 				// For the other half, create a context with a deadline instead. This is
 				// different because the context deadline is used to set the socket write
 				// deadline.
-				ctx, cancel = context.WithTimeout(context.Background(), timeout)
+				ctx, cancel = context.WithTimeout(t.Context(), timeout)
 			}
 
 			// Now perform a call with the context.
@@ -433,7 +433,7 @@ func TestClientSubscribeInvalidArg(t *testing.T) {
 				t.Error(string(buf))
 			}
 		}()
-		client.QRLSubscribe(context.Background(), arg, "foo_bar")
+		client.QRLSubscribe(t.Context(), arg, "foo_bar")
 	}
 	check(true, nil)
 	check(true, 1)
@@ -453,7 +453,7 @@ func TestClientSubscribe(t *testing.T) {
 
 	nc := make(chan int)
 	count := 10
-	sub, err := client.Subscribe(context.Background(), "nftest", nc, "someSubscription", count, 0)
+	sub, err := client.Subscribe(t.Context(), "nftest", nc, "someSubscription", count, 0)
 	if err != nil {
 		t.Fatal("can't subscribe:", err)
 	}
@@ -500,7 +500,7 @@ func TestClientSubscribeClose(t *testing.T) {
 		err  error
 	)
 	go func() {
-		sub, err = client.Subscribe(context.Background(), "nftest2", nc, "hangSubscription", 999)
+		sub, err = client.Subscribe(t.Context(), "nftest2", nc, "hangSubscription", 999)
 		errc <- err
 	}()
 
@@ -532,7 +532,7 @@ func TestClientCloseUnsubscribeRace(t *testing.T) {
 	for range 20 {
 		client := DialInProc(server)
 		nc := make(chan int)
-		sub, err := client.Subscribe(context.Background(), "nftest", nc, "someSubscription", 3, 1)
+		sub, err := client.Subscribe(t.Context(), "nftest", nc, "someSubscription", 3, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -584,13 +584,13 @@ func TestUnsubscribeTimeout(t *testing.T) {
 
 	// Create the client on the other end of the pipe.
 	cfg := new(clientConfig)
-	client, _ := newClient(context.Background(), cfg, func(context.Context) (ServerCodec, error) {
+	client, _ := newClient(t.Context(), cfg, func(context.Context) (ServerCodec, error) {
 		return NewCodec(p2), nil
 	})
 	defer client.Close()
 
 	// Start subscription.
-	sub, err := client.Subscribe(context.Background(), "nftest", make(chan int), "someSubscription", 1, 1)
+	sub, err := client.Subscribe(t.Context(), "nftest", make(chan int), "someSubscription", 1, 1)
 	if err != nil {
 		t.Fatalf("failed to subscribe: %v", err)
 	}
@@ -651,14 +651,14 @@ func TestClientSubscriptionUnsubscribeServer(t *testing.T) {
 
 	// Create the client on the other end of the pipe.
 	cfg := new(clientConfig)
-	client, _ := newClient(context.Background(), cfg, func(context.Context) (ServerCodec, error) {
+	client, _ := newClient(t.Context(), cfg, func(context.Context) (ServerCodec, error) {
 		return NewCodec(p2), nil
 	})
 	defer client.Close()
 
 	// Create the subscription.
 	ch := make(chan int)
-	sub, err := client.Subscribe(context.Background(), "nftest", ch, "someSubscription", 1, 1)
+	sub, err := client.Subscribe(t.Context(), "nftest", ch, "someSubscription", 1, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -692,7 +692,7 @@ func TestClientSubscriptionChannelClose(t *testing.T) {
 
 	for range 100 {
 		ch := make(chan int, 100)
-		sub, err := client.Subscribe(context.Background(), "nftest", ch, "someSubscription", 100, 1)
+		sub, err := client.Subscribe(t.Context(), "nftest", ch, "someSubscription", 100, 1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -712,7 +712,7 @@ func TestClientNotificationStorm(t *testing.T) {
 	doTest := func(count int, wantError bool) {
 		client := DialInProc(server)
 		defer client.Close()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
 		// Subscribe on the server. It will start sending many notifications
@@ -852,7 +852,7 @@ func TestClientReconnect(t *testing.T) {
 		return srv, l
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 	defer cancel()
 
 	// Start a server and corresponding client.
