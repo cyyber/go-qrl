@@ -92,7 +92,7 @@ type isUnderpriced int
 // runner.
 type txFetcherTest struct {
 	init  func() *TxFetcher
-	steps []interface{}
+	steps []any
 }
 
 // Tests that transaction announcements are added to a waitlist, and none
@@ -107,7 +107,7 @@ func TestTransactionFetcherWaiting(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Initial announcement to get something into the waitlist
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}, {0x02}}},
 			isWaiting(map[string][]common.Hash{
@@ -202,7 +202,7 @@ func TestTransactionFetcherWaitingWithMeta(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Initial announcement to get something into the waitlist
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}, {0x02}}, types: []byte{types.DynamicFeeTxType, types.DynamicFeeTxType}, sizes: []uint32{111, 222}},
 			isWaitingWithMeta(map[string][]announce{
@@ -404,7 +404,7 @@ func TestTransactionFetcherSkipWaiting(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}, {0x02}}},
 			isWaiting(map[string][]common.Hash{
@@ -468,7 +468,7 @@ func TestTransactionFetcherSingletonRequesting(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}, {0x02}}},
 			isWaiting(map[string][]common.Hash{
@@ -548,7 +548,7 @@ func TestTransactionFetcherFailedRescheduling(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}, {0x02}}},
 			isWaiting(map[string][]common.Hash{
@@ -618,7 +618,7 @@ func TestTransactionFetcherCleanup(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0]}},
 			isWaiting(map[string][]common.Hash{
@@ -658,7 +658,7 @@ func TestTransactionFetcherCleanupEmpty(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0]}},
 			isWaiting(map[string][]common.Hash{
@@ -699,7 +699,7 @@ func TestTransactionFetcherMissingRescheduling(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0], testTxsHashes[1], testTxsHashes[2]}},
 			isWaiting(map[string][]common.Hash{
@@ -748,7 +748,7 @@ func TestTransactionFetcherMissingCleanup(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0], testTxsHashes[1]}},
 			isWaiting(map[string][]common.Hash{
@@ -787,7 +787,7 @@ func TestTransactionFetcherBroadcasts(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Set up three transactions to be in different stats, waiting, queued and fetching
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0]}},
 			doWait{time: txArriveTimeout, step: true},
@@ -836,7 +836,7 @@ func TestTransactionFetcherWaitTimerResets(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}}},
 			isWaiting(map[string][]common.Hash{
 				"A": {{0x01}},
@@ -894,7 +894,7 @@ func TestTransactionFetcherTimeoutRescheduling(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Push an initial announcement through to the scheduled stage
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0]}},
 			isWaiting(map[string][]common.Hash{
@@ -960,7 +960,7 @@ func TestTransactionFetcherTimeoutTimerResets(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}}},
 			doWait{time: txArriveTimeout, step: true},
 			doTxNotify{peer: "B", hashes: []common.Hash{{0x02}}},
@@ -1019,7 +1019,7 @@ func TestTransactionFetcherRateLimiting(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Announce all the transactions, wait a bit and ensure only a small
 			// percentage gets requested
 			doTxNotify{peer: "A", hashes: hashes},
@@ -1049,7 +1049,7 @@ func TestTransactionFetcherBandwidthLimiting(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Announce mid size transactions from A to verify that multiple
 			// ones can be piled into a single request.
 			doTxNotify{peer: "A",
@@ -1120,7 +1120,7 @@ func TestTransactionFetcherDoSProtection(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Announce half of the transaction and wait for them to be scheduled
 			doTxNotify{peer: "A", hashes: hashesA[:maxTxAnnounces/2]},
 			doTxNotify{peer: "B", hashes: hashesB[:maxTxAnnounces/2-1]},
@@ -1188,7 +1188,7 @@ func TestTransactionFetcherUnderpricedDedup(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Deliver a transaction through the fetcher, but reject as underpriced
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0], testTxsHashes[1]}},
 			doWait{time: txArriveTimeout, step: true},
@@ -1224,7 +1224,7 @@ func TestTransactionFetcherUnderpricedDoSProtection(t *testing.T) {
 		hashes[i] = tx.Hash()
 	}
 	// Generate a set of steps to announce and deliver the entire set of transactions
-	var steps []interface{}
+	var steps []any
 	for i := 0; i < maxTxUnderpricedSetSize/maxTxRetrievals; i++ {
 		steps = append(steps, doTxNotify{peer: "A", hashes: hashes[i*maxTxRetrievals : (i+1)*maxTxRetrievals]})
 		steps = append(steps, isWaiting(map[string][]common.Hash{
@@ -1259,7 +1259,7 @@ func TestTransactionFetcherUnderpricedDoSProtection(t *testing.T) {
 				nil,
 			)
 		},
-		steps: append(steps, []interface{}{
+		steps: append(steps, []any{
 			// The preparation of the test has already been done in `steps`, add the last check
 			doTxNotify{peer: "A", hashes: []common.Hash{hashes[maxTxUnderpricedSetSize]}},
 			doWait{time: txArriveTimeout, step: true},
@@ -1282,7 +1282,7 @@ func TestTransactionFetcherOutOfBoundDeliveries(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Deliver something out of the blue
 			isWaiting(nil),
 			isScheduled{nil, nil, nil},
@@ -1336,7 +1336,7 @@ func TestTransactionFetcherDrop(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Set up a few hashes into various stages
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}}},
 			doWait{time: txArriveTimeout, step: true},
@@ -1403,7 +1403,7 @@ func TestTransactionFetcherDropRescheduling(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Set up a few hashes into various stages
 			doTxNotify{peer: "A", hashes: []common.Hash{{0x01}}},
 			doWait{time: txArriveTimeout, step: true},
@@ -1449,7 +1449,7 @@ func TestInvalidAnnounceMetadata(t *testing.T) {
 				func(peer string) { drop <- peer },
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Initial announcement to get something into the waitlist
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0], testTxsHashes[1]}, types: []byte{testTxs[0].Type(), testTxs[1].Type()}, sizes: []uint32{uint32(testTxs[0].Size()), uint32(testTxs[1].Size())}},
 			isWaitingWithMeta(map[string][]announce{
@@ -1517,7 +1517,7 @@ func TestTransactionFetcherFuzzCrash01(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Get a transaction into fetching mode and make it dangling with a broadcast
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0]}},
 			doWait{time: txArriveTimeout, step: true},
@@ -1545,7 +1545,7 @@ func TestTransactionFetcherFuzzCrash02(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Get a transaction into fetching mode and make it dangling with a broadcast
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0]}},
 			doWait{time: txArriveTimeout, step: true},
@@ -1575,7 +1575,7 @@ func TestTransactionFetcherFuzzCrash03(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Get a transaction into fetching mode and make it dangling with a broadcast
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0], testTxsHashes[1]}},
 			doWait{time: txFetchTimeout, step: true},
@@ -1612,7 +1612,7 @@ func TestTransactionFetcherFuzzCrash04(t *testing.T) {
 				nil,
 			)
 		},
-		steps: []interface{}{
+		steps: []any{
 			// Get a transaction into fetching mode and make it dangling with a broadcast
 			doTxNotify{peer: "A", hashes: []common.Hash{testTxsHashes[0]}},
 			doWait{time: txArriveTimeout, step: true},

@@ -124,7 +124,7 @@ type rpcBlock struct {
 	Withdrawals  []*types.Withdrawal `json:"withdrawals,omitempty"`
 }
 
-func (qc *Client) getBlock(ctx context.Context, method string, args ...interface{}) (*types.Block, error) {
+func (qc *Client) getBlock(ctx context.Context, method string, args ...any) (*types.Block, error) {
 	var raw json.RawMessage
 	err := qc.c.CallContext(ctx, &raw, method, args...)
 	if err != nil {
@@ -394,8 +394,8 @@ func (qc *Client) SubscribeFilterLogs(ctx context.Context, q qrl.FilterQuery, ch
 	return sub, nil
 }
 
-func toFilterArg(q qrl.FilterQuery) (interface{}, error) {
-	arg := map[string]interface{}{
+func toFilterArg(q qrl.FilterQuery) (any, error) {
+	arg := map[string]any{
 		"address": q.Addresses,
 		"topics":  q.Topics,
 	}
@@ -584,8 +584,8 @@ func toBlockNumArg(number *big.Int) string {
 	return fmt.Sprintf("<invalid %d>", number)
 }
 
-func toCallArg(msg qrl.CallMsg) interface{} {
-	arg := map[string]interface{}{
+func toCallArg(msg qrl.CallMsg) any {
+	arg := map[string]any{
 		"from": msg.From,
 		"to":   msg.To,
 	}

@@ -75,7 +75,7 @@ func TestEmptyMessages(t *testing.T) {
 	// All empty messages encodes to the same format
 	want := common.FromHex("c4820457c0")
 
-	for i, msg := range []interface{}{
+	for i, msg := range []any{
 		// Headers
 		GetBlockHeadersPacket{1111, nil},
 		BlockHeadersPacket{1111, nil},
@@ -190,7 +190,7 @@ func TestMessages(t *testing.T) {
 	}
 
 	for i, tc := range []struct {
-		message interface{}
+		message any
 		want    []byte
 	}{
 		{

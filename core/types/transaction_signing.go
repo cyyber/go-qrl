@@ -229,7 +229,7 @@ func (s ShanghaiSigner) Hash(tx *Transaction, descriptor []byte, extraParams []b
 	case DynamicFeeTxType:
 		return prefixedRlpHash(
 			tx.Type(),
-			[]interface{}{
+			[]any{
 				s.ChainId,
 				tx.Nonce(),
 				tx.GasTipCap(),

@@ -51,10 +51,10 @@ func (t *NoopService) Protocols() []p2p.Protocol {
 				rw.ReadMsg()
 				return nil
 			},
-			NodeInfo: func() interface{} {
+			NodeInfo: func() any {
 				return struct{}{}
 			},
-			PeerInfo: func(id qnode.ID) interface{} {
+			PeerInfo: func(id qnode.ID) any {
 				return struct{}{}
 			},
 			Attributes: []qnr.Entry{},

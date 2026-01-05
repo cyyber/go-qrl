@@ -46,7 +46,7 @@ func benchRLP(b *testing.B, encode bool) {
 	signer := NewShanghaiSigner(big.NewInt(1337))
 	for _, tc := range []struct {
 		name string
-		obj  interface{}
+		obj  any
 	}{
 		{
 			"london-header",

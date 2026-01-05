@@ -110,7 +110,7 @@ func (b *testBackend) RunPeer(peer *Peer, handler Handler) error {
 	// is omitted and we will just give control back to the handler.
 	return handler(peer)
 }
-func (b *testBackend) PeerInfo(qnode.ID) interface{} { panic("not implemented") }
+func (b *testBackend) PeerInfo(qnode.ID) any { panic("not implemented") }
 
 func (b *testBackend) AcceptTxs() bool {
 	panic("data processing tests should be done in the handler package")

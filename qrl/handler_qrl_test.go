@@ -48,7 +48,7 @@ func (h *testQRLHandler) Chain() *core.BlockChain              { panic("no backi
 func (h *testQRLHandler) TxPool() qrl.TxPool                   { panic("no backing tx pool") }
 func (h *testQRLHandler) AcceptTxs() bool                      { return true }
 func (h *testQRLHandler) RunPeer(*qrl.Peer, qrl.Handler) error { panic("not used in tests") }
-func (h *testQRLHandler) PeerInfo(qnode.ID) interface{}        { panic("not used in tests") }
+func (h *testQRLHandler) PeerInfo(qnode.ID) any                { panic("not used in tests") }
 
 func (h *testQRLHandler) Handle(peer *qrl.Peer, packet qrl.Packet) error {
 	switch packet := packet.(type) {

@@ -491,7 +491,7 @@ func TestEstimateGas(t *testing.T) {
 		message     qrl.CallMsg
 		expect      uint64
 		expectError error
-		expectData  interface{}
+		expectData  any
 	}{
 		{"plain transfer(valid)", qrl.CallMsg{
 			From:      addr,
@@ -1183,7 +1183,7 @@ func TestCallContractRevert(t *testing.T) {
 		t.Errorf("could not deploy contract: %v", err)
 	}
 
-	inputs := make(map[string]interface{}, 3)
+	inputs := make(map[string]any, 3)
 	inputs["revertASM"] = nil
 	inputs["revertNoString"] = ""
 	inputs["revertString"] = "some error"

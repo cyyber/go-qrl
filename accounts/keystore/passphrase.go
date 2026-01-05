@@ -160,7 +160,7 @@ func EncryptDataV1(data, auth []byte, argon2idT, argon2idM uint32, argon2idP uin
 		return CryptoJSON{}, err
 	}
 
-	argon2idParamsJSON := make(map[string]interface{}, 5)
+	argon2idParamsJSON := make(map[string]any, 5)
 	argon2idParamsJSON["t"] = argon2idT
 	argon2idParamsJSON["m"] = argon2idM
 	argon2idParamsJSON["p"] = argon2idP
@@ -200,7 +200,7 @@ func EncryptKey(key *Key, auth string, argon2idT, argo2idM uint32, argo2idP uint
 // DecryptKey decrypts a key from a json blob, returning the private key itself.
 func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	// Parse the json into a simple map to fetch the key version
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err := json.Unmarshal(keyjson, &m); err != nil {
 		return nil, err
 	}
@@ -301,7 +301,7 @@ func getKDFKey(cryptoJSON CryptoJSON, auth string) ([]byte, error) {
 // TODO: can we do without this when unmarshalling dynamic JSON?
 // why do integers in KDF params end up as float64 and not int after
 // unmarshal?
-func ensureInt(x interface{}) int {
+func ensureInt(x any) int {
 	res, ok := x.(int)
 	if !ok {
 		res = int(x.(float64))

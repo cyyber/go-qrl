@@ -77,7 +77,7 @@ func HashData(kh KeccakState, data []byte) (h common.Hash) {
 // TODO(rgeraldes24): 12 vs 8
 // CreateAddress creates a qrl address given the bytes and the nonce
 func CreateAddress(b common.Address, nonce uint64) common.Address {
-	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
+	data, _ := rlp.EncodeToBytes([]any{b, nonce})
 	return common.BytesToAddress(Keccak256(data)[8:])
 }
 

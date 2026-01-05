@@ -71,7 +71,7 @@ type UDPv5 struct {
 	validSchemes qnr.IdentityScheme
 
 	// misc buffers used during message handling
-	logcontext []interface{}
+	logcontext []any
 
 	// talkreq handler registry
 	talk *talkSystem

@@ -253,7 +253,7 @@ func New(stack *node.Node, config *qrlconfig.Config) (*QRL, error) {
 func makeExtraData(extra []byte) []byte {
 	if len(extra) == 0 {
 		// create default extradata
-		extra, _ = rlp.EncodeToBytes([]interface{}{
+		extra, _ = rlp.EncodeToBytes([]any{
 			uint(gzondversion.Major<<16 | gzondversion.Minor<<8 | gzondversion.Patch),
 			"gzond",
 			runtime.Version(),

@@ -180,7 +180,7 @@ func testFlatCallTracer(tracerName string, dirPath string, t *testing.T) {
 
 // jsonEqual is similar to reflect.DeepEqual, but does a 'bounce' via json prior to
 // comparison
-func jsonEqualFlat(x, y interface{}) bool {
+func jsonEqualFlat(x, y any) bool {
 	xTrace := new([]flatCallTrace)
 	yTrace := new([]flatCallTrace)
 	if xj, err := json.Marshal(x); err == nil {
@@ -205,7 +205,7 @@ func BenchmarkFlatCallTracer(b *testing.B) {
 	for _, file := range files {
 		filename := strings.TrimPrefix(file, "testdata/call_tracer_flat/")
 		b.Run(camel(strings.TrimSuffix(filename, ".json")), func(b *testing.B) {
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				err := flatCallTracerTestRunner("flatCallTracer", filename, "call_tracer_flat", b)
 				if err != nil {
 					b.Fatal(err)
