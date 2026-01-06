@@ -286,11 +286,9 @@ func NewDatabaseWithFreezer(db qrldb.KeyValueStore, ancient string, namespace st
 	}
 	// Freezer is consistent with the key-value database, permit combining the two
 	if !frdb.readonly {
-		frdb.wg.Add(1)
-		go func() {
+		frdb.wg.Go(func() {
 			frdb.freeze(db)
-			frdb.wg.Done()
-		}()
+		})
 	}
 	return &freezerdb{
 		ancientRoot:   ancient,

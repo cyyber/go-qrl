@@ -254,10 +254,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 		tracker = newStateTracker(maximumPendingTraceStates, start.NumberU64())
 	)
 	for range threads {
-		pend.Add(1)
-		go func() {
-			defer pend.Done()
-
+		pend.Go(func() {
 			// Fetch and execute the block trace taskCh
 			for task := range taskCh {
 				var (
@@ -295,7 +292,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 					return
 				}
 			}
-		}()
+		})
 	}
 	// Start a goroutine to feed all the blocks into the tracers
 	go func() {
@@ -638,9 +635,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 	}
 	jobs := make(chan *txTraceTask, threads)
 	for range threads {
-		pend.Add(1)
-		go func() {
-			defer pend.Done()
+		pend.Go(func() {
 			// Fetch and execute the next transaction trace tasks
 			for task := range jobs {
 				msg, _ := core.TransactionToMessage(txs[task.index], signer, block.BaseFee())
@@ -657,7 +652,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 				}
 				results[task.index] = &txTraceResult{TxHash: txs[task.index].Hash(), Result: res}
 			}
-		}()
+		})
 	}
 
 	// Feed the transactions into the tracers and return

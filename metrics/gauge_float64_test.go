@@ -18,13 +18,11 @@ func BenchmarkGaugeFloat64Parallel(b *testing.B) {
 	c := NewGaugeFloat64()
 	var wg sync.WaitGroup
 	for i := range 10 {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			for b.Loop() {
 				c.Update(float64(i))
 			}
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 	if have, want := c.Snapshot().Value(), float64(b.N-1); have != want {

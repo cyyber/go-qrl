@@ -217,12 +217,10 @@ func TestFeedUnsubscribeBlockedPost(t *testing.T) {
 	}
 
 	// Queue up some Sends. None of these can make progress while bchan isn't read.
-	wg.Add(nsends)
 	for range nsends {
-		go func() {
+		wg.Go(func() {
 			feed.Send(99)
-			wg.Done()
-		}()
+		})
 	}
 	// Subscribe the other channels.
 	for i, ch := range chans {
@@ -250,11 +248,9 @@ func TestFeedUnsubscribeSentChan(t *testing.T) {
 	)
 	defer sub2.Unsubscribe()
 
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		feed.Send(0)
-		wg.Done()
-	}()
+	})
 
 	// Wait for the value on ch1.
 	<-ch1
@@ -267,11 +263,9 @@ func TestFeedUnsubscribeSentChan(t *testing.T) {
 
 	// Send again. This should send to ch2 only, so the wait group will unblock
 	// as soon as a value is received on ch2.
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		feed.Send(0)
-		wg.Done()
-	}()
+	})
 	<-ch2
 	wg.Wait()
 }
