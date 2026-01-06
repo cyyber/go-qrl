@@ -123,7 +123,7 @@ func TestGenerateWithdrawalChain(t *testing.T) {
 		head            = blockchain.CurrentBlock().Number.Uint64()
 	)
 	for i := range head {
-		block := blockchain.GetBlockByNumber(uint64(i))
+		block := blockchain.GetBlockByNumber(i)
 		if block == nil {
 			t.Fatalf("block %d not found", i)
 		}

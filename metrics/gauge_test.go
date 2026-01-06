@@ -8,7 +8,7 @@ func BenchmarkGauge(b *testing.B) {
 	g := NewGauge()
 	var i int64
 	for b.Loop() {
-		g.Update(int64(i))
+		g.Update(i)
 		i++
 	}
 }

@@ -1354,7 +1354,7 @@ func setRequiredBlocks(ctx *cli.Context, cfg *qrlconfig.Config) {
 // specialize it further.
 func CheckExclusive(ctx *cli.Context, args ...any) {
 	set := make([]string, 0, 1)
-	for i := range args {
+	for i := 0; i < len(args); i++ {
 		// Make sure the next argument is a flag and skip if not set
 		flag, ok := args[i].(cli.Flag)
 		if !ok {
