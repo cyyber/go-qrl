@@ -64,7 +64,6 @@ var (
 	allToolsArchiveFiles = []string{
 		"COPYING",
 		executablePath("abigen"),
-		executablePath("bootnode"),
 		executablePath("qrvm"),
 		executablePath("gzond"),
 		executablePath("rlpdump"),

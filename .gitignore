@@ -40,7 +40,6 @@
 # binaries
 cmd/abidump/abidump
 cmd/abigen/abigen
-cmd/bootnode/bootnode
 cmd/clef/clef
 cmd/devp2p/devp2p
 cmd/gzond/gzond
