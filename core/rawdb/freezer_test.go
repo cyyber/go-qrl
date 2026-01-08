@@ -142,7 +142,7 @@ func TestFreezerConcurrentModifyRetrieve(t *testing.T) {
 		defer close(written)
 		for item := uint64(0); item < 10000; item += writeBatchSize {
 			_, err := f.ModifyAncients(func(op qrldb.AncientWriteOp) error {
-				for i := uint64(0); i < writeBatchSize; i++ {
+				for i := range writeBatchSize {
 					item := item + i
 					value := getChunk(32, int(item))
 					if err := op.AppendRaw("test", item, value); err != nil {
@@ -196,7 +196,7 @@ func TestFreezerConcurrentModifyTruncate(t *testing.T) {
 			t.Fatal("truncate failed:", err)
 		}
 		_, err := f.ModifyAncients(func(op qrldb.AncientWriteOp) error {
-			for i := uint64(0); i < 100; i++ {
+			for i := range uint64(100) {
 				if err := op.AppendRaw("test", i, item); err != nil {
 					return err
 				}

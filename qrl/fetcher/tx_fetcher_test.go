@@ -1215,7 +1215,7 @@ func TestTransactionFetcherUnderpricedDoSProtection(t *testing.T) {
 
 	// Create a slew of transactions to max out the underpriced set
 	var txs []*types.Transaction
-	for i := 0; i < maxTxUnderpricedSetSize+1; i++ {
+	for range maxTxUnderpricedSetSize + 1 {
 		to := common.Address{byte(rand.Intn(256))}
 		txs = append(txs, types.NewTx(&types.DynamicFeeTx{Nonce: rand.Uint64(), To: &to, Value: new(big.Int), Gas: 0, GasFeeCap: new(big.Int), Data: nil}))
 	}
@@ -1225,7 +1225,7 @@ func TestTransactionFetcherUnderpricedDoSProtection(t *testing.T) {
 	}
 	// Generate a set of steps to announce and deliver the entire set of transactions
 	var steps []any
-	for i := 0; i < maxTxUnderpricedSetSize/maxTxRetrievals; i++ {
+	for i := range maxTxUnderpricedSetSize / maxTxRetrievals {
 		steps = append(steps, doTxNotify{peer: "A", hashes: hashes[i*maxTxRetrievals : (i+1)*maxTxRetrievals]})
 		steps = append(steps, isWaiting(map[string][]common.Hash{
 			"A": hashes[i*maxTxRetrievals : (i+1)*maxTxRetrievals],

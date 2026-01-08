@@ -109,7 +109,7 @@ func newTester(t *testing.T) *tester {
 			snapStorages: make(map[common.Hash]map[common.Hash]map[common.Hash][]byte),
 		}
 	)
-	for i := 0; i < 2*128; i++ {
+	for i := range 2 * 128 {
 		var parent = types.EmptyRootHash
 		if len(obj.roots) != 0 {
 			parent = obj.roots[len(obj.roots)-1]

@@ -498,7 +498,7 @@ func TestFreezerReadAndTruncate(t *testing.T) {
 			f.Close()
 			t.Fatalf("expected %d items, got %d", 0, f.items.Load())
 		}
-		for y := byte(0); y < 30; y++ {
+		for y := range byte(30) {
 			f.Retrieve(uint64(y))
 		}
 

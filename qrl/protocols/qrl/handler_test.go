@@ -137,7 +137,7 @@ func testGetBlockHeaders(t *testing.T, protocol uint) {
 		unknown[i] = byte(i)
 	}
 	getHashes := func(from, limit uint64) (hashes []common.Hash) {
-		for i := uint64(0); i < limit; i++ {
+		for i := range limit {
 			hashes = append(hashes, backend.chain.GetCanonicalHash(from-1-i))
 		}
 		return hashes

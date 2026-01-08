@@ -32,7 +32,7 @@ func TestGenerator(t *testing.T) {
 	var input, output [types.BloomBitLength][types.BloomByteLength]byte
 
 	for i := range types.BloomBitLength {
-		for j := 0; j < types.BloomBitLength; j++ {
+		for j := range types.BloomBitLength {
 			bit := byte(rand.Int() % 2)
 
 			input[i][j/8] |= bit << byte(7-j%8)

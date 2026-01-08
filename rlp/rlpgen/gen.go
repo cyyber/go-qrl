@@ -22,6 +22,7 @@ import (
 	"go/format"
 	"go/types"
 	"sort"
+	"strings"
 
 	"github.com/theQRL/go-zond/rlp/internal/rlpstruct"
 	"golang.org/x/tools/go/packages"
@@ -623,14 +624,14 @@ func (op structOp) writeOptionalFields(b *bytes.Buffer, ctx *genContext, v strin
 	// Now write the fields.
 	for i, field := range op.optionalFields {
 		selector := v + "." + field.name
-		cond := ""
+		var cond strings.Builder
 		for j := i; j < len(op.optionalFields); j++ {
 			if j > i {
-				cond += " || "
+				cond.WriteString(" || ")
 			}
-			cond += zeroV[j]
+			cond.WriteString(zeroV[j])
 		}
-		fmt.Fprintf(b, "if %s {\n", cond)
+		fmt.Fprintf(b, "if %s {\n", cond.String())
 		fmt.Fprint(b, field.elem.genWrite(ctx, selector))
 		fmt.Fprintf(b, "}\n")
 	}

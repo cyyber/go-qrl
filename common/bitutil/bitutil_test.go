@@ -40,10 +40,7 @@ func TestXOR(t *testing.T) {
 
 // naiveXOR xors bytes one by one.
 func naiveXOR(dst, a, b []byte) int {
-	n := len(a)
-	if len(b) < n {
-		n = len(b)
-	}
+	n := min(len(b), len(a))
 	for i := range n {
 		dst[i] = a[i] ^ b[i]
 	}

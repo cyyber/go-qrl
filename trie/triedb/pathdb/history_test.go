@@ -133,7 +133,7 @@ func TestTruncateHeadHistory(t *testing.T) {
 	)
 	defer freezer.Close()
 
-	for i := 0; i < len(hs); i++ {
+	for i := range hs {
 		accountData, storageData, accountIndex, storageIndex := hs[i].encode()
 		rawdb.WriteStateHistory(freezer, uint64(i+1), hs[i].meta.encode(), accountIndex, storageIndex, accountData, storageData)
 		rawdb.WriteStateID(db, hs[i].meta.root, uint64(i+1))
@@ -161,7 +161,7 @@ func TestTruncateTailHistory(t *testing.T) {
 	)
 	defer freezer.Close()
 
-	for i := 0; i < len(hs); i++ {
+	for i := range hs {
 		accountData, storageData, accountIndex, storageIndex := hs[i].encode()
 		rawdb.WriteStateHistory(freezer, uint64(i+1), hs[i].meta.encode(), accountIndex, storageIndex, accountData, storageData)
 		rawdb.WriteStateID(db, hs[i].meta.root, uint64(i+1))
@@ -204,7 +204,7 @@ func TestTruncateTailHistories(t *testing.T) {
 		)
 		defer freezer.Close()
 
-		for i := 0; i < len(hs); i++ {
+		for i := range hs {
 			accountData, storageData, accountIndex, storageIndex := hs[i].encode()
 			rawdb.WriteStateHistory(freezer, uint64(i+1), hs[i].meta.encode(), accountIndex, storageIndex, accountData, storageData)
 			rawdb.WriteStateID(db, hs[i].meta.root, uint64(i+1))
@@ -249,7 +249,7 @@ func compareList[k comparable](a, b []k) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := 0; i < len(a); i++ {
+	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}

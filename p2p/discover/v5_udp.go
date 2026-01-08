@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 	"sync"
 	"time"
 
@@ -449,12 +450,7 @@ func (t *UDPv5) verifyResponseNode(c *callV5, r *qnr.Record, distances []uint, s
 }
 
 func containsUint(x uint, xs []uint) bool {
-	for _, v := range xs {
-		if x == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(xs, x)
 }
 
 // callToNode sends the given call and sets up a handler for response packets (of message

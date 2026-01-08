@@ -89,7 +89,7 @@ func TestIteratorLargeData(t *testing.T) {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	vals := make(map[string]*kv)
 
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		value := &kv{common.LeftPadBytes([]byte{i}, 32), []byte{i}, false}
 		value2 := &kv{common.LeftPadBytes([]byte{10, i}, 32), []byte{i}, false}
 		trie.MustUpdate(value.k, value.v)

@@ -146,7 +146,7 @@ func TestTable_IPLimit(t *testing.T) {
 	defer db.Close()
 	defer tab.close()
 
-	for i := 0; i < tableIPLimit+1; i++ {
+	for i := range tableIPLimit + 1 {
 		n := nodeAtDistance(tab.self().ID(), i, net.IP{172, 0, 1, byte(i)})
 		tab.addSeenNode(n)
 	}
@@ -164,7 +164,7 @@ func TestTable_BucketIPLimit(t *testing.T) {
 	defer tab.close()
 
 	d := 3
-	for i := 0; i < bucketIPLimit+1; i++ {
+	for i := range bucketIPLimit + 1 {
 		n := nodeAtDistance(tab.self().ID(), d, net.IP{172, 0, 1, byte(i)})
 		tab.addSeenNode(n)
 	}

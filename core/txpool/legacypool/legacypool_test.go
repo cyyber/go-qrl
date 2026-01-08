@@ -715,7 +715,7 @@ func TestPostponing(t *testing.T) {
 	wallets := make([]wallet.Wallet, 2)
 	accs := make([]common.Address, len(wallets))
 
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		accs[i] = wallets[i].GetAddress()
 
@@ -930,7 +930,7 @@ func testQueueGlobalLimiting(t *testing.T, nolocals bool) {
 
 	// Create a number of test accounts and fund them (last one will be the local)
 	wallets := make([]wallet.Wallet, 5)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
@@ -1209,7 +1209,7 @@ func TestPendingGlobalLimiting(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	wallets := make([]wallet.Wallet, 5)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
@@ -1348,7 +1348,7 @@ func TestPendingMinimumAllowance(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	wallets := make([]wallet.Wallet, 5)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
@@ -1439,7 +1439,7 @@ func TestRepricingDynamicFee(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	wallets := make([]wallet.Wallet, 4)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
@@ -1562,12 +1562,12 @@ func TestRepricingKeepsLocals(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	wallets := make([]wallet.Wallet, 3)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(100000*1000000))
 	}
 	// Create transaction (both pending and queued) with a linearly growing gasprice
-	for i := uint64(0); i < 500; i++ {
+	for i := range uint64(500) {
 		// Add pending dynamic fee transaction.
 		pendingTx := dynamicFeeTx(i, 100000, big.NewInt(int64(i)+1), big.NewInt(int64(i)), wallets[1])
 		if err := pool.addLocal(pendingTx); err != nil {
@@ -1632,7 +1632,7 @@ func TestStableUnderpricing(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	wallets := make([]wallet.Wallet, 2)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
@@ -1696,7 +1696,7 @@ func TestUnderpricingDynamicFee(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	wallets := make([]wallet.Wallet, 4)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
@@ -2148,7 +2148,7 @@ func TestStatusCheck(t *testing.T) {
 
 	// Create the test accounts to check various transaction statuses with
 	wallets := make([]wallet.Wallet, 3)
-	for i := 0; i < len(wallets); i++ {
+	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
@@ -2302,11 +2302,11 @@ func BenchmarkInsertRemoteWithAllLocals(b *testing.B) {
 	remoteAddr := remoteWallet.GetAddress()
 
 	locals := make([]*types.Transaction, 4096+1024) // Occupy all slots
-	for i := 0; i < len(locals); i++ {
+	for i := range locals {
 		locals[i] = transaction(uint64(i), 100000, localWallet)
 	}
 	remotes := make([]*types.Transaction, 1000)
-	for i := 0; i < len(remotes); i++ {
+	for i := range remotes {
 		remotes[i] = dynamicFeeTx(uint64(i), 100000, big.NewInt(2), big.NewInt(0), remoteWallet) // Higher gasprice
 	}
 	// Benchmark importing the transactions into the queue
@@ -2321,7 +2321,7 @@ func BenchmarkInsertRemoteWithAllLocals(b *testing.B) {
 		b.StartTimer()
 		// Assign a high enough balance for testing
 		testAddBalance(pool, remoteAddr, big.NewInt(100000000))
-		for i := 0; i < len(remotes); i++ {
+		for i := range remotes {
 			pool.addRemotes([]*types.Transaction{remotes[i]})
 		}
 		pool.Close()

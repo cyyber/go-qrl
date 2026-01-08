@@ -251,7 +251,7 @@ func startRetrievers(session *MatcherSession, quit chan struct{}, retrievals *at
 // numbers.
 func generateBitset(bit uint, section uint64) []byte {
 	bitset := make([]byte, testSectionSize/8)
-	for i := 0; i < len(bitset); i++ {
+	for i := range bitset {
 		for b := range 8 {
 			blockIdx := section*testSectionSize + uint64(i*8+b)
 			bitset[i] += bitset[i]

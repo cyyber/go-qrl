@@ -242,10 +242,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 		reexec = *config.Reexec
 	}
 	blocks := int(end.NumberU64() - start.NumberU64())
-	threads := runtime.NumCPU()
-	if threads > blocks {
-		threads = blocks
-	}
+	threads := min(runtime.NumCPU(), blocks)
 	var (
 		pend    = new(sync.WaitGroup)
 		ctx     = context.Background()
@@ -629,10 +626,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 		results   = make([]*txTraceResult, len(txs))
 		pend      sync.WaitGroup
 	)
-	threads := runtime.NumCPU()
-	if threads > len(txs) {
-		threads = len(txs)
-	}
+	threads := min(runtime.NumCPU(), len(txs))
 	jobs := make(chan *txTraceTask, threads)
 	for range threads {
 		pend.Go(func() {

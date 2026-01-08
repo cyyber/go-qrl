@@ -424,7 +424,7 @@ func checkReceiptsRLP(have, want types.Receipts) error {
 	if len(have) != len(want) {
 		return fmt.Errorf("receipts sizes mismatch: have %d, want %d", len(have), len(want))
 	}
-	for i := 0; i < len(want); i++ {
+	for i := range want {
 		rlpHave, err := rlp.EncodeToBytes(have[i])
 		if err != nil {
 			return err
@@ -643,7 +643,7 @@ func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
 // makeTestReceipts creates fake receipts for the ancient write benchmark.
 func makeTestReceipts(n int, nPerBlock int) []types.Receipts {
 	receipts := make([]*types.Receipt, nPerBlock)
-	for i := 0; i < len(receipts); i++ {
+	for i := range receipts {
 		receipts[i] = &types.Receipt{
 			Status:            types.ReceiptStatusSuccessful,
 			CumulativeGasUsed: 0x888888888,

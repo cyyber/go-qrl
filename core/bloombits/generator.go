@@ -66,7 +66,7 @@ func (b *Generator) AddBloom(index uint, bloom types.Bloom) error {
 	// Rotate the bloom and insert into our collection
 	byteIndex := b.nextSec / 8
 	bitIndex := byte(7 - b.nextSec%8)
-	for byt := 0; byt < types.BloomByteLength; byt++ {
+	for byt := range types.BloomByteLength {
 		bloomByte := bloom[types.BloomByteLength-1-byt]
 		if bloomByte == 0 {
 			continue

@@ -26,11 +26,11 @@ import (
 )
 
 var (
-	bytesT  = reflect.TypeOf(Bytes(nil))
-	bytesqT = reflect.TypeOf(BytesQ(nil))
-	bigT    = reflect.TypeOf((*Big)(nil))
-	uintT   = reflect.TypeOf(Uint(0))
-	uint64T = reflect.TypeOf(Uint64(0))
+	bytesT  = reflect.TypeFor[Bytes]()
+	bytesqT = reflect.TypeFor[BytesQ]()
+	bigT    = reflect.TypeFor[*Big]()
+	uintT   = reflect.TypeFor[Uint]()
+	uint64T = reflect.TypeFor[Uint64]()
 )
 
 // Bytes marshals/unmarshals as a JSON string with 0x prefix.
@@ -202,10 +202,7 @@ func (b *Big) UnmarshalText(input []byte) error {
 	words := make([]big.Word, len(raw)/bigWordNibbles+1)
 	end := len(raw)
 	for i := range words {
-		start := end - bigWordNibbles
-		if start < 0 {
-			start = 0
-		}
+		start := max(end-bigWordNibbles, 0)
 		for ri := start; ri < end; ri++ {
 			nib := decodeNibble(raw[ri])
 			if nib == badNibble {

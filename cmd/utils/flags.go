@@ -962,8 +962,8 @@ func setNAT(ctx *cli.Context, cfg *p2p.Config) {
 // SplitAndTrim splits input separated by a comma
 // and trims excessive white space from the substrings.
 func SplitAndTrim(input string) (ret []string) {
-	l := strings.Split(input, ",")
-	for _, r := range l {
+	l := strings.SplitSeq(input, ",")
+	for r := range l {
 		if r = strings.TrimSpace(r); r != "" {
 			ret = append(ret, r)
 		}
@@ -1269,8 +1269,8 @@ func setGPO(ctx *cli.Context, cfg *gasprice.Config) {
 
 func setTxPool(ctx *cli.Context, cfg *legacypool.Config) {
 	if ctx.IsSet(TxPoolLocalsFlag.Name) {
-		locals := strings.Split(ctx.String(TxPoolLocalsFlag.Name), ",")
-		for _, account := range locals {
+		locals := strings.SplitSeq(ctx.String(TxPoolLocalsFlag.Name), ",")
+		for account := range locals {
 			trimmed := strings.TrimSpace(account)
 			addr, err := common.NewAddressFromString(trimmed)
 			if err != nil {
@@ -1332,7 +1332,7 @@ func setRequiredBlocks(ctx *cli.Context, cfg *qrlconfig.Config) {
 		return
 	}
 	cfg.RequiredBlocks = make(map[uint64]common.Hash)
-	for _, entry := range strings.Split(requiredBlocks, ",") {
+	for entry := range strings.SplitSeq(requiredBlocks, ",") {
 		parts := strings.Split(entry, "=")
 		if len(parts) != 2 {
 			Fatalf("Invalid required block entry: %s", entry)
@@ -1892,7 +1892,7 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 	// Otherwise resolve absolute paths and return them
 	var preloads []string
 
-	for _, file := range strings.Split(ctx.String(PreloadJSFlag.Name), ",") {
+	for file := range strings.SplitSeq(ctx.String(PreloadJSFlag.Name), ",") {
 		preloads = append(preloads, strings.TrimSpace(file))
 	}
 	return preloads

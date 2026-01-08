@@ -535,11 +535,11 @@ func testReorgShort(t *testing.T, full bool, scheme string) {
 	// we need a fairly long chain of blocks with different difficulties for a short
 	// one to become heavier than a long one. The 96 is an empirical value.
 	easy := make([]int64, 96)
-	for i := 0; i < len(easy); i++ {
+	for i := range easy {
 		easy[i] = 60
 	}
 	diff := make([]int64, len(easy)-1)
-	for i := 0; i < len(diff); i++ {
+	for i := range diff {
 		diff[i] = -9
 	}
 	testReorg(t, easy, diff, full, scheme)
@@ -749,7 +749,7 @@ func testFastVsFullChains(t *testing.T, scheme string) {
 	}
 
 	// Iterate over all chain data components, and cross reference
-	for i := 0; i < len(blocks); i++ {
+	for i := range blocks {
 		num, hash, time := blocks[i].NumberU64(), blocks[i].Hash(), blocks[i].Time()
 
 		if fheader, aheader := fast.GetHeaderByHash(hash), archive.GetHeaderByHash(hash); fheader.Hash() != aheader.Hash() {
@@ -1461,7 +1461,7 @@ func testBlockchainHeaderchainReorgConsistency(t *testing.T, scheme string) {
 
 	// Generate a bunch of fork blocks, each side forking from the canonical chain
 	forks := make([]*types.Block, len(blocks))
-	for i := 0; i < len(forks); i++ {
+	for i := range forks {
 		parent := genesis.ToBlock()
 		if i > 0 {
 			parent = blocks[i-1]
@@ -1477,7 +1477,7 @@ func testBlockchainHeaderchainReorgConsistency(t *testing.T, scheme string) {
 	}
 	defer chain.Stop()
 
-	for i := 0; i < len(blocks); i++ {
+	for i := range blocks {
 		if _, err := chain.InsertChain(blocks[i : i+1]); err != nil {
 			t.Fatalf("block %d: failed to insert into chain: %v", i, err)
 		}
@@ -1506,7 +1506,7 @@ func TestTrieForkGC(t *testing.T) {
 
 	// Generate a bunch of fork blocks, each side forking from the canonical chain
 	forks := make([]*types.Block, len(blocks))
-	for i := 0; i < len(forks); i++ {
+	for i := range forks {
 		parent := genesis.ToBlock()
 		if i > 0 {
 			parent = blocks[i-1]
@@ -1521,7 +1521,7 @@ func TestTrieForkGC(t *testing.T) {
 	}
 	defer chain.Stop()
 
-	for i := 0; i < len(blocks); i++ {
+	for i := range blocks {
 		if _, err := chain.InsertChain(blocks[i : i+1]); err != nil {
 			t.Fatalf("block %d: failed to insert into chain: %v", i, err)
 		}
@@ -2870,7 +2870,7 @@ func testCanonicalHashMarker(t *testing.T, scheme string) {
 		}
 
 		// Ensure all hash markers are updated correctly
-		for i := 0; i < len(forkB); i++ {
+		for i := range forkB {
 			block := forkB[i]
 			hash := chain.GetCanonicalHash(block.NumberU64())
 			if hash != block.Hash() {

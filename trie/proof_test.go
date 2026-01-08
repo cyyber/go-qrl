@@ -611,7 +611,7 @@ func TestBadRangeProof(t *testing.T) {
 func TestGappedRangeProof(t *testing.T) {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	var entries []*kv // Sorted entries
-	for i := byte(0); i < 10; i++ {
+	for i := range byte(10) {
 		value := &kv{common.LeftPadBytes([]byte{i}, 32), []byte{i}, false}
 		trie.MustUpdate(value.k, value.v)
 		entries = append(entries, value)
@@ -1041,7 +1041,7 @@ func benchmarkVerifyRangeNoProof(b *testing.B, size int) {
 func randomTrie(n int) (*Trie, map[string]*kv) {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	vals := make(map[string]*kv)
-	for i := byte(0); i < 100; i++ {
+	for i := range byte(100) {
 		value := &kv{common.LeftPadBytes([]byte{i}, 32), []byte{i}, false}
 		value2 := &kv{common.LeftPadBytes([]byte{i + 10}, 32), []byte{i}, false}
 		trie.MustUpdate(value.k, value.v)

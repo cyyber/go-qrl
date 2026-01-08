@@ -46,7 +46,7 @@ func TestHashing(t *testing.T) {
 	t.Parallel()
 
 	var bytecodes = make([][]byte, 10)
-	for i := 0; i < len(bytecodes); i++ {
+	for i := range bytecodes {
 		buf := make([]byte, 100)
 		rand.Read(buf)
 		bytecodes[i] = buf
@@ -54,7 +54,7 @@ func TestHashing(t *testing.T) {
 	var want, got string
 	var old = func() {
 		hasher := sha3.NewLegacyKeccak256()
-		for i := 0; i < len(bytecodes); i++ {
+		for i := range bytecodes {
 			hasher.Reset()
 			hasher.Write(bytecodes[i])
 			hash := hasher.Sum(nil)
@@ -64,7 +64,7 @@ func TestHashing(t *testing.T) {
 	var new = func() {
 		hasher := crypto.NewKeccakState()
 		var hash = make([]byte, 32)
-		for i := 0; i < len(bytecodes); i++ {
+		for i := range bytecodes {
 			hasher.Reset()
 			hasher.Write(bytecodes[i])
 			hasher.Read(hash)
@@ -80,14 +80,14 @@ func TestHashing(t *testing.T) {
 
 func BenchmarkHashing(b *testing.B) {
 	var bytecodes = make([][]byte, 10000)
-	for i := 0; i < len(bytecodes); i++ {
+	for i := range bytecodes {
 		buf := make([]byte, 100)
 		rand.Read(buf)
 		bytecodes[i] = buf
 	}
 	var old = func() {
 		hasher := sha3.NewLegacyKeccak256()
-		for i := 0; i < len(bytecodes); i++ {
+		for i := range bytecodes {
 			hasher.Reset()
 			hasher.Write(bytecodes[i])
 			hasher.Sum(nil)
@@ -96,7 +96,7 @@ func BenchmarkHashing(b *testing.B) {
 	var new = func() {
 		hasher := crypto.NewKeccakState()
 		var hash = make([]byte, 32)
-		for i := 0; i < len(bytecodes); i++ {
+		for i := range bytecodes {
 			hasher.Reset()
 			hasher.Write(bytecodes[i])
 			hasher.Read(hash)

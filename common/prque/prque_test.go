@@ -117,12 +117,12 @@ func BenchmarkPop(b *testing.B) {
 	// Create some initial data
 	data := make([]int, b.N)
 	prio := make([]int64, b.N)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		data[i] = rand.Int()
 		prio[i] = rand.Int63()
 	}
 	queue := New[int64, int](nil)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		queue.Push(data[i], prio[i])
 	}
 	// Execute the benchmark

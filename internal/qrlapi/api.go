@@ -890,13 +890,11 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 
 	// Binary search for the smallest gas limit that allows the tx to execute successfully.
 	for lo+1 < hi {
-		mid := (hi + lo) / 2
-		if mid > lo*2 {
+		mid := min((hi+lo)/2,
 			// Most txs don't need much higher gas limit than their gas used, and most txs don't
 			// require near the full block limit of gas, so the selection of where to bisect the
 			// range here is skewed to favor the low side.
-			mid = lo * 2
-		}
+			lo*2)
 		failed, _, err = executeEstimate(ctx, b, args, state.Copy(), header, gasCap, mid)
 		if err != nil {
 			// This should not happen under normal conditions since if we make it this far the
@@ -1735,7 +1733,7 @@ func (api *DebugAPI) ChaindbProperty(property string) (string, error) {
 // ChaindbCompact flattens the entire key-value database into a single level,
 // removing all unused slots and merging all keys.
 func (api *DebugAPI) ChaindbCompact() error {
-	for b := byte(0); b < 255; b++ {
+	for b := range byte(255) {
 		log.Info("Compacting chain database", "range", fmt.Sprintf("0x%0.2X-0x%0.2X", b, b+1))
 		if err := api.b.ChainDb().Compact([]byte{b}, []byte{b + 1}); err != nil {
 			log.Error("Database compaction failed", "err", err)

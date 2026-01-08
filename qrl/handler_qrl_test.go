@@ -386,7 +386,7 @@ func testTransactionPropagation(t *testing.T, protocol uint) {
 	defer source.close()
 
 	sinks := make([]*testHandler, 10)
-	for i := 0; i < len(sinks); i++ {
+	for i := range sinks {
 		sinks[i] = newTestHandler()
 		defer sinks[i].close()
 
@@ -412,7 +412,7 @@ func testTransactionPropagation(t *testing.T, protocol uint) {
 	}
 	// Subscribe to all the transaction pools
 	txChs := make([]chan core.NewTxsEvent, len(sinks))
-	for i := 0; i < len(sinks); i++ {
+	for i := range sinks {
 		txChs[i] = make(chan core.NewTxsEvent, 1024)
 
 		sub := sinks[i].txpool.SubscribeTransactions(txChs[i])

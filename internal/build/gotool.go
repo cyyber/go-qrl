@@ -71,8 +71,8 @@ func (g *GoToolchain) goTool(command string, args ...string) *exec.Cmd {
 	// TODO: what about GOARM?
 	skip := map[string]struct{}{"GOROOT": {}, "GOARCH": {}, "GOOS": {}, "GOBIN": {}, "CC": {}}
 	for _, e := range os.Environ() {
-		if i := strings.IndexByte(e, '='); i >= 0 {
-			if _, ok := skip[e[:i]]; ok {
+		if before, _, ok := strings.Cut(e, "="); ok {
+			if _, ok := skip[before]; ok {
 				continue
 			}
 		}

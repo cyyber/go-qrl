@@ -170,7 +170,7 @@ func (f *chainFreezer) freeze(db qrldb.KeyValueStore) {
 
 		// Wipe out all data from the active database
 		batch := db.NewBatch()
-		for i := 0; i < len(ancients); i++ {
+		for i := range ancients {
 			// Always keep the genesis block in active database
 			if first+uint64(i) != 0 {
 				DeleteBlockWithoutNumber(batch, ancients[i], first+uint64(i))

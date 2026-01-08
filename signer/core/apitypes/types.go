@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -190,8 +191,8 @@ func (t *Type) isArray() bool {
 // typeName returns the canonical name of the type. If the type is 'Person[]', then
 // this method returns 'Person'
 func (t *Type) typeName() string {
-	if strings.HasSuffix(t.Type, "[]") {
-		return strings.TrimSuffix(t.Type, "[]")
+	if before, ok := strings.CutSuffix(t.Type, "[]"); ok {
+		return before
 	}
 	return t.Type
 }
@@ -246,12 +247,7 @@ func (typedData *TypedData) HashStruct(primaryType string, data TypedDataMessage
 func (typedData *TypedData) Dependencies(primaryType string, found []string) []string {
 	primaryType = strings.TrimSuffix(primaryType, "[]")
 	includes := func(arr []string, str string) bool {
-		for _, obj := range arr {
-			if obj == str {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(arr, str)
 	}
 
 	if includes(found, primaryType) {
@@ -384,7 +380,7 @@ func parseBytes(encType any) ([]byte, bool) {
 	// Handle array types.
 	val := reflect.ValueOf(encType)
 	if val.Kind() == reflect.Array && val.Type().Elem().Kind() == reflect.Uint8 {
-		v := reflect.MakeSlice(reflect.TypeOf([]byte{}), val.Len(), val.Len())
+		v := reflect.MakeSlice(reflect.TypeFor[[]byte](), val.Len(), val.Len())
 		reflect.Copy(v, val)
 		return v.Bytes(), true
 	}
@@ -415,8 +411,8 @@ func parseInteger(encType string, encValue any) (*big.Int, error) {
 		length = 256
 	} else {
 		lengthStr := ""
-		if strings.HasPrefix(encType, "uint") {
-			lengthStr = strings.TrimPrefix(encType, "uint")
+		if after, ok := strings.CutPrefix(encType, "uint"); ok {
+			lengthStr = after
 		} else {
 			lengthStr = strings.TrimPrefix(encType, "int")
 		}
@@ -502,8 +498,8 @@ func (typedData *TypedData) EncodePrimitiveValue(encType string, encValue any, d
 		}
 		return crypto.Keccak256(bytesValue), nil
 	}
-	if strings.HasPrefix(encType, "bytes") {
-		lengthStr := strings.TrimPrefix(encType, "bytes")
+	if after, ok := strings.CutPrefix(encType, "bytes"); ok {
+		lengthStr := after
 		length, err := strconv.Atoi(lengthStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid size on bytes: %v", lengthStr)

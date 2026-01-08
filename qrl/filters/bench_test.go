@@ -84,7 +84,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 	start := time.Now()
 	cnt := (*headNum - 512) / sectionSize
 	var dataSize, compSize uint64
-	for sectionIdx := uint64(0); sectionIdx < cnt; sectionIdx++ {
+	for sectionIdx := range cnt {
 		bc, err := bloombits.NewGenerator(uint(sectionSize))
 		if err != nil {
 			b.Fatalf("failed to create generator: %v", err)
