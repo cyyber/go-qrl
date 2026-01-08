@@ -60,10 +60,8 @@ func BenchmarkUnpack(b *testing.B) {
 				b.Fatalf("invalid hex %s: %v", test.packed, err)
 			}
 
-			b.ResetTimer()
-
 			var result any
-			for range b.N {
+			for b.Loop() {
 				result, _ = abi.Unpack("method", encb)
 			}
 			_ = result
