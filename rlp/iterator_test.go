@@ -37,8 +37,8 @@ func TestIterator(t *testing.T) {
 	if !it.Next() {
 		t.Fatal("expected two elems, got zero")
 	}
-
 	txs := it.Value()
+
 	// Check that uncles exist
 	if !it.Next() {
 		t.Fatal("expected two elems, got one")
