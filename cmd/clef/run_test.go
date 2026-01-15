@@ -57,8 +57,7 @@ func TestMain(m *testing.M) {
 // This method creates a temporary  keystore folder which will be removed after
 // the test exits.
 func runClef(t *testing.T, args ...string) *testproc {
-	ddir := t.TempDir()
-	return runWithKeystore(t, ddir, args...)
+	return runWithKeystore(t, t.TempDir(), args...)
 }
 
 // runWithKeystore spawns clef with the given command line args and adds keystore arg.
