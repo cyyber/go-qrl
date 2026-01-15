@@ -146,7 +146,6 @@ func BenchmarkRuntimeHistogramSnapshotRead(b *testing.B) {
 		return &res
 	}
 	latency := RuntimeHistogramFromData(float64(time.Second), dserialize(sLatency))
-	b.ResetTimer()
 	b.ReportAllocs()
 	for b.Loop() {
 		snap := latency.Snapshot()

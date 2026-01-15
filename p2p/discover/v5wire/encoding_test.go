@@ -447,7 +447,6 @@ func BenchmarkV5_DecodeHandshakePingSecp256k1(b *testing.B) {
 		b.Fatal("can't encode handshake packet")
 	}
 	challenge.Node = nil // force QNR signature verification in decoder
-	b.ResetTimer()
 
 	input := make([]byte, len(enc))
 	for b.Loop() {
@@ -477,7 +476,6 @@ func BenchmarkV5_DecodePing(b *testing.B) {
 	if err != nil {
 		b.Fatalf("can't encode: %v", err)
 	}
-	b.ResetTimer()
 
 	input := make([]byte, len(enc))
 	for b.Loop() {

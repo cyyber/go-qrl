@@ -10,7 +10,6 @@ import (
 func BenchmarkDebugGCStats(b *testing.B) {
 	r := NewRegistry()
 	RegisterDebugGCStats(r)
-	b.ResetTimer()
 	for b.Loop() {
 		CaptureDebugGCStatsOnce(r)
 	}

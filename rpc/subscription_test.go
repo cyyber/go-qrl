@@ -259,7 +259,7 @@ func BenchmarkNotify(b *testing.B) {
 		ParentHash: common.HexToHash("0x01"),
 		Number:     big.NewInt(100),
 	}
-	b.ResetTimer()
+
 	for b.Loop() {
 		notifier.Notify(id, msg)
 	}

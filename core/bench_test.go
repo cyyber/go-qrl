@@ -278,7 +278,6 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 	cacheConfig.TrieDirtyDisabled = true
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
 	for b.Loop() {
 		db, err := rawdb.NewLevelDBDatabase(dir, 128, 1024, "", false)

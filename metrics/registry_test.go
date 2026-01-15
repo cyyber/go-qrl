@@ -8,7 +8,6 @@ import (
 func BenchmarkRegistry(b *testing.B) {
 	r := NewRegistry()
 	r.Register("foo", NewCounter())
-	b.ResetTimer()
 	for b.Loop() {
 		r.Each(func(string, any) {})
 	}

@@ -104,7 +104,6 @@ func BenchmarkEncodeShortNode(b *testing.B) {
 		Key: []byte{0x1, 0x2},
 		Val: hashNode(randBytes(32)),
 	}
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -122,7 +121,6 @@ func BenchmarkEncodeFullNode(b *testing.B) {
 	for i := range 16 {
 		node.Children[i] = hashNode(randBytes(32))
 	}
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -143,7 +141,6 @@ func BenchmarkDecodeShortNode(b *testing.B) {
 	blob := nodeToBytes(node)
 	hash := crypto.Keccak256(blob)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -164,7 +161,6 @@ func BenchmarkDecodeShortNodeUnsafe(b *testing.B) {
 	blob := nodeToBytes(node)
 	hash := crypto.Keccak256(blob)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -185,7 +181,6 @@ func BenchmarkDecodeFullNode(b *testing.B) {
 	blob := nodeToBytes(node)
 	hash := crypto.Keccak256(blob)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -206,7 +201,6 @@ func BenchmarkDecodeFullNodeUnsafe(b *testing.B) {
 	blob := nodeToBytes(node)
 	hash := crypto.Keccak256(blob)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {

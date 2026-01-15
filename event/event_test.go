@@ -168,7 +168,6 @@ func BenchmarkPost1000(b *testing.B) {
 	subscribed.Wait()
 
 	// The actual benchmark.
-	b.ResetTimer()
 	for b.Loop() {
 		mux.Post(testEvent(0))
 	}

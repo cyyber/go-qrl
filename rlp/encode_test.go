@@ -527,7 +527,6 @@ func BenchmarkEncodeBigInts(b *testing.B) {
 		ints[i] = math.BigPow(2, int64(i))
 	}
 	out := bytes.NewBuffer(make([]byte, 0, 4096))
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -544,7 +543,6 @@ func BenchmarkEncodeU256Ints(b *testing.B) {
 		ints[i], _ = uint256.FromBig(math.BigPow(2, int64(i)))
 	}
 	out := bytes.NewBuffer(make([]byte, 0, 4096))
-	b.ResetTimer()
 	b.ReportAllocs()
 
 	for b.Loop() {

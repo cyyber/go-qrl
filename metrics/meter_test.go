@@ -7,7 +7,6 @@ import (
 
 func BenchmarkMeter(b *testing.B) {
 	m := NewMeter()
-	b.ResetTimer()
 	for b.Loop() {
 		m.Mark(1)
 	}

@@ -177,8 +177,7 @@ func benchmarkEncoding(b *testing.B, bytes int, fill float64) {
 		bit := uint(random.Int63() % 8)
 		data[idx] |= 1 << bit
 	}
-	// Reset the benchmark and measure encoding/decoding
-	b.ResetTimer()
+	// Measure encoding/decoding
 	b.ReportAllocs()
 	for b.Loop() {
 		bitsetDecodeBytes(bitsetEncodeBytes(data), len(data))

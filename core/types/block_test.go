@@ -247,7 +247,6 @@ var benchBuffer = bytes.NewBuffer(make([]byte, 0, 32000))
 
 func BenchmarkEncodeBlock(b *testing.B) {
 	block := makeBenchBlock()
-	b.ResetTimer()
 
 	for b.Loop() {
 		benchBuffer.Reset()

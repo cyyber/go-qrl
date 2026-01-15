@@ -228,7 +228,7 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 	defer triedb.Close()
 
 	b.ReportAllocs()
-	b.ResetTimer()
+
 	for b.Loop() {
 		tracer, err := tracers.DefaultDirectory.New(tracerName, new(tracers.Context), nil)
 		if err != nil {

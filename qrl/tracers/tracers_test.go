@@ -94,7 +94,7 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}
-	b.ResetTimer()
+
 	b.ReportAllocs()
 
 	for b.Loop() {

@@ -144,7 +144,6 @@ func BenchmarkCall(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
 	for b.Loop() {
 		for range 400 {
 			Execute(code, cpurchase, nil)

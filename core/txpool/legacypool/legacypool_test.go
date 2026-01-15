@@ -2225,7 +2225,6 @@ func benchmarkPendingDemotion(b *testing.B, size int) {
 		pool.promoteTx(account, tx.Hash(), tx)
 	}
 	// Benchmark the speed of pool validation
-	b.ResetTimer()
 	for b.Loop() {
 		pool.demoteUnexecutables()
 	}
@@ -2250,7 +2249,6 @@ func benchmarkFuturePromotion(b *testing.B, size int) {
 		pool.enqueueTx(tx.Hash(), tx, false, true)
 	}
 	// Benchmark the speed of pool validation
-	b.ResetTimer()
 	for b.Loop() {
 		pool.promoteExecutables(nil)
 	}
@@ -2310,7 +2308,6 @@ func BenchmarkInsertRemoteWithAllLocals(b *testing.B) {
 		remotes[i] = dynamicFeeTx(uint64(i), 100000, big.NewInt(2), big.NewInt(0), remoteWallet) // Higher gasprice
 	}
 	// Benchmark importing the transactions into the queue
-	b.ResetTimer()
 	for b.Loop() {
 		b.StopTimer()
 		pool, _ := setupPool()

@@ -85,7 +85,6 @@ func BenchmarkDeriveSha200(b *testing.B) {
 	var exp common.Hash
 	var got common.Hash
 	b.Run("std_trie", func(b *testing.B) {
-		b.ResetTimer()
 		b.ReportAllocs()
 		for b.Loop() {
 			exp = types.DeriveSha(txs, trie.NewEmpty(trie.NewDatabase(rawdb.NewMemoryDatabase(), nil)))
@@ -93,7 +92,6 @@ func BenchmarkDeriveSha200(b *testing.B) {
 	})
 
 	b.Run("stack_trie", func(b *testing.B) {
-		b.ResetTimer()
 		b.ReportAllocs()
 		for b.Loop() {
 			got = types.DeriveSha(txs, trie.NewStackTrie(nil))

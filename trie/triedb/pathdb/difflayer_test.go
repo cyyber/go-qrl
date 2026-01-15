@@ -83,7 +83,6 @@ func benchmarkSearch(b *testing.B, depth int, total int) {
 	for i := range total {
 		layer = fill(layer, i)
 	}
-	b.ResetTimer()
 
 	var (
 		have []byte
@@ -162,7 +161,6 @@ func BenchmarkJournal(b *testing.B) {
 	for range 128 {
 		layer = fill(layer)
 	}
-	b.ResetTimer()
 
 	for b.Loop() {
 		layer.journal(new(bytes.Buffer))

@@ -1029,7 +1029,6 @@ func benchmarkVerifyRangeNoProof(b *testing.B, size int) {
 		keys = append(keys, entry.k)
 		values = append(values, entry.v)
 	}
-	b.ResetTimer()
 	for b.Loop() {
 		_, err := VerifyRangeProof(trie.Hash(), keys[0], keys[len(keys)-1], keys, values, nil)
 		if err != nil {

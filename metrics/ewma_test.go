@@ -9,7 +9,6 @@ const epsilon = 0.0000000000000001
 
 func BenchmarkEWMA(b *testing.B) {
 	a := NewEWMA1()
-	b.ResetTimer()
 	for b.Loop() {
 		a.Update(1)
 		a.Tick()

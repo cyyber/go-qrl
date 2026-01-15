@@ -9,7 +9,6 @@ import (
 
 func BenchmarkTimer(b *testing.B) {
 	tm := NewTimer()
-	b.ResetTimer()
 	for b.Loop() {
 		tm.Update(1)
 	}

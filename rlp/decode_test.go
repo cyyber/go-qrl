@@ -1180,7 +1180,6 @@ func BenchmarkDecodeUints(b *testing.B) {
 	enc := encodeTestSlice(90000)
 	b.SetBytes(int64(len(enc)))
 	b.ReportAllocs()
-	b.ResetTimer()
 
 	for b.Loop() {
 		var s []uint
@@ -1195,7 +1194,6 @@ func BenchmarkDecodeUintsReused(b *testing.B) {
 	enc := encodeTestSlice(100000)
 	b.SetBytes(int64(len(enc)))
 	b.ReportAllocs()
-	b.ResetTimer()
 
 	var s []uint
 	for b.Loop() {
@@ -1213,7 +1211,6 @@ func BenchmarkDecodeByteArrayStruct(b *testing.B) {
 	}
 	b.SetBytes(int64(len(enc)))
 	b.ReportAllocs()
-	b.ResetTimer()
 
 	var out byteArrayStruct
 	for b.Loop() {
@@ -1234,7 +1231,6 @@ func BenchmarkDecodeBigInts(b *testing.B) {
 	}
 	b.SetBytes(int64(len(enc)))
 	b.ReportAllocs()
-	b.ResetTimer()
 
 	var out []*big.Int
 	for b.Loop() {
@@ -1255,7 +1251,6 @@ func BenchmarkDecodeU256Ints(b *testing.B) {
 	}
 	b.SetBytes(int64(len(enc)))
 	b.ReportAllocs()
-	b.ResetTimer()
 
 	var out []*uint256.Int
 	for b.Loop() {

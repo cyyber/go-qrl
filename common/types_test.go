@@ -557,7 +557,6 @@ func BenchmarkPrettyDuration(b *testing.B) {
 	var x = PrettyDuration(time.Duration(int64(1203123912312)))
 	b.Logf("Pre %s", time.Duration(x).String())
 	var a string
-	b.ResetTimer()
 	for b.Loop() {
 		a = x.String()
 	}
