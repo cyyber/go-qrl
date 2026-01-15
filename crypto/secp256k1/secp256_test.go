@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
+//go:build !gofuzz && cgo
+// +build !gofuzz,cgo
+
 package secp256k1
 
 import (
@@ -144,7 +147,7 @@ func TestRandomMessagesWithRandomKeys(t *testing.T) {
 }
 
 func signAndRecoverWithRandomMessages(t *testing.T, keys func() ([]byte, []byte)) {
-	for range TestCount {
+	for i := 0; i < TestCount; i++ {
 		pubkey1, seckey := keys()
 		msg := csprngEntropy(32)
 		sig, err := Sign(msg, seckey)
@@ -176,7 +179,7 @@ func TestRecoveryOfRandomSignature(t *testing.T) {
 	pubkey1, _ := generateKeyPair()
 	msg := csprngEntropy(32)
 
-	for i := range TestCount {
+	for i := 0; i < TestCount; i++ {
 		// recovery can sometimes work, but if so should always give wrong pubkey
 		pubkey2, _ := RecoverPubkey(msg, randSig())
 		if bytes.Equal(pubkey1, pubkey2) {
@@ -190,7 +193,7 @@ func TestRandomMessagesAgainstValidSig(t *testing.T) {
 	msg := csprngEntropy(32)
 	sig, _ := Sign(msg, seckey)
 
-	for i := range TestCount {
+	for i := 0; i < TestCount; i++ {
 		msg = csprngEntropy(32)
 		pubkey2, _ := RecoverPubkey(msg, sig)
 		// recovery can sometimes work, but if so should always give wrong pubkey
@@ -218,7 +221,6 @@ func TestRecoverSanity(t *testing.T) {
 func BenchmarkSign(b *testing.B) {
 	_, seckey := generateKeyPair()
 	msg := csprngEntropy(32)
-
 	for b.Loop() {
 		Sign(msg, seckey)
 	}
@@ -228,7 +230,6 @@ func BenchmarkRecover(b *testing.B) {
 	msg := csprngEntropy(32)
 	_, seckey := generateKeyPair()
 	sig, _ := Sign(msg, seckey)
-
 	for b.Loop() {
 		RecoverPubkey(msg, sig)
 	}

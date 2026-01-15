@@ -74,17 +74,16 @@ func HashData(kh KeccakState, data []byte) (h common.Hash) {
 	return h
 }
 
-// TODO(rgeraldes24): 12 vs 8
 // CreateAddress creates a qrl address given the bytes and the nonce
 func CreateAddress(b common.Address, nonce uint64) common.Address {
 	data, _ := rlp.EncodeToBytes([]any{b, nonce})
-	return common.BytesToAddress(Keccak256(data)[8:])
+	return common.BytesToAddress(Keccak256(data)[12:])
 }
 
 // CreateAddress2 creates a qrl address given the address bytes, initial
 // contract code hash and a salt.
 func CreateAddress2(b common.Address, salt [32]byte, inithash []byte) common.Address {
-	return common.BytesToAddress(Keccak256([]byte{0xff}, b.Bytes(), salt[:], inithash)[8:])
+	return common.BytesToAddress(Keccak256([]byte{0xff}, b.Bytes(), salt[:], inithash)[12:])
 }
 
 // ToECDSA creates a private key with the given D value.
