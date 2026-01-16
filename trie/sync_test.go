@@ -732,7 +732,7 @@ func testSyncMovingTarget(t *testing.T, scheme string) {
 		preRoot = srcTrie.Hash()
 		diff    = make(map[string][]byte)
 	)
-	for range 10 {
+	for range byte(10) {
 		key, val := randBytes(32), randBytes(32)
 		srcTrie.MustUpdate(key, val)
 		diff[string(key)] = val
