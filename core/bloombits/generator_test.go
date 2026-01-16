@@ -64,8 +64,7 @@ func BenchmarkGenerator(b *testing.B) {
 	var input [types.BloomBitLength][types.BloomByteLength]byte
 	b.Run("empty", func(b *testing.B) {
 		b.ReportAllocs()
-		var i int
-		for b.Loop() {
+		for i := 0; b.Loop(); i++ {
 			// Crunch the input through the generator and verify the result
 			gen, err := NewGenerator(types.BloomBitLength)
 			if err != nil {
@@ -84,8 +83,7 @@ func BenchmarkGenerator(b *testing.B) {
 	}
 	b.Run("random", func(b *testing.B) {
 		b.ReportAllocs()
-		var i uint64
-		for b.Loop() {
+		for i := 0; b.Loop(); i++ {
 			// Crunch the input through the generator and verify the result
 			gen, err := NewGenerator(types.BloomBitLength)
 			if err != nil {
@@ -96,7 +94,6 @@ func BenchmarkGenerator(b *testing.B) {
 					b.Fatalf("bloom %d: failed to add: %v", i, err)
 				}
 			}
-			i++
 		}
 	})
 }
