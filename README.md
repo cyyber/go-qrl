@@ -233,8 +233,6 @@ that other nodes can use to connect to it and exchange peer information. Make su
 replace the displayed IP address information (most probably `[::]`) with your externally
 accessible IP to get the actual `qnode` URL.
 
-*Note: You could previously use the `bootnode` utility to start a stripped down version of geth. This is not possible anymore.*
-
 #### Starting up your member nodes
 
 With the bootnode operational and externally reachable (you can try
