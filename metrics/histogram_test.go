@@ -4,10 +4,8 @@ import "testing"
 
 func BenchmarkHistogram(b *testing.B) {
 	h := NewHistogram(NewUniformSample(100))
-	var i uint64
-	for b.Loop() {
+	for i := 0; b.Loop(); i++ {
 		h.Update(int64(i))
-		i++
 	}
 }
 
