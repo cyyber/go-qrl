@@ -75,7 +75,6 @@ func BenchmarkGenerator(b *testing.B) {
 					b.Fatalf("bloom %d: failed to add: %v", i, err)
 				}
 			}
-			i++
 		}
 	})
 	for i := range types.BloomBitLength {
