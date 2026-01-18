@@ -6,10 +6,8 @@ import (
 
 func BenchmarkGauge(b *testing.B) {
 	g := NewGauge()
-	var i int64
-	for b.Loop() {
+	for i := int64(0); b.Loop(); i++ {
 		g.Update(i)
-		i++
 	}
 }
 
