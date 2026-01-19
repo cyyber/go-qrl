@@ -20,8 +20,9 @@ func BenchmarkCounterFloat64Parallel(b *testing.B) {
 		wg.Add(1)
 		go func() {
 			for i := 0; i < b.N; i++ {
-				wg.Done()
+				c.Inc(1.0)
 			}
+			wg.Done()
 		}()
 	}
 	wg.Wait()
