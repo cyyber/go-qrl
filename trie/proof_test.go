@@ -939,7 +939,8 @@ func BenchmarkProve(b *testing.B) {
 		keys = append(keys, k)
 	}
 
-	for i := 0; b.Loop(); i++ {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		kv := vals[keys[i%len(keys)]]
 		proofs := memorydb.New()
 		if trie.Prove(kv.k, proofs); proofs.Len() == 0 {
@@ -960,7 +961,8 @@ func BenchmarkVerifyProof(b *testing.B) {
 		proofs = append(proofs, proof)
 	}
 
-	for i := 0; b.Loop(); i++ {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		im := i % len(keys)
 		if _, err := VerifyProof(root, []byte(keys[im]), proofs[im]); err != nil {
 			b.Fatalf("key %x: %v", keys[im], err)
@@ -997,7 +999,8 @@ func benchmarkVerifyRangeProof(b *testing.B, size int) {
 		values = append(values, entries[i].v)
 	}
 
-	for i := 0; b.Loop(); i++ {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		_, err := VerifyRangeProof(trie.Hash(), keys[0], keys[len(keys)-1], keys, values, proof)
 		if err != nil {
 			b.Fatalf("Case %d(%d->%d) expect no error, got %v", i, start, end-1, err)
@@ -1023,7 +1026,8 @@ func benchmarkVerifyRangeNoProof(b *testing.B, size int) {
 		keys = append(keys, entry.k)
 		values = append(values, entry.v)
 	}
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		_, err := VerifyRangeProof(trie.Hash(), keys[0], keys[len(keys)-1], keys, values, nil)
 		if err != nil {
 			b.Fatalf("Expected no error, got %v", err)

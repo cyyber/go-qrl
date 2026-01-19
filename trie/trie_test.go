@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"io"
 	"math/big"
 	"math/rand"
 	"reflect"
@@ -389,33 +390,45 @@ const (
 )
 
 func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
+	var finishedFn = func() bool {
+		size--
+		return size == 0
+	}
+	return reflect.ValueOf(generateSteps(finishedFn, r))
+}
+
+func generateSteps(finished func() bool, r io.Reader) randTest {
 	var allKeys [][]byte
+	var one = []byte{0}
 	genKey := func() []byte {
-		if len(allKeys) < 2 || r.Intn(100) < 10 {
+		r.Read(one)
+		if len(allKeys) < 2 || one[0]%100 > 90 {
 			// new key
-			key := make([]byte, r.Intn(50))
+			size := one[0] % 50
+			key := make([]byte, size)
 			r.Read(key)
 			allKeys = append(allKeys, key)
 			return key
 		}
 		// use existing key
-		return allKeys[r.Intn(len(allKeys))]
+		idx := int(one[0]) % len(allKeys)
+		return allKeys[idx]
 	}
-
 	var steps randTest
-	for i := range size {
-		step := randTestStep{op: r.Intn(opMax)}
+	for !finished() {
+		r.Read(one)
+		step := randTestStep{op: int(one[0]) % opMax}
 		switch step.op {
 		case opUpdate:
 			step.key = genKey()
 			step.value = make([]byte, 8)
-			binary.BigEndian.PutUint64(step.value, uint64(i))
+			binary.BigEndian.PutUint64(step.value, uint64(len(steps)))
 		case opGet, opDelete, opProve:
 			step.key = genKey()
 		}
 		steps = append(steps, step)
 	}
-	return reflect.ValueOf(steps)
+	return steps
 }
 
 func verifyAccessList(old *Trie, new *Trie, set *trienode.NodeSet) error {
@@ -460,7 +473,12 @@ func verifyAccessList(old *Trie, new *Trie, set *trienode.NodeSet) error {
 	return nil
 }
 
-func runRandTest(rt randTest) bool {
+// runRandTestBool coerces error to boolean, for use in quick.Check
+func runRandTestBool(rt randTest) bool {
+	return runRandTest(rt) == nil
+}
+
+func runRandTest(rt randTest) error {
 	var scheme = rawdb.HashScheme
 	if rand.Intn(2) == 0 {
 		scheme = rawdb.PathScheme
@@ -513,12 +531,12 @@ func runRandTest(rt randTest) bool {
 			newtr, err := New(TrieID(root), triedb)
 			if err != nil {
 				rt[i].err = err
-				return false
+				return err
 			}
 			if nodes != nil {
 				if err := verifyAccessList(origTrie, newtr, nodes); err != nil {
 					rt[i].err = err
-					return false
+					return err
 				}
 			}
 			tr = newtr
@@ -587,14 +605,14 @@ func runRandTest(rt randTest) bool {
 		}
 		// Abort the test on error.
 		if rt[i].err != nil {
-			return false
+			return rt[i].err
 		}
 	}
-	return true
+	return nil
 }
 
 func TestRandom(t *testing.T) {
-	if err := quick.Check(runRandTest, nil); err != nil {
+	if err := quick.Check(runRandTestBool, nil); err != nil {
 		if cerr, ok := err.(*quick.CheckError); ok {
 			t.Fatalf("random test iteration %d failed: %s", cerr.Count, spew.Sdump(cerr.In))
 		}
@@ -618,7 +636,8 @@ func benchGet(b *testing.B) {
 	}
 	binary.LittleEndian.PutUint64(k, benchElemCount/2)
 
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		trie.MustGet(k)
 	}
 	b.StopTimer()
@@ -628,11 +647,9 @@ func benchUpdate(b *testing.B, e binary.ByteOrder) *Trie {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	k := make([]byte, 32)
 	b.ReportAllocs()
-	var i uint64
-	for b.Loop() {
-		e.PutUint64(k, i)
+	for i := 0; i < b.N; i++ {
+		e.PutUint64(k, uint64(i))
 		trie.MustUpdate(k, k)
-		i++
 	}
 	return trie
 }
@@ -1003,14 +1020,14 @@ func BenchmarkHashFixedSize(b *testing.B) {
 	b.Run("10", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(20)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
@@ -1018,21 +1035,21 @@ func BenchmarkHashFixedSize(b *testing.B) {
 	b.Run("1K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(1000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("10K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(10000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkHashFixedSize(b, acc, add)
 		}
 	})
@@ -1054,14 +1071,14 @@ func BenchmarkCommitAfterHashFixedSize(b *testing.B) {
 	b.Run("10", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(20)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
@@ -1069,21 +1086,21 @@ func BenchmarkCommitAfterHashFixedSize(b *testing.B) {
 	b.Run("1K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(1000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("10K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(10000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkCommitAfterHashFixedSize(b, acc, add)
 		}
 	})
@@ -1106,14 +1123,14 @@ func BenchmarkDerefRootFixedSize(b *testing.B) {
 	b.Run("10", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(20)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
@@ -1121,21 +1138,21 @@ func BenchmarkDerefRootFixedSize(b *testing.B) {
 	b.Run("1K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(1000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
 	b.Run("10K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(10000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
 	b.Run("100K", func(b *testing.B) {
 		b.StopTimer()
 		acc, add := makeAccounts(100000)
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			benchmarkDerefRootFixedSize(b, acc, add)
 		}
 	})
@@ -1180,4 +1197,18 @@ func TestDecodeNode(t *testing.T) {
 		prng.Read(elems)
 		decodeNode(hash, elems)
 	}
+}
+
+func FuzzTrie(f *testing.F) {
+	f.Fuzz(func(t *testing.T, data []byte) {
+		var steps = 500
+		var input = bytes.NewReader(data)
+		var finishedFn = func() bool {
+			steps--
+			return steps < 0 || input.Len() == 0
+		}
+		if err := runRandTest(generateSteps(finishedFn, input)); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
