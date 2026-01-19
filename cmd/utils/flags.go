@@ -192,7 +192,8 @@ var (
 		Usage: "Max number of elements (0 = no limit)",
 		Value: 0,
 	}
-	SnapshotFlag = &cli.BoolFlag{
+	defaultSyncMode = qrlconfig.Defaults.SyncMode
+	SnapshotFlag    = &cli.BoolFlag{
 		Name:     "snapshot",
 		Usage:    `Enables snapshot-database mode (default = enable)`,
 		Value:    true,
@@ -214,8 +215,7 @@ var (
 		Value:    2048,
 		Category: flags.QRLCategory,
 	}
-	defaultSyncMode = qrlconfig.Defaults.SyncMode
-	SyncModeFlag    = &flags.TextMarshalerFlag{
+	SyncModeFlag = &flags.TextMarshalerFlag{
 		Name:     "syncmode",
 		Usage:    `Blockchain sync mode ("snap" or "full")`,
 		Value:    &defaultSyncMode,
