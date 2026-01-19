@@ -192,6 +192,7 @@ var (
 		Usage: "Max number of elements (0 = no limit)",
 		Value: 0,
 	}
+
 	defaultSyncMode = qrlconfig.Defaults.SyncMode
 	SnapshotFlag    = &cli.BoolFlag{
 		Name:     "snapshot",
