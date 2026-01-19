@@ -14,13 +14,15 @@ func BenchmarkCounterFloat64(b *testing.B) {
 
 func BenchmarkCounterFloat64Parallel(b *testing.B) {
 	c := NewCounterFloat64()
+	b.ResetTimer()
 	var wg sync.WaitGroup
 	for range 10 {
-		wg.Go(func() {
-			for b.Loop() {
-				c.Inc(1.0)
+		wg.Add(1)
+		go func() {
+			for i := 0; i < b.N; i++ {
+				wg.Done()
 			}
-		})
+		}()
 	}
 	wg.Wait()
 	if have, want := c.Snapshot().Count(), 10.0*float64(b.N); have != want {
