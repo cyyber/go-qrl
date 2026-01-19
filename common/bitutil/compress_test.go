@@ -177,9 +177,11 @@ func benchmarkEncoding(b *testing.B, bytes int, fill float64) {
 		bit := uint(random.Int63() % 8)
 		data[idx] |= 1 << bit
 	}
-	// Measure encoding/decoding
+	// NOTE(rgeraldes24): oss-fuzz.sh doesn't work with b.Loop()
+	// Reset the benchmark and measure encoding/decoding
+	b.ResetTimer()
 	b.ReportAllocs()
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		bitsetDecodeBytes(bitsetEncodeBytes(data), len(data))
 	}
 }
