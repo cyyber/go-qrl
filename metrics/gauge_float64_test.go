@@ -7,22 +7,22 @@ import (
 
 func BenchmarkGaugeFloat64(b *testing.B) {
 	g := NewGaugeFloat64()
-	var i uint64
-	for b.Loop() {
+	for i := 0; b.Loop(); i++ {
 		g.Update(float64(i))
-		i++
 	}
 }
 
 func BenchmarkGaugeFloat64Parallel(b *testing.B) {
 	c := NewGaugeFloat64()
 	var wg sync.WaitGroup
-	for i := range 10 {
-		wg.Go(func() {
-			for b.Loop() {
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			for i := 0; i < b.N; i++ {
 				c.Update(float64(i))
 			}
-		})
+			wg.Done()
+		}()
 	}
 	wg.Wait()
 	if have, want := c.Snapshot().Value(), float64(b.N-1); have != want {
