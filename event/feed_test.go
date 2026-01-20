@@ -217,10 +217,12 @@ func TestFeedUnsubscribeBlockedPost(t *testing.T) {
 	}
 
 	// Queue up some Sends. None of these can make progress while bchan isn't read.
+	wg.Add(nsends)
 	for range nsends {
-		wg.Go(func() {
+		go func() {
 			feed.Send(99)
-		})
+			wg.Done()
+		}()
 	}
 	// Subscribe the other channels.
 	for i, ch := range chans {
@@ -304,7 +306,7 @@ func BenchmarkFeedSend1000(b *testing.B) {
 		nsubs = 1000
 	)
 	subscriber := func(ch <-chan int) {
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			<-ch
 		}
 		done.Done()
@@ -317,12 +319,10 @@ func BenchmarkFeedSend1000(b *testing.B) {
 	}
 
 	// The actual benchmark.
-	var i int
-	for b.Loop() {
+	for i := 0; b.Loop(); i++ {
 		if feed.Send(i) != nsubs {
 			panic("wrong number of sends")
 		}
-		i++
 	}
 
 	b.StopTimer()
