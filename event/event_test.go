@@ -185,7 +185,7 @@ func BenchmarkPostConcurrent(b *testing.B) {
 
 	var wg sync.WaitGroup
 	poster := func() {
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			mux.Post(testEvent(0))
 		}
 		wg.Done()
@@ -207,12 +207,10 @@ func BenchmarkChanSend(b *testing.B) {
 		}
 	}()
 
-	var i int
-	for b.Loop() {
+	for i := 0; b.Loop(); i++ {
 		select {
 		case c <- i:
 		case <-closed:
 		}
-		i++
 	}
 }
