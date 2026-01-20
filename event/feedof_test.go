@@ -250,7 +250,7 @@ func BenchmarkFeedOfSend1000(b *testing.B) {
 		nsubs = 1000
 	)
 	subscriber := func(ch <-chan int) {
-		for b.Loop() {
+		for i := 0; i < b.N; i++ {
 			<-ch
 		}
 		done.Done()
@@ -263,14 +263,11 @@ func BenchmarkFeedOfSend1000(b *testing.B) {
 	}
 
 	// The actual benchmark.
-	var i int
-	for b.Loop() {
+	for i := 0; b.Loop(); i++ {
 		if feed.Send(i) != nsubs {
 			panic("wrong number of sends")
 		}
-		i++
 	}
 
-	b.StopTimer()
 	done.Wait()
 }
