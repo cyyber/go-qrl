@@ -70,7 +70,7 @@ func BenchmarkMetrics(b *testing.B) {
 		go func(i int) {
 			defer wg.Done()
 			//log.Println("go", i)
-			for b.Loop() {
+			for i := 0; i < b.N; i++ {
 				c.Inc(1)
 				cf.Inc(1.0)
 				g.Update(int64(i))
