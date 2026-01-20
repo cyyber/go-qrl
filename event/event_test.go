@@ -172,7 +172,6 @@ func BenchmarkPost1000(b *testing.B) {
 		mux.Post(testEvent(0))
 	}
 
-	b.StopTimer()
 	mux.Stop()
 	done.Wait()
 }
