@@ -570,7 +570,7 @@ func BenchmarkEncodeConcurrentInterface(b *testing.B) {
 	for range runtime.NumCPU() {
 		wg.Go(func() {
 			var buffer bytes.Buffer
-			for b.Loop() {
+			for i := 0; i < b.N; i++ {
 				buffer.Reset()
 				err := Encode(&buffer, value)
 				if err != nil {
