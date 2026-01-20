@@ -239,7 +239,6 @@ func benchmarkSample(b *testing.B, s Sample) {
 	for b.Loop() {
 		s.Update(1)
 	}
-	b.StopTimer()
 	runtime.GC()
 	runtime.ReadMemStats(&memStats)
 	b.Logf("GC cost: %d ns/op", int(memStats.PauseTotalNs-pauseTotalNs)/b.N)
