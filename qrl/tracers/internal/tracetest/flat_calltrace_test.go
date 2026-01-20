@@ -205,7 +205,7 @@ func BenchmarkFlatCallTracer(b *testing.B) {
 	for _, file := range files {
 		filename := strings.TrimPrefix(file, "testdata/call_tracer_flat/")
 		b.Run(camel(strings.TrimSuffix(filename, ".json")), func(b *testing.B) {
-			for b.Loop() {
+			for n := 0; n < b.N; n++ {
 				err := flatCallTracerTestRunner("flatCallTracer", filename, "call_tracer_flat", b)
 				if err != nil {
 					b.Fatal(err)
