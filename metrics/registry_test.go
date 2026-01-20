@@ -27,7 +27,7 @@ func benchmarkRegistryGetOrRegisterParallel(b *testing.B, amount int) {
 	var wg sync.WaitGroup
 	for range amount {
 		wg.Go(func() {
-			for b.Loop() {
+			for i := 0; i < b.N; i++ {
 				r.GetOrRegister("foo", NewMeter)
 			}
 		})
