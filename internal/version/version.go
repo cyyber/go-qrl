@@ -74,9 +74,9 @@ func Archive(gitCommit string) string {
 // conventions in the QRL p2p network.
 func ClientName(clientIdentifier string) string {
 	git, _ := VCS()
-	caser := cases.Title(language.English)
+	title := cases.Title(language.Und, cases.NoLower)
 	return fmt.Sprintf("%s/v%v/%v-%v/%v",
-		caser.String(clientIdentifier),
+		title.String(clientIdentifier),
 		WithCommit(git.Commit, git.Date),
 		runtime.GOOS, runtime.GOARCH,
 		runtime.Version(),
