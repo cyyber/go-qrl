@@ -174,11 +174,9 @@ func benchmarkQRVM_Create(bench *testing.B, code string) {
 		QRVMConfig: vm.Config{},
 	}
 	// Warm up the intpools and stuff
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
+	for bench.Loop() {
 		Call(receiver, []byte{}, &runtimeConfig)
 	}
-	bench.StopTimer()
 }
 
 func BenchmarkQRVM_CREATE_500(bench *testing.B) {
