@@ -40,11 +40,6 @@ func blockTestCmd(ctx *cli.Context) error {
 	if len(ctx.Args().First()) == 0 {
 		return errors.New("path-to-test argument required")
 	}
-	// Configure the go-zond logger
-	// TODO(rgeraldes24)
-	// glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	// glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	// log.Root().SetHandler(glogger)
 	var tracer vm.QRVMLogger
 	// Configure the QRVM logger
 	if ctx.Bool(MachineFlag.Name) {
