@@ -29,7 +29,7 @@ import (
 type txJSON struct {
 	Type hexutil.Uint64 `json:"type"`
 
-	ChainID              *hexutil.Big    `json:"chainId"`
+	ChainID              *hexutil.Big    `json:"chainId,omitempty"`
 	Nonce                *hexutil.Uint64 `json:"nonce"`
 	To                   *common.Address `json:"to"`
 	Gas                  *hexutil.Uint64 `json:"gas"`
