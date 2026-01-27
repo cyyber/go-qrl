@@ -146,7 +146,6 @@ func BenchmarkCreateBloom(b *testing.B) {
 		for b.Loop() {
 			bl = CreateBloom(rSmall)
 		}
-		b.StopTimer()
 		var exp = common.HexToHash("c384c56ece49458a427c67b90fefe979ebf7104795be65dc398b280f24104949")
 		got := crypto.Keccak256Hash(bl.Bytes())
 		if got != exp {
@@ -159,7 +158,6 @@ func BenchmarkCreateBloom(b *testing.B) {
 		for b.Loop() {
 			bl = CreateBloom(rLarge)
 		}
-		b.StopTimer()
 		var exp = common.HexToHash("c384c56ece49458a427c67b90fefe979ebf7104795be65dc398b280f24104949")
 		got := crypto.Keccak256Hash(bl.Bytes())
 		if got != exp {
