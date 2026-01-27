@@ -1000,8 +1000,8 @@ type RPCTransaction struct {
 	// NOTE(rgeraldes24): keeping GasPrice for now because it provides
 	// the effective gas price if the transaction has been included
 	GasPrice         *hexutil.Big      `json:"gasPrice"`
-	GasFeeCap        *hexutil.Big      `json:"maxFeePerGas"`
-	GasTipCap        *hexutil.Big      `json:"maxPriorityFeePerGas"`
+	GasFeeCap        *hexutil.Big      `json:"maxFeePerGas,omitempty"`
+	GasTipCap        *hexutil.Big      `json:"maxPriorityFeePerGas,omitempty"`
 	Hash             common.Hash       `json:"hash"`
 	Input            hexutil.Bytes     `json:"input"`
 	Nonce            hexutil.Uint64    `json:"nonce"`
@@ -1009,8 +1009,8 @@ type RPCTransaction struct {
 	TransactionIndex *hexutil.Uint64   `json:"transactionIndex"`
 	Value            *hexutil.Big      `json:"value"`
 	Type             hexutil.Uint64    `json:"type"`
-	Accesses         *types.AccessList `json:"accessList"`
-	ChainID          *hexutil.Big      `json:"chainId"`
+	Accesses         *types.AccessList `json:"accessList,omitempty"`
+	ChainID          *hexutil.Big      `json:"chainId,omitempty"`
 	Descriptor       hexutil.Bytes     `json:"descriptor"`
 	ExtraParams      hexutil.Bytes     `json:"extraParams"`
 	PublicKey        hexutil.Bytes     `json:"publicKey"`
