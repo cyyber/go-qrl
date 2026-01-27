@@ -349,7 +349,6 @@ func BenchmarkFlatten(b *testing.B) {
 			}
 			layer = dl.flatten()
 		}
-		b.StopTimer()
 	}
 }
 
