@@ -890,11 +890,10 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 
 	// Binary search for the smallest gas limit that allows the tx to execute successfully.
 	for lo+1 < hi {
-		mid := min((hi+lo)/2,
-			// Most txs don't need much higher gas limit than their gas used, and most txs don't
-			// require near the full block limit of gas, so the selection of where to bisect the
-			// range here is skewed to favor the low side.
-			lo*2)
+		// Most txs don't need much higher gas limit than their gas used, and most txs don't
+		// require near the full block limit of gas, so the selection of where to bisect the
+		// range here is skewed to favor the low side.
+		mid := min((hi+lo)/2, lo*2)
 		failed, _, err = executeEstimate(ctx, b, args, state.Copy(), header, gasCap, mid)
 		if err != nil {
 			// This should not happen under normal conditions since if we make it this far the
