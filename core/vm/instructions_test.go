@@ -294,15 +294,13 @@ func opBenchmark(bench *testing.B, op executionFunc, args ...string) {
 		intArgs[i] = new(uint256.Int).SetBytes(common.Hex2Bytes(arg))
 	}
 	pc := uint64(0)
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
+	for bench.Loop() {
 		for _, arg := range intArgs {
 			stack.push(arg)
 		}
 		op(&pc, qrvmInterpreter, scope)
 		stack.pop()
 	}
-	bench.StopTimer()
 
 	for i, arg := range args {
 		want := new(uint256.Int).SetBytes(common.Hex2Bytes(arg))

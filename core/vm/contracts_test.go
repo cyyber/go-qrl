@@ -134,12 +134,10 @@ func benchmarkPrecompiled(addr string, test precompiledTest, bench *testing.B) {
 	bench.Run(fmt.Sprintf("%s-Gas=%d", test.Name, reqGas), func(bench *testing.B) {
 		bench.ReportAllocs()
 		start := time.Now()
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
+		for bench.Loop() {
 			copy(data, in)
 			res, _, err = RunPrecompiledContract(p, data, reqGas)
 		}
-		bench.StopTimer()
 		elapsed := max(uint64(time.Since(start)), 1)
 		gasUsed := reqGas * uint64(bench.N)
 		bench.ReportMetric(float64(reqGas), "gas/op")

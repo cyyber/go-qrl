@@ -2261,7 +2261,6 @@ func benchmarkLargeNumberOfValueToNonexisting(b *testing.B, numTxs, numBlocks in
 
 	_, shared, _ := GenerateChainWithGenesis(gspec, engine, numBlocks, blockGenerator)
 	b.StopTimer()
-	b.ResetTimer()
 	for b.Loop() {
 		// Import the shared chain and the original canonical one
 		chain, err := NewBlockChain(rawdb.NewMemoryDatabase(), nil, gspec, engine, vm.Config{}, nil)

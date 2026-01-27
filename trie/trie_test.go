@@ -636,11 +636,9 @@ func benchGet(b *testing.B) {
 	}
 	binary.LittleEndian.PutUint64(k, benchElemCount/2)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		trie.MustGet(k)
 	}
-	b.StopTimer()
 }
 
 func benchUpdate(b *testing.B, e binary.ByteOrder) *Trie {

@@ -325,6 +325,5 @@ func BenchmarkFeedSend1000(b *testing.B) {
 		}
 	}
 
-	b.StopTimer()
 	done.Wait()
 }
