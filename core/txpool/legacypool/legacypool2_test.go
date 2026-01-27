@@ -237,10 +237,8 @@ func BenchmarkFutureAttack(b *testing.B) {
 	pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(100000000000))
 	futureTxs := types.Transactions{}
 
-	var n uint64
-	for b.Loop() {
-		futureTxs = append(futureTxs, dynamicFeeTx(1000+n, 100000, big.NewInt(500), big.NewInt(0), wallet))
-		n++
+	for n := 0; n < b.N; n++ {
+		futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(n), 100000, big.NewInt(500), big.NewInt(0), wallet))
 	}
 	b.ResetTimer()
 	for range 5 {
