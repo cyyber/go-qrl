@@ -140,9 +140,6 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 			return errors.New("missing required field 'publicKey' in transaction")
 		}
 		itx.PublicKey = *dec.PublicKey
-		if dec.Descriptor == nil {
-			return errors.New("missing required field 'descriptor' in transaction")
-		}
 
 		// TODO (cyyber): add sanity check later
 		//withSignature := itx.V.Sign() != 0 || itx.R.Sign() != 0 || itx.S.Sign() != 0
