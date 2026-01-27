@@ -1042,6 +1042,12 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 			reqHeader: true,
 			file:      "hash-1",
 		},
+		// 16. latest-1 header
+		{
+			blockHash: &blockHashes[len(blockHashes)-2],
+			reqHeader: true,
+			file:      "hash-latest-1",
+		},
 		// 17. empty hash
 		{
 			blockHash: &common.Hash{},
