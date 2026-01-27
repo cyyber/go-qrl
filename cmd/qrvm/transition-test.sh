@@ -138,11 +138,11 @@ type DynamicFeeTx struct {
 	Value       *big.Int        `json:"value"`
 	Data        []byte          `json:"data"`
 	AccessList  AccessList      `json:"accessList"`
-  Descriptor  [3]byte         `json:"descriptor"`
-  ExtraParams []byte          `json:"extraParams"`
+	Descriptor  [3]byte         `json:"descriptor"`
+	ExtraParams []byte          `json:"extraParams"`
 	PublicKey   []byte          `json:"publicKey"`
 	Signature   []byte          `json:"signature"`
-  Seed        *common.Hash    `json:"seed"`
+	Seed        *common.Hash    `json:"seed"`
 }
 ```
 
