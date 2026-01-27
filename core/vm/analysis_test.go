@@ -69,7 +69,6 @@ func BenchmarkJumpdestAnalysis_1200k(bench *testing.B) {
 	for bench.Loop() {
 		codeBitmap(code)
 	}
-	bench.StopTimer()
 }
 func BenchmarkJumpdestHashing_1200k(bench *testing.B) {
 	// 4 ms
@@ -79,7 +78,6 @@ func BenchmarkJumpdestHashing_1200k(bench *testing.B) {
 	for bench.Loop() {
 		crypto.Keccak256Hash(code)
 	}
-	bench.StopTimer()
 }
 
 func BenchmarkJumpdestOpAnalysis(bench *testing.B) {
