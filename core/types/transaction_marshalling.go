@@ -41,8 +41,8 @@ type txJSON struct {
 
 	Descriptor  *hexutil.Bytes `json:"descriptor"`
 	ExtraParams *hexutil.Bytes `json:"extraParams"`
-	PublicKey   *hexutil.Bytes `json:"publicKey"`
 	Signature   *hexutil.Bytes `json:"signature"`
+	PublicKey   *hexutil.Bytes `json:"publicKey"`
 
 	// Only used for encoding:
 	Hash common.Hash `json:"hash"`
@@ -70,8 +70,8 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 		desc := hexutil.Bytes(itx.Descriptor[:])
 		enc.Descriptor = &desc
 		enc.ExtraParams = (*hexutil.Bytes)(&itx.ExtraParams)
-		enc.PublicKey = (*hexutil.Bytes)(&itx.PublicKey)
 		enc.Signature = (*hexutil.Bytes)(&itx.Signature)
+		enc.PublicKey = (*hexutil.Bytes)(&itx.PublicKey)
 	}
 	return json.Marshal(&enc)
 }
@@ -132,14 +132,14 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 			return errors.New("missing required field 'extraParams' in transaction")
 		}
 		itx.ExtraParams = *dec.ExtraParams
-		if dec.PublicKey == nil {
-			return errors.New("missing required field 'publicKey' in transaction")
-		}
-		itx.PublicKey = *dec.PublicKey
 		if dec.Signature == nil {
 			return errors.New("missing required field 'signature' in transaction")
 		}
 		itx.Signature = *dec.Signature
+		if dec.PublicKey == nil {
+			return errors.New("missing required field 'publicKey' in transaction")
+		}
+		itx.PublicKey = *dec.PublicKey
 		if dec.Descriptor == nil {
 			return errors.New("missing required field 'descriptor' in transaction")
 		}
