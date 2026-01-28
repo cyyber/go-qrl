@@ -258,17 +258,13 @@ func TestT9n(t *testing.T) {
 		expExitCode int
 		expOut      string
 	}{
-		// TODO(rgeraldes24)
-		/*
-				{ // txs on Shanghai
-				base: "./testdata/15",
-				input: t9nInput{
-					inTxs: "signed_txs.rlp",
-				},
-				expOut: "exp2.json",
+		{ // txs on Shanghai
+			base: "./testdata/15",
+			input: t9nInput{
+				inTxs: "signed_txs.rlp",
 			},
-
-		*/
+			expOut: "exp2.json",
+		},
 		{ // An RLP list (a blockheader really)
 			base: "./testdata/15",
 			input: t9nInput{
@@ -283,15 +279,13 @@ func TestT9n(t *testing.T) {
 			},
 			expOut: "exp.json",
 		},
-		/*
-			{ // Transactions with value exceeding 256 bits
-				base: "./testdata/17",
-				input: t9nInput{
-					inTxs: "signed_txs.rlp",
-				},
-				expOut: "exp.json",
+		{ // Transactions with value exceeding 256 bits
+			base: "./testdata/17",
+			input: t9nInput{
+				inTxs: "signed_txs.rlp",
 			},
-		*/
+			expOut: "exp.json",
+		},
 		{ // Invalid RLP
 			base: "./testdata/18",
 			input: t9nInput{
