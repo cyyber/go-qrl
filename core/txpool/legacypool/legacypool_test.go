@@ -1219,7 +1219,7 @@ func TestPendingGlobalLimiting(t *testing.T) {
 	txs := types.Transactions{}
 	for _, wallet := range wallets {
 		addr := wallet.GetAddress()
-		for j := 0; j < int(config.GlobalSlots)/len(wallets)*2; j++ {
+		for range int(config.GlobalSlots) / len(wallets) * 2 {
 			txs = append(txs, transaction(nonces[addr], 100000, wallet))
 			nonces[addr]++
 		}
@@ -1239,7 +1239,6 @@ func TestPendingGlobalLimiting(t *testing.T) {
 	}
 }
 
-// TODO(rgeraldes24)
 // Test the limit on transaction size is enforced correctly.
 // This test verifies every transaction having allowed size
 // is added to the pool, and longer transactions are rejected.
@@ -1253,34 +1252,28 @@ func TestAllowedTxSize(t *testing.T) {
 	account := wallet.GetAddress()
 	testAddBalance(pool, account, big.NewInt(1000000000))
 
-	// Compute maximal data size for transactions (lower bound).
-	//
-	// It is assumed the fields in the transaction (except of the data) are:
-	//   - nonce     <= 32 bytes
-	//   - gasTip  <= 32 bytes
-	//   - gasLimit  <= 32 bytes
-	//   - recipient == 20 bytes
-	//   - value     <= 32 bytes
-	//   - signature == 4627 bytes
-	//   - publicKey == 2592 bytes
-	// All those fields are summed up to at most 7335 bytes.
-	baseSize := uint64(7335)
-	dataSize := txMaxSize - baseSize
+	// Find the maximum data length for the kind of transaction which will
+	// be generated in the pool.addRemoteSync calls below.
+	const largeDataLength = txMaxSize - 200 // enough to have a 5 bytes RLP encoding of the data length number
+	txWithLargeData := dynamicFeeDataTx(0, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, largeDataLength)
+	maxTxLengthWithoutData := txWithLargeData.Size() - largeDataLength // 103 bytes
+	maxTxDataLength := txMaxSize - maxTxLengthWithoutData              // 131072 - 103 = 130969 bytes
+
 	// Try adding a transaction with maximal allowed size
-	tx := dynamicFeeDataTx(0, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, dataSize)
+	tx := dynamicFeeDataTx(0, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, maxTxDataLength)
 	if err := pool.addRemoteSync(tx); err != nil {
 		t.Fatalf("failed to add transaction of size %d, close to maximal: %v", int(tx.Size()), err)
 	}
 	// Try adding a transaction with random allowed size
-	if err := pool.addRemoteSync(dynamicFeeDataTx(1, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, uint64(rand.Intn(int(dataSize))))); err != nil {
+	if err := pool.addRemoteSync(dynamicFeeDataTx(1, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, uint64(rand.Intn(int(maxTxDataLength+1))))); err != nil {
 		t.Fatalf("failed to add transaction of random allowed size: %v", err)
 	}
-	// Try adding a transaction of minimal not allowed size
-	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, txMaxSize)); err == nil {
+	// Try adding a transaction above maximum size by one
+	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, maxTxDataLength+1)); err == nil {
 		t.Fatalf("expected rejection on slightly oversize transaction")
 	}
-	// Try adding a transaction of random not allowed size
-	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, dataSize+1+uint64(rand.Intn(10*txMaxSize)))); err == nil {
+	// Try adding a transaction above maximum size by more than one
+	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, maxTxDataLength+1+uint64(rand.Intn(10*txMaxSize)))); err == nil {
 		t.Fatalf("expected rejection on oversize transaction")
 	}
 	// Run some sanity checks on the pool internals
@@ -2272,13 +2265,11 @@ func benchmarkBatchInsert(b *testing.B, size int, local bool) {
 	testAddBalance(pool, account, big.NewInt(1000000000000000000))
 
 	batches := make([]types.Transactions, b.N)
-	var i int
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		batches[i] = make(types.Transactions, size)
 		for j := range size {
 			batches[i][j] = transaction(uint64(size*i+j), 100000, key)
 		}
-		i++
 	}
 	// Benchmark importing the transactions into the queue
 	b.ResetTimer()
@@ -2332,14 +2323,12 @@ func BenchmarkMultiAccountBatchInsert(b *testing.B) {
 	defer pool.Close()
 	b.ReportAllocs()
 	batches := make(types.Transactions, b.N)
-	var i int
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 		account := wallet.GetAddress()
 		pool.currentState.AddBalance(account, big.NewInt(1000000))
 		tx := transaction(uint64(0), 100000, wallet)
 		batches[i] = tx
-		i++
 	}
 	// Benchmark importing the transactions into the queue
 	b.ResetTimer()

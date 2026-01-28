@@ -209,7 +209,6 @@ func (s ShanghaiSigner) Equal(s2 Signer) bool {
 	return ok && x.ChainId.Cmp(s.ChainId) == 0
 }
 
-// TODO(rgeraldes24): refactor
 func (s ShanghaiSigner) AuthValues(tx *Transaction, sig, pk, desc, extraParams []byte) ([]byte, []byte, []byte, []byte, error) {
 	// Check that chain ID of tx matches the signer. We also accept ID zero here,
 	// because it indicates that the chain ID was not specified in the tx.
