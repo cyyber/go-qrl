@@ -144,7 +144,7 @@ type Signer interface {
 	// Sender returns the sender address of the transaction.
 	Sender(tx *Transaction) (common.Address, error)
 
-	// Auth returns the raw signature, publicKey, descriptor and params values
+	// AuthValues returns the raw signature, publicKey, descriptor and params values
 	// corresponding to the given signature.
 	AuthValues(tx *Transaction, sig, pk, desc, extraParams []byte) (signature, publicKey, descriptor, params []byte, err error)
 	ChainID() *big.Int
