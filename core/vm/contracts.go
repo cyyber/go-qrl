@@ -43,8 +43,8 @@ type PrecompiledContract interface {
 var PrecompiledContractsShanghai = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &depositroot{},
 	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &dataCopy{},
-	common.BytesToAddress([]byte{4}): &bigModExp{},
+	common.BytesToAddress([]byte{4}): &dataCopy{},
+	common.BytesToAddress([]byte{5}): &bigModExp{},
 }
 
 var (
