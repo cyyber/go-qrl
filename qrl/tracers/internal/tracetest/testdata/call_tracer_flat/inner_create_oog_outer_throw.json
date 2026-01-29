@@ -69,9 +69,7 @@
       "error": "contract creation code storage out of gas",
       "result": {},
       "subtraces": 0,
-      "traceAddress": [
-        0
-      ],
+      "traceAddress": [0],
       "type": "create"
     }
   ]
