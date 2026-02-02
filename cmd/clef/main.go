@@ -249,6 +249,7 @@ The gendoc generates example structures of the json-rpc communication types.
 			logLevelFlag,
 			keystoreFlag,
 			utils.LightKDFFlag,
+			utils.PasswordFileFlag,
 			acceptFlag,
 		},
 		Description: `
