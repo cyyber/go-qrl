@@ -376,8 +376,9 @@ func TestPrecompiledMLDSA87VerifyRejectsInvalidInput(t *testing.T) {
 // is all zero. For such a key the verifier's reconstructed commitment
 // w1' = UseHint(h, A*z - c*2^d*t1) does not depend on the challenge, so
 // (c~ = H(mu || w1Encode(0)), z = 0, h = 0) verifies for any digest without a
-// secret key. The precompile casts caller bytes straight to a key, so it relies
-// on go-qrllib's verify-time guard rather than the wallet constructor.
+// secret key. The precompile casts caller bytes straight to a key, bypassing
+// the wallet constructor, so it calls cryptomldsa87.ValidatePublicKey itself;
+// the FIPS 204 primitive deliberately does not reject such keys.
 func TestPrecompiledMLDSA87VerifyRejectsZeroT1Key(t *testing.T) {
 	context := []byte("QRL")
 	digest := crypto.Keccak256([]byte("QRL zero-t1 forgery test"))
