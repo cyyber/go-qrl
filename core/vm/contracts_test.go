@@ -18,6 +18,7 @@ package vm
 
 import (
 	"bytes"
+	"crypto/sha3"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -368,6 +369,72 @@ func TestPrecompiledMLDSA87VerifyRejectsInvalidInput(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestPrecompiledMLDSA87VerifyRejectsZeroT1Key checks that the precompile
+// rejects the universally forgeable ML-DSA-87 public keys whose t1 component
+// is all zero. For such a key the verifier's reconstructed commitment
+// w1' = UseHint(h, A*z - c*2^d*t1) does not depend on the challenge, so
+// (c~ = H(mu || w1Encode(0)), z = 0, h = 0) verifies for any digest without a
+// secret key. The precompile casts caller bytes straight to a key, so it relies
+// on go-qrllib's verify-time guard rather than the wallet constructor.
+func TestPrecompiledMLDSA87VerifyRejectsZeroT1Key(t *testing.T) {
+	context := []byte("QRL")
+	digest := crypto.Keccak256([]byte("QRL zero-t1 forgery test"))
+	tests := []struct {
+		name string
+		rho  byte
+	}{
+		{name: "all-zero key"},
+		{name: "non-zero rho, zero t1", rho: 0xab},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var publicKey [cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte
+			for i := 0; i < cryptomldsa87.SEED_BYTES; i++ {
+				publicKey[i] = test.rho
+			}
+			signature := forgeZeroT1Signature(publicKey, context, digest)
+			input := make([]byte, 0, mldsa87VerifyMinInputLength+len(context))
+			input = append(input, digest...)
+			input = append(input, publicKey[:]...)
+			input = append(input, signature[:]...)
+			input = append(input, byte(len(context)))
+			input = append(input, context...)
+			if output := runMLDSA87Verify(t, input); output != nil {
+				t.Fatalf("forged signature under a zero-t1 key verified: output %x, want nil", output)
+			}
+		})
+	}
+}
+
+// forgeZeroT1Signature builds the (c~, z = 0, h = 0) signature that verifies
+// under any public key with t1 = 0 when the verifier does not reject such keys.
+func forgeZeroT1Signature(publicKey [cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte, context, digest []byte) [cryptomldsa87.CRYPTO_BYTES]byte {
+	pre := append([]byte{0, byte(len(context))}, context...)
+	tr := sha3.SumSHAKE256(publicKey[:], cryptomldsa87.TR_BYTES)
+	h := sha3.NewSHAKE256()
+	h.Write(tr[:])
+	h.Write(pre)
+	h.Write(digest)
+	mu := make([]byte, cryptomldsa87.CRH_BYTES)
+	h.Read(mu)
+
+	h = sha3.NewSHAKE256()
+	h.Write(mu)
+	h.Write(make([]byte, cryptomldsa87.K*cryptomldsa87.POLY_W1_PACKED_BYTES)) // w1Encode(0)
+	c := make([]byte, cryptomldsa87.C_TILDE_BYTES)
+	h.Read(c)
+
+	var signature [cryptomldsa87.CRYPTO_BYTES]byte
+	copy(signature[:], c)
+	// z = 0 packs every coefficient as GAMMA1 - 0 = 2^19, two per five bytes.
+	z := signature[cryptomldsa87.C_TILDE_BYTES : cryptomldsa87.C_TILDE_BYTES+cryptomldsa87.L*cryptomldsa87.POLY_Z_PACKED_BYTES]
+	for i := 0; i+5 <= len(z); i += 5 {
+		z[i+2], z[i+4] = 0x08, 0x80
+	}
+	// The hint section stays all zero: no hints, which is a canonical encoding.
+	return signature
 }
 
 func TestPrecompiledMLDSA87VerifyOOG(t *testing.T) {
