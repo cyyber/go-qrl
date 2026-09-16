@@ -175,6 +175,15 @@ func (*mldsa87Verify) Run(input []byte) ([]byte, error) {
 	digest := input[mldsa87VerifyDigestOffset:mldsa87VerifyPublicKeyOffset]
 	publicKeyBytes := input[mldsa87VerifyPublicKeyOffset:mldsa87VerifySignatureOffset]
 	publicKey := (*[cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte)(publicKeyBytes)
+
+	// The key comes straight from calldata, so it never passes through the
+	// wallet-layer constructor. Apply key validation here before handing it
+	// to the FIPS 204 primitive, which (by spec) does not validate keys and
+	// would accept a forgery under the universally forgeable all-zero-t1 key.
+	if err := cryptomldsa87.ValidatePublicKey(publicKey); err != nil {
+		return nil, nil
+	}
+
 	signatureBytes := input[mldsa87VerifySignatureOffset:mldsa87VerifyContextLengthOffset]
 	signature := [cryptomldsa87.CRYPTO_BYTES]byte(signatureBytes)
 
