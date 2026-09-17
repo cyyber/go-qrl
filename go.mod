@@ -45,7 +45,7 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-	github.com/theQRL/go-qrllib v0.9.2
+	github.com/theQRL/go-qrllib v0.10.0
 	github.com/urfave/cli/v2 v2.27.5
 	go.uber.org/automaxprocs v1.5.2
 	golang.org/x/crypto v0.52.0
@@ -128,7 +128,3 @@ tool (
 	golang.org/x/tools/cmd/stringer
 	google.golang.org/protobuf/cmd/protoc-gen-go
 )
-
-// Pin go-qrllib to the cyyber fork so go-qrl and qrysm build against the same
-// ML-DSA-87 code (upstream v0.9.2 plus the fork's follow-ups).
-replace github.com/theQRL/go-qrllib => github.com/cyyber/go-qrllib v0.1.1-0.20260916184241-fe4ae224cf81

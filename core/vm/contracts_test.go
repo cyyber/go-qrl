@@ -371,23 +371,29 @@ func TestPrecompiledMLDSA87VerifyRejectsInvalidInput(t *testing.T) {
 	}
 }
 
-// TestPrecompiledMLDSA87VerifyRejectsZeroT1Key checks that the precompile
-// rejects the universally forgeable ML-DSA-87 public keys whose t1 component
-// is all zero. For such a key the verifier's reconstructed commitment
-// w1' = UseHint(h, A*z - c*2^d*t1) does not depend on the challenge, so
-// (c~ = H(mu || w1Encode(0)), z = 0, h = 0) verifies for any digest without a
-// secret key. The precompile casts caller bytes straight to a key, bypassing
-// the wallet constructor, so it calls cryptomldsa87.ValidatePublicKey itself;
-// the FIPS 204 primitive deliberately does not reject such keys.
-func TestPrecompiledMLDSA87VerifyRejectsZeroT1Key(t *testing.T) {
+// TestPrecompiledMLDSA87VerifyRejectsWeakKey checks that the precompile
+// rejects a weak ML-DSA-87 public key: one whose t1 makes the verifier's
+// reconstructed commitment w1' = UseHint(h, A*z - c*2^d*t1) independent of
+// the challenge, so that (c~ = H(mu || w1Encode(0)), z = 0, h = 0) verifies
+// for any digest without a secret key. The all-zero t1 is the canonical
+// shape; t1 = 1023 everywhere (2^13*1023 = q - 1) and t1 = 512 everywhere
+// (2^13*512 = 2^-1*(2^13 - 1) mod q, and c*(1 + x + ... + x^255) is always
+// even) are two more. The key comes straight from calldata, bypassing the
+// wallet constructor, so the precompile goes through
+// cryptomldsa87.ParsePublicKey, which applies the weak-key rule shared by
+// every QRL client; the FIPS 204 primitive deliberately does not.
+func TestPrecompiledMLDSA87VerifyRejectsWeakKey(t *testing.T) {
 	context := []byte("QRL")
-	digest := crypto.Keccak256([]byte("QRL zero-t1 forgery test"))
+	digest := crypto.Keccak256([]byte("QRL weak-key forgery test"))
 	tests := []struct {
 		name string
 		rho  byte
+		t1   uint16 // every t1 coefficient
 	}{
 		{name: "all-zero key"},
 		{name: "non-zero rho, zero t1", rho: 0xab},
+		{name: "t1 all 1023", rho: 0xab, t1: 1023},
+		{name: "t1 all 512", rho: 0xab, t1: 512},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -395,7 +401,8 @@ func TestPrecompiledMLDSA87VerifyRejectsZeroT1Key(t *testing.T) {
 			for i := 0; i < cryptomldsa87.SEED_BYTES; i++ {
 				publicKey[i] = test.rho
 			}
-			signature := forgeZeroT1Signature(publicKey, context, digest)
+			fillT1(&publicKey, test.t1)
+			signature := forgeZeroHintSignature(publicKey, context, digest)
 			input := make([]byte, 0, mldsa87VerifyMinInputLength+len(context))
 			input = append(input, digest...)
 			input = append(input, publicKey[:]...)
@@ -403,15 +410,27 @@ func TestPrecompiledMLDSA87VerifyRejectsZeroT1Key(t *testing.T) {
 			input = append(input, byte(len(context)))
 			input = append(input, context...)
 			if output := runMLDSA87Verify(t, input); output != nil {
-				t.Fatalf("forged signature under a zero-t1 key verified: output %x, want nil", output)
+				t.Fatalf("forged signature under a weak key verified: output %x, want nil", output)
 			}
 		})
 	}
 }
 
-// forgeZeroT1Signature builds the (c~, z = 0, h = 0) signature that verifies
-// under any public key with t1 = 0 when the verifier does not reject such keys.
-func forgeZeroT1Signature(publicKey [cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte, context, digest []byte) [cryptomldsa87.CRYPTO_BYTES]byte {
+// fillT1 sets every t1 coefficient of a packed public key to v. t1 follows
+// rho and is packed as 10-bit little-endian fields, four per five bytes.
+func fillT1(publicKey *[cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte, v uint16) {
+	t1 := publicKey[cryptomldsa87.SEED_BYTES:]
+	for i := 0; i+5 <= len(t1); i += 5 {
+		packed := uint64(v) | uint64(v)<<10 | uint64(v)<<20 | uint64(v)<<30
+		for j := 0; j < 5; j++ {
+			t1[i+j] = byte(packed >> (8 * j))
+		}
+	}
+}
+
+// forgeZeroHintSignature builds the (c~, z = 0, h = 0) signature that verifies
+// under a weak public key when the verifier does not reject such keys.
+func forgeZeroHintSignature(publicKey [cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte, context, digest []byte) [cryptomldsa87.CRYPTO_BYTES]byte {
 	pre := append([]byte{0, byte(len(context))}, context...)
 	tr := sha3.SumSHAKE256(publicKey[:], cryptomldsa87.TR_BYTES)
 	h := sha3.NewSHAKE256()
