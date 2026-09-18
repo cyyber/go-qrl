@@ -546,8 +546,8 @@ func InspectDatabase(db qrldb.Database, keyPrefix, keyStart []byte) error {
 			var accounted bool
 			for _, meta := range [][]byte{
 				databaseVersionKey, headHeaderKey, headBlockKey, headFastBlockKey, headFinalizedBlockKey,
-				lastPivotKey, fastTrieProgressKey, snapshotDisabledKey, SnapshotRootKey, snapshotJournalKey,
-				snapshotGeneratorKey, snapshotRecoveryKey, txIndexTailKey, fastTxLookupLimitKey,
+				lastPivotKey, snapshotDisabledKey, SnapshotRootKey, snapshotJournalKey,
+				snapshotGeneratorKey, snapshotRecoveryKey, txIndexTailKey,
 				uncleanShutdownKey, badBlockKey, skeletonSyncStatusKey,
 				persistentStateIDKey, trieJournalKey, snapshotSyncStatusKey,
 			} {
@@ -649,7 +649,6 @@ func ReadChainMetadata(db qrldb.KeyValueStore) [][]string {
 		{"snapshotRecoveryNumber", pp(ReadSnapshotRecoveryNumber(db))},
 		{"snapshotRoot", fmt.Sprintf("%v", ReadSnapshotRoot(db))},
 		{"txIndexTail", pp(ReadTxIndexTail(db))},
-		{"fastTxLookupLimit", pp(ReadFastTxLookupLimit(db))},
 	}
 	if b := ReadSkeletonSyncStatus(db); b != nil {
 		data = append(data, []string{"SkeletonSyncStatus", string(b)})
