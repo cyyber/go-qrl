@@ -48,8 +48,8 @@ type Header struct {
 	Time            uint64         `json:"timestamp"        gencodec:"required"`
 	Extra           []byte         `json:"extraData"        gencodec:"required"`
 	Random          common.Hash    `json:"prevRandao"`
-	BaseFee         *big.Int       `json:"baseFeePerGas"`
-	WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"`
+	BaseFee         *big.Int       `json:"baseFeePerGas"     gencodec:"required"`
+	WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"   gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -118,7 +118,7 @@ func (h *Header) EmptyReceipts() bool {
 // a block's data contents (transactions) together.
 type Body struct {
 	Transactions []*Transaction
-	Withdrawals  []*Withdrawal `rlp:"optional"`
+	Withdrawals  []*Withdrawal
 }
 
 // Block represents a QRL block.
@@ -157,15 +157,15 @@ type Block struct {
 type extblock struct {
 	Header      *Header
 	Txs         []*Transaction
-	Withdrawals []*Withdrawal `rlp:"optional"`
+	Withdrawals []*Withdrawal
 }
 
 // NewBlock creates a new block. The input data is copied, changes to header and to the
 // field values will not affect the block.
 //
-// The values of TxHash, ReceiptHash and Bloom in header
-// are ignored and set to values derived from the given txs
-// and receipts.
+// The values of TxHash, ReceiptHash, Bloom and WithdrawalsHash in header
+// are ignored and set to values derived from the given txs, receipts and
+// withdrawals. A nil withdrawals list is treated as empty.
 func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher) *Block {
 	if body == nil {
 		body = &Body{}
@@ -191,9 +191,7 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 		b.header.Bloom = CreateBloom(receipts)
 	}
 
-	if withdrawals == nil {
-		b.header.WithdrawalsHash = nil
-	} else if len(withdrawals) == 0 {
+	if len(withdrawals) == 0 {
 		b.header.WithdrawalsHash = &EmptyWithdrawalsHash
 		b.withdrawals = Withdrawals{}
 	} else {
