@@ -246,11 +246,7 @@ func (d *depositdata) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	}
 	hh.PutBytes(d.Signature)
 
-	if ssz.EnableVectorizedHTR {
-		hh.MerkleizeVectorizedHTR(indx)
-	} else {
-		hh.Merkleize(indx)
-	}
+	hh.Merkleize(indx)
 	return
 }
 
