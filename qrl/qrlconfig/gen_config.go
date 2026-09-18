@@ -23,7 +23,6 @@ func (c Config) MarshalTOML() (any, error) {
 		SnapDiscoveryURLs       []string
 		NoPruning               bool
 		NoPrefetch              bool
-		TxLookupLimit           uint64                 `toml:",omitempty"`
 		TransactionHistory      uint64                 `toml:",omitempty"`
 		StateHistory            uint64                 `toml:",omitempty"`
 		StateScheme             string                 `toml:",omitempty"`
@@ -90,7 +89,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(any) error) error {
 		SnapDiscoveryURLs       []string
 		NoPruning               *bool
 		NoPrefetch              *bool
-		TxLookupLimit           *uint64                `toml:",omitempty"`
 		TransactionHistory      *uint64                `toml:",omitempty"`
 		StateHistory            *uint64                `toml:",omitempty"`
 		StateScheme             *string                `toml:",omitempty"`
