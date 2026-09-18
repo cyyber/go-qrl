@@ -352,7 +352,13 @@ func TestNewBlockEmptyWithdrawals(t *testing.T) {
 }
 
 func TestHeaderRLPAlwaysIncludesShanghaiFields(t *testing.T) {
-	enc, err := rlp.EncodeToBytes(&Header{Number: big.NewInt(1)})
+	// A fully populated header round-trips with both fields present.
+	withdrawalsHash := EmptyWithdrawalsHash
+	enc, err := rlp.EncodeToBytes(&Header{
+		Number:          big.NewInt(1),
+		BaseFee:         big.NewInt(0),
+		WithdrawalsHash: &withdrawalsHash,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -365,6 +371,18 @@ func TestHeaderRLPAlwaysIncludesShanghaiFields(t *testing.T) {
 	}
 	if dec.WithdrawalsHash == nil || *dec.WithdrawalsHash != EmptyWithdrawalsHash {
 		t.Fatalf("WithdrawalsHash: got %v, want %x", dec.WithdrawalsHash, EmptyWithdrawalsHash)
+	}
+
+	// The generated encoder is not responsible for defaulting a nil
+	// WithdrawalsHash: producers (NewBlock, genesis, engine API) must set it.
+	// A nil pointer encodes as an empty string, which is not a valid hash and
+	// is rejected on decode rather than silently becoming the empty root.
+	nilHash, err := rlp.EncodeToBytes(&Header{Number: big.NewInt(1), BaseFee: big.NewInt(0)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := rlp.DecodeBytes(nilHash, new(Header)); err == nil {
+		t.Fatal("expected error decoding a header encoded with a nil withdrawalsRoot")
 	}
 
 	type preShanghaiHeader struct {
