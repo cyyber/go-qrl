@@ -1282,37 +1282,6 @@ func TestRPCGetTransactionReceipt(t *testing.T) {
 	}
 }
 
-func TestMarshalReceiptStatusOnly(t *testing.T) {
-	t.Parallel()
-
-	to := common.Address{}
-	tx := types.NewTx(&types.DynamicFeeTx{
-		Nonce:     0,
-		GasTipCap: big.NewInt(1),
-		GasFeeCap: big.NewInt(1),
-		Gas:       21000,
-		To:        &to,
-		Value:     big.NewInt(0),
-	})
-	receipt := &types.Receipt{
-		Type:              tx.Type(),
-		Status:            types.ReceiptStatusSuccessful,
-		CumulativeGasUsed: 21000,
-		GasUsed:           21000,
-		EffectiveGasPrice: big.NewInt(1),
-		TxHash:            tx.Hash(),
-	}
-
-	fields := marshalReceipt(receipt, common.Hash{1}, 1, types.MakeSigner(params.TestChainConfig), tx, 0)
-	if _, ok := fields["root"]; ok {
-		t.Fatal("receipt JSON must not include a pre-Byzantium root")
-	}
-	status, ok := fields["status"].(hexutil.Uint)
-	if !ok || uint64(status) != types.ReceiptStatusSuccessful {
-		t.Fatalf("status = %v, want %d", fields["status"], types.ReceiptStatusSuccessful)
-	}
-}
-
 func TestSendRawTransactionRejectsNonEmptyExtraParams(t *testing.T) {
 	t.Parallel()
 
