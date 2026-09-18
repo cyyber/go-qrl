@@ -103,10 +103,7 @@ func (h *Header) SanityCheck() error {
 // EmptyBody returns true if there is no additional 'body' to complete the header
 // that is: no transactions and no withdrawals.
 func (h *Header) EmptyBody() bool {
-	var (
-		emptyWithdrawals = h.WithdrawalsHash == nil || *h.WithdrawalsHash == EmptyWithdrawalsHash
-	)
-	return h.TxHash == EmptyTxsHash && emptyWithdrawals
+	return h.TxHash == EmptyTxsHash && h.WithdrawalsHash != nil && *h.WithdrawalsHash == EmptyWithdrawalsHash
 }
 
 // EmptyReceipts returns true if there are no receipts for this header/block.
@@ -337,12 +334,16 @@ func (b *Block) WithSeal(header *Header) *Block {
 }
 
 // WithBody returns a new block with the original header and a deep copy of the
-// provided body.
+// provided body. A nil withdrawals list is treated as empty.
 func (b *Block) WithBody(body Body) *Block {
+	withdrawals := slices.Clone(body.Withdrawals)
+	if withdrawals == nil {
+		withdrawals = Withdrawals{}
+	}
 	block := &Block{
 		header:       b.header,
 		transactions: slices.Clone(body.Transactions),
-		withdrawals:  slices.Clone(body.Withdrawals),
+		withdrawals:  withdrawals,
 	}
 	return block
 }
