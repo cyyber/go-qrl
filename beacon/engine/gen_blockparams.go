@@ -19,7 +19,7 @@ func (p PayloadAttributes) MarshalJSON() ([]byte, error) {
 		Timestamp             hexutil.Uint64      `json:"timestamp"             gencodec:"required"`
 		Random                common.Hash         `json:"prevRandao"            gencodec:"required"`
 		SuggestedFeeRecipient common.Address      `json:"suggestedFeeRecipient" gencodec:"required"`
-		Withdrawals           []*types.Withdrawal `json:"withdrawals"`
+		Withdrawals           []*types.Withdrawal `json:"withdrawals"           gencodec:"required"`
 	}
 	var enc PayloadAttributes
 	enc.Timestamp = hexutil.Uint64(p.Timestamp)
@@ -35,7 +35,7 @@ func (p *PayloadAttributes) UnmarshalJSON(input []byte) error {
 		Timestamp             *hexutil.Uint64     `json:"timestamp"             gencodec:"required"`
 		Random                *common.Hash        `json:"prevRandao"            gencodec:"required"`
 		SuggestedFeeRecipient *common.Address     `json:"suggestedFeeRecipient" gencodec:"required"`
-		Withdrawals           []*types.Withdrawal `json:"withdrawals"`
+		Withdrawals           []*types.Withdrawal `json:"withdrawals"           gencodec:"required"`
 	}
 	var dec PayloadAttributes
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -53,8 +53,9 @@ func (p *PayloadAttributes) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'suggestedFeeRecipient' for PayloadAttributes")
 	}
 	p.SuggestedFeeRecipient = *dec.SuggestedFeeRecipient
-	if dec.Withdrawals != nil {
-		p.Withdrawals = dec.Withdrawals
+	if dec.Withdrawals == nil {
+		return errors.New("missing required field 'withdrawals' for PayloadAttributes")
 	}
+	p.Withdrawals = dec.Withdrawals
 	return nil
 }
