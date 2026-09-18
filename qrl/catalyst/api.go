@@ -631,9 +631,8 @@ func getBody(block *types.Block) *engine.ExecutionPayloadBodyV1 {
 	}
 
 	var (
-		body        = block.Body()
-		txs         = make([]hexutil.Bytes, len(body.Transactions))
-		withdrawals = body.Withdrawals
+		body = block.Body()
+		txs  = make([]hexutil.Bytes, len(body.Transactions))
 	)
 
 	for j, tx := range body.Transactions {
@@ -641,13 +640,8 @@ func getBody(block *types.Block) *engine.ExecutionPayloadBodyV1 {
 		txs[j] = hexutil.Bytes(data)
 	}
 
-	// Post-zond withdrawals MUST be set to empty slice instead of nil
-	if withdrawals == nil && block.Header().WithdrawalsHash != nil {
-		withdrawals = make([]*types.Withdrawal, 0)
-	}
-
 	return &engine.ExecutionPayloadBodyV1{
 		TransactionData: txs,
-		Withdrawals:     withdrawals,
+		Withdrawals:     body.Withdrawals,
 	}
 }
