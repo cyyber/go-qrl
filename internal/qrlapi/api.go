@@ -1364,7 +1364,6 @@ func marshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 		"effectiveGasPrice": (*hexutil.Big)(receipt.EffectiveGasPrice),
 	}
 
-	// Zond receipts are status-only. Pre-Byzantium post-state roots are not used.
 	fields["status"] = hexutil.Uint(receipt.Status)
 	if receipt.Logs == nil {
 		fields["logs"] = []*types.Log{}

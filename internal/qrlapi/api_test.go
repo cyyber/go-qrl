@@ -1296,7 +1296,6 @@ func TestMarshalReceiptStatusOnly(t *testing.T) {
 	})
 	receipt := &types.Receipt{
 		Type:              tx.Type(),
-		PostState:         common.Hash{2}.Bytes(),
 		Status:            types.ReceiptStatusSuccessful,
 		CumulativeGasUsed: 21000,
 		GasUsed:           21000,

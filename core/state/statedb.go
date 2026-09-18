@@ -571,9 +571,9 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 		if !prevdestruct {
 			s.stateObjectsDestruct[prev.address] = prev.origin
 		}
-		// There may be some cached account/storage data already since IntermediateRoot
-		// will be called for each transaction before byzantium fork which will always
-		// cache the latest account/storage data.
+		// There may be some cached account/storage data already if IntermediateRoot
+		// was called (for example at a block boundary), which caches the latest
+		// account/storage data.
 		prevAccount, ok := s.accountsOrigin[prev.address]
 		s.journal.append(resetObjectChange{
 			account:                &addr,
@@ -797,8 +797,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 }
 
 // IntermediateRoot computes the current root hash of the state trie.
-// It is called in between transactions to get the root hash that
-// goes into transaction receipts.
+// It is used for the block header state root, not for transaction receipts.
 func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	// Finalise all the dirty storage states and write them into the tries
 	s.Finalise(deleteEmptyObjects)
@@ -806,10 +805,6 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	// If there was a trie prefetcher operating, it gets aborted and irrevocably
 	// modified after we start retrieving tries. Remove it from the statedb after
 	// this round of use.
-	//
-	// This is weird pre-byzantium since the first tx runs with a prefetcher and
-	// the remainder without, but pre-byzantium even the initial prefetcher is
-	// useless, so no sleep lost.
 	prefetcher := s.prefetcher
 	if s.prefetcher != nil {
 		defer func() {
