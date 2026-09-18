@@ -131,10 +131,7 @@ func roundTripBlockEncoding(t *testing.T, makeTx func(Signer, wallet.Wallet) *Tr
 		WithdrawalsHash: &EmptyWithdrawalsHash,
 	}
 
-	// Pass an empty Withdrawals slice (not nil) so NewBlock keeps
-	// header.WithdrawalsHash populated — the reflection-based Header decoder
-	// requires the field, otherwise it fails with "too few elements".
-	block := NewBlock(header, &Body{Transactions: Transactions{tx}, Withdrawals: Withdrawals{}}, nil, blocktest.NewHasher())
+	block := NewBlock(header, &Body{Transactions: Transactions{tx}}, nil, blocktest.NewHasher())
 
 	enc, err := rlp.EncodeToBytes(block)
 	if err != nil {
@@ -335,8 +332,100 @@ func TestMaxBlockSize(t *testing.T) {
 	}
 	// Block layout widened for 64-byte addresses (Coinbase, tx To fields,
 	// bloom topic words). Re-run the test and print if that ever changes again.
-	const expectedBlockSize = uint64(6967855)
+	const expectedBlockSize = uint64(6967889)
 	if blockSize != expectedBlockSize {
 		t.Errorf("block size mismatch: got %d, want %d", blockSize, expectedBlockSize)
+	}
+}
+
+func TestNewBlockEmptyWithdrawals(t *testing.T) {
+	block := NewBlock(&Header{Number: big.NewInt(1), BaseFee: big.NewInt(params.InitialBaseFee)}, nil, nil, blocktest.NewHasher())
+	if block.header.WithdrawalsHash == nil || *block.header.WithdrawalsHash != EmptyWithdrawalsHash {
+		t.Fatalf("WithdrawalsHash: got %v, want %x", block.header.WithdrawalsHash, EmptyWithdrawalsHash)
+	}
+	if block.withdrawals == nil {
+		t.Fatal("withdrawals should be an empty list, not nil")
+	}
+	if len(block.withdrawals) != 0 {
+		t.Fatalf("withdrawals len: got %d, want 0", len(block.withdrawals))
+	}
+}
+
+func TestHeaderRLPAlwaysIncludesShanghaiFields(t *testing.T) {
+	// A fully populated header round-trips with both fields present.
+	withdrawalsHash := EmptyWithdrawalsHash
+	enc, err := rlp.EncodeToBytes(&Header{
+		Number:          big.NewInt(1),
+		BaseFee:         big.NewInt(0),
+		WithdrawalsHash: &withdrawalsHash,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var dec Header
+	if err := rlp.DecodeBytes(enc, &dec); err != nil {
+		t.Fatalf("decode header: %v", err)
+	}
+	if dec.BaseFee == nil || dec.BaseFee.Sign() != 0 {
+		t.Fatalf("BaseFee: got %v, want 0", dec.BaseFee)
+	}
+	if dec.WithdrawalsHash == nil || *dec.WithdrawalsHash != EmptyWithdrawalsHash {
+		t.Fatalf("WithdrawalsHash: got %v, want %x", dec.WithdrawalsHash, EmptyWithdrawalsHash)
+	}
+
+	// The generated encoder is not responsible for defaulting a nil
+	// WithdrawalsHash: producers (NewBlock, genesis, engine API) must set it.
+	// A nil pointer encodes as an empty string, which is not a valid hash and
+	// is rejected on decode rather than silently becoming the empty root.
+	nilHash, err := rlp.EncodeToBytes(&Header{Number: big.NewInt(1), BaseFee: big.NewInt(0)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := rlp.DecodeBytes(nilHash, new(Header)); err == nil {
+		t.Fatal("expected error decoding a header encoded with a nil withdrawalsRoot")
+	}
+
+	type preShanghaiHeader struct {
+		ParentHash  common.Hash
+		Coinbase    common.Address
+		Root        common.Hash
+		TxHash      common.Hash
+		ReceiptHash common.Hash
+		Bloom       Bloom
+		Number      *big.Int
+		GasLimit    uint64
+		GasUsed     uint64
+		Time        uint64
+		Extra       []byte
+		Random      common.Hash
+	}
+	truncated, err := rlp.EncodeToBytes(&preShanghaiHeader{Number: big.NewInt(1)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := rlp.DecodeBytes(truncated, new(Header)); err == nil {
+		t.Fatal("expected error decoding a header without baseFeePerGas and withdrawalsRoot")
+	}
+}
+
+func TestBodyRLPAlwaysIncludesWithdrawals(t *testing.T) {
+	enc, err := rlp.EncodeToBytes(&Body{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var dec Body
+	if err := rlp.DecodeBytes(enc, &dec); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if dec.Withdrawals == nil {
+		t.Fatal("withdrawals should decode as an empty list, not nil")
+	}
+
+	txsOnly, err := rlp.EncodeToBytes([]any{[]any{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := rlp.DecodeBytes(txsOnly, new(Body)); err == nil {
+		t.Fatal("expected error decoding a body without a withdrawals list")
 	}
 }

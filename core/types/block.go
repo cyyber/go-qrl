@@ -48,8 +48,8 @@ type Header struct {
 	Time            uint64         `json:"timestamp"        gencodec:"required"`
 	Extra           []byte         `json:"extraData"        gencodec:"required"`
 	Random          common.Hash    `json:"prevRandao"`
-	BaseFee         *big.Int       `json:"baseFeePerGas"`
-	WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"`
+	BaseFee         *big.Int       `json:"baseFeePerGas"     gencodec:"required"`
+	WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"   gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -103,10 +103,7 @@ func (h *Header) SanityCheck() error {
 // EmptyBody returns true if there is no additional 'body' to complete the header
 // that is: no transactions and no withdrawals.
 func (h *Header) EmptyBody() bool {
-	var (
-		emptyWithdrawals = h.WithdrawalsHash == nil || *h.WithdrawalsHash == EmptyWithdrawalsHash
-	)
-	return h.TxHash == EmptyTxsHash && emptyWithdrawals
+	return h.TxHash == EmptyTxsHash && h.WithdrawalsHash != nil && *h.WithdrawalsHash == EmptyWithdrawalsHash
 }
 
 // EmptyReceipts returns true if there are no receipts for this header/block.
@@ -118,7 +115,7 @@ func (h *Header) EmptyReceipts() bool {
 // a block's data contents (transactions) together.
 type Body struct {
 	Transactions []*Transaction
-	Withdrawals  []*Withdrawal `rlp:"optional"`
+	Withdrawals  []*Withdrawal
 }
 
 // Block represents a QRL block.
@@ -157,15 +154,15 @@ type Block struct {
 type extblock struct {
 	Header      *Header
 	Txs         []*Transaction
-	Withdrawals []*Withdrawal `rlp:"optional"`
+	Withdrawals []*Withdrawal
 }
 
 // NewBlock creates a new block. The input data is copied, changes to header and to the
 // field values will not affect the block.
 //
-// The values of TxHash, ReceiptHash and Bloom in header
-// are ignored and set to values derived from the given txs
-// and receipts.
+// The values of TxHash, ReceiptHash, Bloom and WithdrawalsHash in header
+// are ignored and set to values derived from the given txs, receipts and
+// withdrawals. A nil withdrawals list is treated as empty.
 func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher) *Block {
 	if body == nil {
 		body = &Body{}
@@ -191,9 +188,7 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 		b.header.Bloom = CreateBloom(receipts)
 	}
 
-	if withdrawals == nil {
-		b.header.WithdrawalsHash = nil
-	} else if len(withdrawals) == 0 {
+	if len(withdrawals) == 0 {
 		b.header.WithdrawalsHash = &EmptyWithdrawalsHash
 		b.withdrawals = Withdrawals{}
 	} else {
@@ -339,12 +334,16 @@ func (b *Block) WithSeal(header *Header) *Block {
 }
 
 // WithBody returns a new block with the original header and a deep copy of the
-// provided body.
+// provided body. A nil withdrawals list is treated as empty.
 func (b *Block) WithBody(body Body) *Block {
+	withdrawals := slices.Clone(body.Withdrawals)
+	if withdrawals == nil {
+		withdrawals = Withdrawals{}
+	}
 	block := &Block{
 		header:       b.header,
 		transactions: slices.Clone(body.Transactions),
-		withdrawals:  slices.Clone(body.Withdrawals),
+		withdrawals:  withdrawals,
 	}
 	return block
 }
