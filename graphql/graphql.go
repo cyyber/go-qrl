@@ -271,16 +271,13 @@ func (t *Transaction) GasPrice(ctx context.Context) hexutil.Big {
 	if tx == nil {
 		return hexutil.Big{}
 	}
-	switch tx.Type() {
-	default:
-		if block != nil {
-			if baseFee, _ := block.BaseFeePerGas(ctx); baseFee != nil {
-				// price = min(gasTipCap + baseFee, gasFeeCap)
-				return (hexutil.Big)(*math.BigMin(new(big.Int).Add(tx.GasTipCap(), baseFee.ToInt()), tx.GasFeeCap()))
-			}
+	if block != nil {
+		if header, err := block.resolveHeader(ctx); err == nil && header != nil {
+			// price = min(gasTipCap + baseFee, gasFeeCap)
+			return (hexutil.Big)(*math.BigMin(new(big.Int).Add(tx.GasTipCap(), header.BaseFee), tx.GasFeeCap()))
 		}
-		return hexutil.Big(*tx.GasPrice())
 	}
+	return hexutil.Big(*tx.GasPrice())
 }
 
 func (t *Transaction) EffectiveGasPrice(ctx context.Context) (*hexutil.Big, error) {
@@ -295,9 +292,6 @@ func (t *Transaction) EffectiveGasPrice(ctx context.Context) (*hexutil.Big, erro
 	header, err := block.resolveHeader(ctx)
 	if err != nil || header == nil {
 		return nil, err
-	}
-	if header.BaseFee == nil {
-		return (*hexutil.Big)(tx.GasPrice()), nil
 	}
 	return (*hexutil.Big)(math.BigMin(new(big.Int).Add(tx.GasTipCap(), header.BaseFee), tx.GasFeeCap())), nil
 }
@@ -341,10 +335,6 @@ func (t *Transaction) EffectiveTip(ctx context.Context) (*hexutil.Big, error) {
 	if err != nil || header == nil {
 		return nil, err
 	}
-	if header.BaseFee == nil {
-		return (*hexutil.Big)(tx.GasPrice()), nil
-	}
-
 	tip, err := tx.EffectiveGasTip(header.BaseFee)
 	if err != nil {
 		return nil, err
@@ -693,15 +683,12 @@ func (b *Block) GasUsed(ctx context.Context) (hexutil.Uint64, error) {
 	return hexutil.Uint64(header.GasUsed), nil
 }
 
-func (b *Block) BaseFeePerGas(ctx context.Context) (*hexutil.Big, error) {
+func (b *Block) BaseFeePerGas(ctx context.Context) (hexutil.Big, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return nil, err
+		return hexutil.Big{}, err
 	}
-	if header.BaseFee == nil {
-		return nil, nil
-	}
-	return (*hexutil.Big)(header.BaseFee), nil
+	return hexutil.Big(*header.BaseFee), nil
 }
 
 func (b *Block) NextBaseFeePerGas(ctx context.Context) (*hexutil.Big, error) {
@@ -1263,9 +1250,7 @@ func (r *Resolver) GasPrice(ctx context.Context) (hexutil.Big, error) {
 	if err != nil {
 		return hexutil.Big{}, err
 	}
-	if head := r.backend.CurrentHeader(); head.BaseFee != nil {
-		tipcap.Add(tipcap, head.BaseFee)
-	}
+	tipcap.Add(tipcap, r.backend.CurrentHeader().BaseFee)
 	return (hexutil.Big)(*tipcap), nil
 }
 

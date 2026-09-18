@@ -204,7 +204,7 @@ const schema string = `
         # GasUsed is the amount of gas that was used executing transactions in this block.
         gasUsed: Long!
         # BaseFeePerGas is the fee per unit of gas burned by the protocol in this block.
-        baseFeePerGas: BigInt
+        baseFeePerGas: BigInt!
         # NextBaseFeePerGas is the fee per unit of gas which needs to be burned in the next block.
         nextBaseFeePerGas: BigInt
         # Timestamp is the unix timestamp at which this block was mined.
