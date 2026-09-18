@@ -49,9 +49,6 @@ var (
 	// lastPivotKey tracks the last pivot block used by fast sync (to reenable on sethead).
 	lastPivotKey = []byte("LastPivot")
 
-	// fastTrieProgressKey tracks the number of trie entries imported during fast sync.
-	fastTrieProgressKey = []byte("TrieSync")
-
 	// snapshotDisabledKey flags that the snapshot should not be maintained due to initial sync.
 	snapshotDisabledKey = []byte("SnapshotDisabled")
 
@@ -78,9 +75,6 @@ var (
 
 	// txIndexTailKey tracks the oldest block whose transactions have been indexed.
 	txIndexTailKey = []byte("TransactionIndexTail")
-
-	// fastTxLookupLimitKey tracks the transaction lookup limit during fast sync.
-	fastTxLookupLimitKey = []byte("FastTransactionLookupLimit")
 
 	// badBlockKey tracks the list of bad blocks seen by local
 	badBlockKey = []byte("InvalidBlock")
