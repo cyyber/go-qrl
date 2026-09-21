@@ -41,8 +41,7 @@ const (
 	MimetypeTextPlain         = "text/plain"
 )
 
-// Wallet represents a software or hardware wallet that might contain one or more
-// accounts (derived from the same seed).
+// Wallet represents a software wallet that might contain one or more accounts.
 type Wallet interface {
 	// URL retrieves the canonical path under which this wallet is reachable. It is
 	// used by upper layers to define a sorting order over all wallets from multiple
@@ -55,8 +54,7 @@ type Wallet interface {
 	Status() (string, error)
 
 	// Open initializes access to a wallet instance. It is not meant to unlock or
-	// decrypt account keys, rather simply to establish a connection to hardware
-	// wallets and/or to access derivation seeds.
+	// decrypt account keys.
 	//
 	// The passphrase parameter may or may not be used by the implementation of a
 	// particular wallet instance. The reason there is no passwordless open method
@@ -64,7 +62,7 @@ type Wallet interface {
 	// backend providers.
 	//
 	// Please note, if you open a wallet, you must close it to release any allocated
-	// resources (especially important when working with hardware wallets).
+	// resources.
 	Open(passphrase string) error
 
 	// Close releases any resources held by an open wallet instance.
@@ -91,9 +89,8 @@ type Wallet interface {
 	// opposed to descending into a child path to allow discovering accounts starting
 	// from non zero components.
 	//
-	// Some hardware wallets switched derivation paths through their evolution, so
-	// this method supports providing multiple bases to discover old user accounts
-	// too. Only the last base will be used to derive the next empty account.
+	// Multiple bases may be supplied. Only the last base is used to derive the
+	// next empty account.
 	//
 	// You can disable automatic account discovery by calling SelfDerive with a nil
 	// chain state reader.
@@ -157,14 +154,11 @@ type Wallet interface {
 type Backend interface {
 	// Wallets retrieves the list of wallets the backend is currently aware of.
 	//
-	// The returned wallets are not opened by default. For software HD wallets this
-	// means that no base seeds are decrypted, and for hardware wallets that no actual
-	// connection is established.
+	// The returned wallets are not opened by default.
 	//
 	// The resulting wallet list will be sorted alphabetically based on its internal
-	// URL assigned by the backend. Since wallets (especially hardware) may come and
-	// go, the same wallet might appear at a different positions in the list during
-	// subsequent retrievals.
+	// URL assigned by the backend. Wallets may come and go, so the same wallet might
+	// appear at a different position in the list during subsequent retrievals.
 	Wallets() []Wallet
 
 	// Subscribe creates an async subscription to receive notifications when the

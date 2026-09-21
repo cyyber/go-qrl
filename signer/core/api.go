@@ -36,8 +36,6 @@ import (
 )
 
 const (
-	// numberOfAccountsToDerive For hardware wallets, the number of accounts to derive
-	// numberOfAccountsToDerive = 10
 	// ExternalAPIVersion -- see extapi_changelog.md
 	ExternalAPIVersion = "6.1.0"
 	// InternalAPIVersion -- see intapi_changelog.md
@@ -82,8 +80,8 @@ type UIClientAPI interface {
 	// OnSignerStartup is invoked when the signer boots, and tells the UI info about external API location and version
 	// information
 	OnSignerStartup(info StartupInfo)
-	// OnInputRequired is invoked when clef requires user input, for example master password or
-	// pin-code for unlocking hardware wallets
+	// OnInputRequired is invoked when clef requires user input, for example a
+	// master-seed password or an account password.
 	OnInputRequired(info UserInputRequest) (UserInputResponse, error)
 	// RegisterUIServer tells the UI to use the given UIServerAPI for ui->clef communication
 	RegisterUIServer(api *UIServerAPI)
