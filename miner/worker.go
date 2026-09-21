@@ -283,10 +283,8 @@ func (miner *Miner) fillTransactions(interrupt *atomic.Int32, env *environment) 
 
 	// Retrieve the pending transactions pre-filtered by the 1559 dynamic fees
 	filter := txpool.PendingFilter{
-		MinTip: tip,
-	}
-	if env.header.BaseFee != nil {
-		filter.BaseFee = env.header.BaseFee
+		MinTip:  tip,
+		BaseFee: env.header.BaseFee,
 	}
 	pendingTxs := miner.txpool.Pending(filter)
 
