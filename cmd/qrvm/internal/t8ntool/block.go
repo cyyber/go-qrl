@@ -44,8 +44,8 @@ type header struct {
 	Time            uint64          `json:"timestamp"        gencodec:"required"`
 	Extra           []byte          `json:"extraData"`
 	Random          common.Hash     `json:"prevRandao"`
-	BaseFee         *big.Int        `json:"baseFeePerGas" rlp:"optional"`
-	WithdrawalsHash *common.Hash    `json:"withdrawalsRoot" rlp:"optional"`
+	BaseFee         *big.Int        `json:"baseFeePerGas"   gencodec:"required"`
+	WithdrawalsHash *common.Hash    `json:"withdrawalsRoot" gencodec:"required"`
 }
 
 type headerMarshaling struct {
@@ -65,8 +65,18 @@ type bbInput struct {
 	Txs []*types.Transaction `json:"-"`
 }
 
-// ToBlock converts i into a *types.Block
-func (i *bbInput) ToBlock() *types.Block {
+// ToBlock converts i into a *types.Block.
+// baseFeePerGas and withdrawalsRoot are required and are copied as given.
+func (i *bbInput) ToBlock() (*types.Block, error) {
+	if i.Header == nil {
+		return nil, NewError(ErrorConfig, fmt.Errorf("missing header"))
+	}
+	if i.Header.BaseFee == nil {
+		return nil, NewError(ErrorConfig, fmt.Errorf("missing baseFeePerGas in header"))
+	}
+	if i.Header.WithdrawalsHash == nil {
+		return nil, NewError(ErrorConfig, fmt.Errorf("missing withdrawalsRoot in header"))
+	}
 	header := &types.Header{
 		ParentHash:      i.Header.ParentHash,
 		Coinbase:        common.Address{},
@@ -81,7 +91,7 @@ func (i *bbInput) ToBlock() *types.Block {
 		Extra:           i.Header.Extra,
 		Random:          i.Header.Random,
 		BaseFee:         i.Header.BaseFee,
-		WithdrawalsHash: &types.EmptyWithdrawalsHash,
+		WithdrawalsHash: i.Header.WithdrawalsHash,
 	}
 
 	// Fill optional values.
@@ -94,10 +104,7 @@ func (i *bbInput) ToBlock() *types.Block {
 	if i.Header.ReceiptHash != nil {
 		header.ReceiptHash = *i.Header.ReceiptHash
 	}
-	if i.Header.WithdrawalsHash != nil {
-		header.WithdrawalsHash = i.Header.WithdrawalsHash
-	}
-	return types.NewBlockWithHeader(header).WithBody(types.Body{Transactions: i.Txs, Withdrawals: i.Withdrawals})
+	return types.NewBlockWithHeader(header).WithBody(types.Body{Transactions: i.Txs, Withdrawals: i.Withdrawals}), nil
 }
 
 // SealBlock seals the given block using the configured engine.
@@ -118,7 +125,10 @@ func BuildBlock(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	block := inputData.ToBlock()
+	block, err := inputData.ToBlock()
+	if err != nil {
+		return err
+	}
 	block, err = inputData.SealBlock(block)
 	if err != nil {
 		return err

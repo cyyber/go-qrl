@@ -212,6 +212,7 @@ func TestRegenerateT8nFixtures(t *testing.T) {
 		"mixHash":          "0x0000000000000000000000000000000000000000000000000000000000000000",
 		"nonce":            "0x0000000000000000",
 		"baseFeePerGas":    "0x1",
+		"withdrawalsRoot":  "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
 	}
 	writeJSON("header.json", header)
 	b11rCmd := exec.Command(qrvm, "b11r",

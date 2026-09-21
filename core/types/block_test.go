@@ -406,6 +406,21 @@ func TestHeaderRLPAlwaysIncludesShanghaiFields(t *testing.T) {
 	if err := rlp.DecodeBytes(truncated, new(Header)); err == nil {
 		t.Fatal("expected error decoding a header without baseFeePerGas and withdrawalsRoot")
 	}
+
+	// A nil BaseFee encodes as the RLP integer 0, so decode yields 0 rather
+	// than a nil pointer. Zero is a valid base fee, and rejecting this
+	// encoding would also reject an explicit base fee of zero.
+	nilFee, err := rlp.EncodeToBytes(&Header{Number: big.NewInt(1), WithdrawalsHash: &withdrawalsHash})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var zeroFee Header
+	if err := rlp.DecodeBytes(nilFee, &zeroFee); err != nil {
+		t.Fatalf("decode header with nil BaseFee: %v", err)
+	}
+	if zeroFee.BaseFee == nil || zeroFee.BaseFee.Sign() != 0 {
+		t.Fatalf("nil BaseFee decoded as %v, want 0", zeroFee.BaseFee)
+	}
 }
 
 func TestBodyRLPAlwaysIncludesWithdrawals(t *testing.T) {
