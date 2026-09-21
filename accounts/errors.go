@@ -47,8 +47,7 @@ var ErrWalletClosed = errors.New("wallet closed")
 // AuthNeededError is returned by backends for signing requests where the user
 // is required to provide further authentication before signing can succeed.
 //
-// This usually means either that a password needs to be supplied, or perhaps a
-// one time PIN code displayed by some hardware device.
+// This usually means that a password needs to be supplied.
 type AuthNeededError struct {
 	Needed string // Extra authentication the user needs to provide
 }
