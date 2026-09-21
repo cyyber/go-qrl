@@ -166,6 +166,7 @@ func TestMessages(t *testing.T) {
 	// init the block body data, both object and rlp form
 	blockBody = &BlockBody{
 		Transactions: txs,
+		Withdrawals:  []*types.Withdrawal{},
 	}
 	blockBodyRlp, err = rlp.EncodeToBytes(blockBody)
 	if err != nil {
@@ -260,5 +261,27 @@ func TestMessages(t *testing.T) {
 		} else if !bytes.Equal(have, tc.want) {
 			t.Errorf("test %d, type %T, have\n\t%x\nwant\n\t%x", i, tc.message, have, tc.want)
 		}
+	}
+}
+
+func TestBlockBodyRLPRequiresWithdrawals(t *testing.T) {
+	enc, err := rlp.EncodeToBytes(&BlockBody{Withdrawals: []*types.Withdrawal{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var dec BlockBody
+	if err := rlp.DecodeBytes(enc, &dec); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if dec.Withdrawals == nil {
+		t.Fatal("withdrawals should decode as an empty list, not nil")
+	}
+
+	txsOnly, err := rlp.EncodeToBytes([]any{[]any{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := rlp.DecodeBytes(txsOnly, new(BlockBody)); err == nil {
+		t.Fatal("expected error decoding a block body without a withdrawals list")
 	}
 }
