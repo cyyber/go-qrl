@@ -3085,16 +3085,16 @@ func TestTxIndexer(t *testing.T) {
 		chain.indexBlocks(nil, 128, make(chan struct{}))
 		verify(db, c.tailA)
 
-		chain.SetTxLookupLimit(c.limitB)
+		chain.SetTransactionHistory(c.limitB)
 		chain.indexBlocks(rawdb.ReadTxIndexTail(db), 128, make(chan struct{}))
 		verify(db, c.tailB)
 
-		chain.SetTxLookupLimit(c.limitC)
+		chain.SetTransactionHistory(c.limitC)
 		chain.indexBlocks(rawdb.ReadTxIndexTail(db), 128, make(chan struct{}))
 		verify(db, c.tailC)
 
 		// Recover all indexes
-		chain.SetTxLookupLimit(0)
+		chain.SetTransactionHistory(0)
 		chain.indexBlocks(rawdb.ReadTxIndexTail(db), 128, make(chan struct{}))
 		verify(db, 0)
 

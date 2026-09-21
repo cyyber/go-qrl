@@ -316,16 +316,16 @@ func (bc *BlockChain) GetVMConfig() *vm.Config {
 	return &bc.vmConfig
 }
 
-// SetTxLookupLimit is responsible for updating the txlookup limit to the
-// original one stored in db if the new mismatches with the old one.
-func (bc *BlockChain) SetTxLookupLimit(limit uint64) {
-	bc.txLookupLimit = limit
+// SetTransactionHistory updates how many recent blocks keep transaction indices,
+// matching Config.TransactionHistory / --history.transactions.
+func (bc *BlockChain) SetTransactionHistory(limit uint64) {
+	bc.transactionHistory = limit
 }
 
-// TxLookupLimit retrieves the txlookup limit used by blockchain to prune
-// stale transaction indices.
-func (bc *BlockChain) TxLookupLimit() uint64 {
-	return bc.txLookupLimit
+// TransactionHistory returns how many recent blocks keep transaction indices.
+// Zero reserves the entire chain.
+func (bc *BlockChain) TransactionHistory() uint64 {
+	return bc.transactionHistory
 }
 
 // TrieDB retrieves the low level trie database used for data storage.

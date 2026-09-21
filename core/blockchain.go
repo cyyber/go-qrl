@@ -206,12 +206,12 @@ type BlockChain struct {
 	triedb        *trie.Database                   // The database handler for maintaining trie nodes.
 	stateCache    state.Database                   // State database to reuse between imports (contains state cache)
 
-	// txLookupLimit is the maximum number of blocks from head whose tx indices
+	// transactionHistory is the maximum number of blocks from head whose tx indices
 	// are reserved:
 	//  * 0:   means no limit and regenerate any missing indexes
 	//  * N:   means N block limit [HEAD-N+1, HEAD] and delete extra indexes
 	//  * nil: disable tx reindexer/deleter, but still index new blocks
-	txLookupLimit uint64
+	transactionHistory uint64
 
 	hc            *HeaderChain
 	rmLogsFeed    event.Feed
@@ -252,7 +252,7 @@ type BlockChain struct {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default QRL Validator
 // and Processor.
-func NewBlockChain(db qrldb.Database, cacheConfig *CacheConfig, genesis *Genesis, engine consensus.Engine, vmConfig vm.Config, txLookupLimit *uint64) (*BlockChain, error) {
+func NewBlockChain(db qrldb.Database, cacheConfig *CacheConfig, genesis *Genesis, engine consensus.Engine, vmConfig vm.Config, transactionHistory *uint64) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -430,8 +430,8 @@ func NewBlockChain(db qrldb.Database, cacheConfig *CacheConfig, genesis *Genesis
 		rawdb.WriteChainConfig(db, genesisHash, chainConfig)
 	}
 	// Start tx indexer/unindexer if required.
-	if txLookupLimit != nil {
-		bc.txLookupLimit = *txLookupLimit
+	if transactionHistory != nil {
+		bc.transactionHistory = *transactionHistory
 
 		bc.wg.Add(1)
 		go bc.maintainTxIndex()
@@ -1121,19 +1121,19 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		}
 
 		// Write tx indices if any condition is satisfied:
-		// * If user requires to reserve all tx indices(txlookuplimit=0)
-		// * If all ancient tx indices are required to be reserved(txlookuplimit is even higher than ancientlimit)
+		// * If user requires to reserve all tx indices (history.transactions=0)
+		// * If all ancient tx indices are required to be reserved (history.transactions is even higher than ancientlimit)
 		// * If block number is large enough to be regarded as a recent block
-		// It means blocks below the ancientLimit-txlookupLimit won't be indexed.
+		// It means blocks below the ancientLimit-transactionHistory won't be indexed.
 		//
 		// But if the `TxIndexTail` is not nil, e.g. Gqrl is initialized with
 		// an external ancient database, during the setup, blockchain will start
-		// a background routine to re-indexed all indices in [ancients - txlookupLimit, ancients)
+		// a background routine to re-index all indices in [ancients - transactionHistory, ancients)
 		// range. In this case, all tx indices of newly imported blocks should be
 		// generated.
 		var batch = bc.db.NewBatch()
 		for i, block := range blockChain {
-			if bc.txLookupLimit == 0 || ancientLimit <= bc.txLookupLimit || block.NumberU64() >= ancientLimit-bc.txLookupLimit {
+			if bc.transactionHistory == 0 || ancientLimit <= bc.transactionHistory || block.NumberU64() >= ancientLimit-bc.transactionHistory {
 				rawdb.WriteTxLookupEntriesByBlock(batch, block)
 			} else if rawdb.ReadTxIndexTail(bc.db) != nil {
 				rawdb.WriteTxLookupEntriesByBlock(batch, block)
@@ -1261,10 +1261,10 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		// * 0: all ancient blocks have been indexed
 		// * ancient-limit: the indices of blocks before ancient-limit are ignored
 		if tail := rawdb.ReadTxIndexTail(bc.db); tail == nil {
-			if bc.txLookupLimit == 0 || ancientLimit <= bc.txLookupLimit {
+			if bc.transactionHistory == 0 || ancientLimit <= bc.transactionHistory {
 				rawdb.WriteTxIndexTail(bc.db, 0)
 			} else {
-				rawdb.WriteTxIndexTail(bc.db, ancientLimit-bc.txLookupLimit)
+				rawdb.WriteTxIndexTail(bc.db, ancientLimit-bc.transactionHistory)
 			}
 		}
 	}
@@ -2104,14 +2104,14 @@ func (bc *BlockChain) indexBlocks(tail *uint64, head uint64, done chan struct{})
 	// and all blocks(may from ancient store) are not indexed yet.
 	if tail == nil {
 		from := uint64(0)
-		if bc.txLookupLimit != 0 && head >= bc.txLookupLimit {
-			from = head - bc.txLookupLimit + 1
+		if bc.transactionHistory != 0 && head >= bc.transactionHistory {
+			from = head - bc.transactionHistory + 1
 		}
 		rawdb.IndexTransactions(bc.db, from, head+1, bc.quit)
 		return
 	}
 	// The tail flag is existent, but the whole chain is required to be indexed.
-	if bc.txLookupLimit == 0 || head < bc.txLookupLimit {
+	if bc.transactionHistory == 0 || head < bc.transactionHistory {
 		if *tail > 0 {
 			// It can happen when chain is rewound to a historical point which
 			// is even lower than the indexes tail, recap the indexing target
@@ -2122,25 +2122,23 @@ func (bc *BlockChain) indexBlocks(tail *uint64, head uint64, done chan struct{})
 		return
 	}
 	// Update the transaction index to the new chain state
-	if head-bc.txLookupLimit+1 < *tail {
+	if head-bc.transactionHistory+1 < *tail {
 		// Reindex a part of missing indices and rewind index tail to HEAD-limit
-		rawdb.IndexTransactions(bc.db, head-bc.txLookupLimit+1, *tail, bc.quit)
+		rawdb.IndexTransactions(bc.db, head-bc.transactionHistory+1, *tail, bc.quit)
 	} else {
 		// Unindex a part of stale indices and forward index tail to HEAD-limit
-		rawdb.UnindexTransactions(bc.db, *tail, head-bc.txLookupLimit+1, bc.quit)
+		rawdb.UnindexTransactions(bc.db, *tail, head-bc.transactionHistory+1, bc.quit)
 	}
 }
 
 // maintainTxIndex is responsible for the construction and deletion of the
 // transaction index.
 //
-// User can use flag `txlookuplimit` to specify a "recentness" block, below
-// which ancient tx indices get deleted. If `txlookuplimit` is 0, it means
-// all tx indices will be reserved.
+// --history.transactions (Config.TransactionHistory) specifies how many recent
+// blocks keep transaction indices. Zero reserves the entire chain.
 //
-// The user can adjust the txlookuplimit value for each launch after sync,
-// Gqrl will automatically construct the missing indices or delete the extra
-// indices.
+// The value can be changed between launches; the indexer rebuilds missing
+// indices or deletes extras to match.
 func (bc *BlockChain) maintainTxIndex() {
 	defer bc.wg.Done()
 
@@ -2154,7 +2152,7 @@ func (bc *BlockChain) maintainTxIndex() {
 		return
 	}
 	defer sub.Unsubscribe()
-	log.Info("Initialized transaction indexer", "limit", bc.TxLookupLimit())
+	log.Info("Initialized transaction indexer", "limit", bc.TransactionHistory())
 
 	// Launch the initial processing if chain is not empty. This step is
 	// useful in these scenarios that chain has no progress and indexer
