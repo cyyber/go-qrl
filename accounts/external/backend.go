@@ -97,14 +97,6 @@ func (api *ExternalSigner) Status() (string, error) {
 	return api.status, nil
 }
 
-func (api *ExternalSigner) Open(passphrase string) error {
-	return errors.New("operation not supported on external signers")
-}
-
-func (api *ExternalSigner) Close() error {
-	return errors.New("operation not supported on external signers")
-}
-
 func (api *ExternalSigner) Accounts() []accounts.Account {
 	var accnts []accounts.Account
 	res, err := api.listAccounts()
