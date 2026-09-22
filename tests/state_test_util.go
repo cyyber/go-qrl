@@ -109,6 +109,22 @@ type stTransaction struct {
 	Sender               *common.Address     `json:"sender"`
 }
 
+type stEnvMarshaling struct {
+	Random    *math.HexOrDecimal256
+	GasLimit  math.HexOrDecimal64
+	Number    math.HexOrDecimal64
+	Timestamp math.HexOrDecimal64
+	BaseFee   *math.HexOrDecimal256
+}
+
+type stTransactionMarshaling struct {
+	GasPrice             *math.HexOrDecimal256
+	MaxFeePerGas         *math.HexOrDecimal256
+	MaxPriorityFeePerGas *math.HexOrDecimal256
+	Nonce                math.HexOrDecimal64
+	GasLimit             []math.HexOrDecimal64
+}
+
 // GetChainConfig takes a fork definition and returns a chain config.
 // The fork definition can be
 // - a plain forkname, e.g. `Byzantium`,
