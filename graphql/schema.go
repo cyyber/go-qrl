@@ -204,7 +204,7 @@ const schema string = `
         # GasUsed is the amount of gas that was used executing transactions in this block.
         gasUsed: Long!
         # BaseFeePerGas is the fee per unit of gas burned by the protocol in this block.
-        baseFeePerGas: BigInt
+        baseFeePerGas: BigInt!
         # NextBaseFeePerGas is the fee per unit of gas which needs to be burned in the next block.
         nextBaseFeePerGas: BigInt
         # Timestamp is the unix timestamp at which this block was mined.
@@ -235,11 +235,9 @@ const schema string = `
         # Raw is the RLP encoding of the block.
         raw: Bytes!
         # WithdrawalsRoot is the withdrawals trie root in this block.
-        # If withdrawals are unavailable for this block, this field will be null.
-        withdrawalsRoot: Bytes32
-        # Withdrawals is a list of withdrawals associated with this block. If
-        # withdrawals are unavailable for this block, this field will be null.
-        withdrawals: [Withdrawal!]
+        withdrawalsRoot: Bytes32!
+        # Withdrawals is the withdrawals list in this block. An empty list is valid.
+        withdrawals: [Withdrawal!]!
     }
 
     # CallData represents the data associated with a local contract call.

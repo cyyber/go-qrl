@@ -17,6 +17,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -35,7 +36,7 @@ type PayloadAttributes struct {
 	Timestamp             uint64              `json:"timestamp"             gencodec:"required"`
 	Random                common.Hash         `json:"prevRandao"            gencodec:"required"`
 	SuggestedFeeRecipient common.Address      `json:"suggestedFeeRecipient" gencodec:"required"`
-	Withdrawals           []*types.Withdrawal `json:"withdrawals"`
+	Withdrawals           []*types.Withdrawal `json:"withdrawals"           gencodec:"required"`
 }
 
 // JSON type overrides for PayloadAttributes.
@@ -61,7 +62,7 @@ type ExecutableData struct {
 	BaseFeePerGas *big.Int            `json:"baseFeePerGas" gencodec:"required"`
 	BlockHash     common.Hash         `json:"blockHash"     gencodec:"required"`
 	Transactions  [][]byte            `json:"transactions"  gencodec:"required"`
-	Withdrawals   []*types.Withdrawal `json:"withdrawals"`
+	Withdrawals   []*types.Withdrawal `json:"withdrawals"   gencodec:"required"`
 }
 
 // JSON type overrides for executableData.
@@ -150,9 +151,8 @@ func decodeTransactions(enc [][]byte) ([]*types.Transaction, error) {
 //
 //	len(extraData) <= 32
 //
-// and that the blockhash of the constructed block matches the parameters. Nil
-// Withdrawals value will propagate through the returned block. Empty
-// Withdrawals value must be passed via non-nil, length 0 value in data.
+// and that the blockhash of the constructed block matches the parameters.
+// A nil Withdrawals value is treated as an empty list.
 func ExecutableDataToBlock(data ExecutableData) (*types.Block, error) {
 	block, err := ExecutableDataToBlockNoHash(data)
 	if err != nil {
@@ -178,18 +178,18 @@ func ExecutableDataToBlockNoHash(data ExecutableData) (*types.Block, error) {
 	if len(data.LogsBloom) != 256 {
 		return nil, fmt.Errorf("invalid logsBloom length: %v", len(data.LogsBloom))
 	}
-	// Check that baseFeePerGas is not negative or too big
-	if data.BaseFeePerGas != nil && (data.BaseFeePerGas.Sign() == -1 || data.BaseFeePerGas.BitLen() > 256) {
+	// Check that baseFeePerGas is present, not negative and not too big
+	if data.BaseFeePerGas == nil {
+		return nil, errors.New("missing baseFeePerGas")
+	}
+	if data.BaseFeePerGas.Sign() == -1 || data.BaseFeePerGas.BitLen() > 256 {
 		return nil, fmt.Errorf("invalid baseFeePerGas: %v", data.BaseFeePerGas)
 	}
-	// Only set withdrawalsRoot if it is non-nil. This allows CLs to use
-	// ExecutableData before withdrawals are enabled by marshaling
-	// Withdrawals as the json null value.
-	var withdrawalsRoot *common.Hash
-	if data.Withdrawals != nil {
-		h := types.DeriveSha(types.Withdrawals(data.Withdrawals), trie.NewStackTrie(nil))
-		withdrawalsRoot = &h
+	withdrawals := data.Withdrawals
+	if withdrawals == nil {
+		withdrawals = make([]*types.Withdrawal, 0)
 	}
+	withdrawalsRoot := types.DeriveSha(types.Withdrawals(withdrawals), trie.NewStackTrie(nil))
 	header := &types.Header{
 		ParentHash:      data.ParentHash,
 		Coinbase:        data.FeeRecipient,
@@ -204,10 +204,10 @@ func ExecutableDataToBlockNoHash(data ExecutableData) (*types.Block, error) {
 		BaseFee:         data.BaseFeePerGas,
 		Extra:           data.ExtraData,
 		Random:          data.Random,
-		WithdrawalsHash: withdrawalsRoot,
+		WithdrawalsHash: &withdrawalsRoot,
 	}
 	return types.NewBlockWithHeader(header).
-			WithBody(types.Body{Transactions: txs, Withdrawals: data.Withdrawals}),
+			WithBody(types.Body{Transactions: txs, Withdrawals: withdrawals}),
 		nil
 }
 

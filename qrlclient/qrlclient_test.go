@@ -19,6 +19,7 @@ package qrlclient
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"math/big"
 	"reflect"
@@ -482,6 +483,69 @@ func testGetBlock(t *testing.T, client *rpc.Client) {
 	if block.Header().Hash() != headerH.Hash() {
 		t.Fatalf("HeaderByHash returned wrong header: want %v got %v", block.Header().Hash().Hex(), headerH.Hash().Hex())
 	}
+	if block.Withdrawals() == nil {
+		t.Fatal("BlockByNumber returned nil withdrawals")
+	}
+}
+
+func TestGetBlockRequiresWithdrawals(t *testing.T) {
+	withdrawalsHash := types.EmptyWithdrawalsHash
+	header := &types.Header{
+		Number:          big.NewInt(0),
+		BaseFee:         big.NewInt(0),
+		TxHash:          types.EmptyTxsHash,
+		ReceiptHash:     types.EmptyReceiptsHash,
+		Extra:           []byte{},
+		WithdrawalsHash: &withdrawalsHash,
+	}
+	raw, err := json.Marshal(header)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var obj map[string]any
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		t.Fatal(err)
+	}
+	obj["transactions"] = []any{}
+
+	missing, err := json.Marshal(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := getBlockFromJSON(t, missing); err == nil {
+		t.Fatal("expected error for a block JSON without withdrawals")
+	}
+
+	obj["withdrawals"] = []any{}
+	empty, err := json.Marshal(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block, err := getBlockFromJSON(t, empty)
+	if err != nil {
+		t.Fatalf("empty withdrawals list: %v", err)
+	}
+	if block.Withdrawals() == nil {
+		t.Fatal("empty withdrawals list should not be nil")
+	}
+}
+
+type mockBlockAPI struct {
+	result json.RawMessage
+}
+
+func (m *mockBlockAPI) GetBlockByNumber(number string, fullTx bool) json.RawMessage {
+	return m.result
+}
+
+func getBlockFromJSON(t *testing.T, raw []byte) (*types.Block, error) {
+	t.Helper()
+	server := rpc.NewServer()
+	t.Cleanup(server.Stop)
+	if err := server.RegisterName("qrl", &mockBlockAPI{result: raw}); err != nil {
+		t.Fatal(err)
+	}
+	return NewClient(rpc.DialInProc(server)).BlockByNumber(t.Context(), big.NewInt(0))
 }
 
 func testStatusFunctions(t *testing.T, client *rpc.Client) {

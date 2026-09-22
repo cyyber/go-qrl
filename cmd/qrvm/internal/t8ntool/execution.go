@@ -53,7 +53,7 @@ type ExecutionResult struct {
 	Rejected        []*rejectedTx         `json:"rejected,omitempty"`
 	GasUsed         math.HexOrDecimal64   `json:"gasUsed"`
 	BaseFee         *math.HexOrDecimal256 `json:"currentBaseFee,omitempty"`
-	WithdrawalsRoot *common.Hash          `json:"withdrawalsRoot,omitempty"`
+	WithdrawalsRoot common.Hash           `json:"withdrawalsRoot"`
 }
 
 //go:generate go run github.com/fjl/gencodec -type stEnv -field-override stEnvMarshaling -out gen_stenv.go
@@ -233,19 +233,16 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 		return nil, nil, NewError(ErrorQRVM, fmt.Errorf("could not commit state: %v", err))
 	}
 	execRs := &ExecutionResult{
-		StateRoot:   root,
-		TxRoot:      types.DeriveSha(includedTxs, trie.NewStackTrie(nil)),
-		ReceiptRoot: types.DeriveSha(receipts, trie.NewStackTrie(nil)),
-		Bloom:       types.CreateBloom(receipts),
-		LogsHash:    rlpHash(statedb.Logs()),
-		Receipts:    receipts,
-		Rejected:    rejectedTxs,
-		GasUsed:     (math.HexOrDecimal64)(gasUsed),
-		BaseFee:     (*math.HexOrDecimal256)(vmContext.BaseFee),
-	}
-	if pre.Env.Withdrawals != nil {
-		h := types.DeriveSha(types.Withdrawals(pre.Env.Withdrawals), trie.NewStackTrie(nil))
-		execRs.WithdrawalsRoot = &h
+		StateRoot:       root,
+		TxRoot:          types.DeriveSha(includedTxs, trie.NewStackTrie(nil)),
+		ReceiptRoot:     types.DeriveSha(receipts, trie.NewStackTrie(nil)),
+		Bloom:           types.CreateBloom(receipts),
+		LogsHash:        rlpHash(statedb.Logs()),
+		Receipts:        receipts,
+		Rejected:        rejectedTxs,
+		GasUsed:         (math.HexOrDecimal64)(gasUsed),
+		BaseFee:         (*math.HexOrDecimal256)(vmContext.BaseFee),
+		WithdrawalsRoot: types.DeriveSha(types.Withdrawals(pre.Env.Withdrawals), trie.NewStackTrie(nil)),
 	}
 	// Re-create statedb instance with new root upon the updated database
 	// for accessing latest states.
