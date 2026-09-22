@@ -115,18 +115,21 @@ func TestAssembleBlock(t *testing.T) {
 // assembleWithTransactions tries to assemble a block, retrying until it has 'want',
 // number of transactions in it, or it has retried three times.
 func assembleWithTransactions(api *ConsensusAPI, parentHash common.Hash, params *engine.PayloadAttributes, want int) (execData *engine.ExecutableData, err error) {
-	for retries := 3; retries > 0; retries-- {
+	// The pool promotes new transactions and follows the chain head
+	// asynchronously, so give it a moment rather than retrying back to back.
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(10 * time.Millisecond) {
 		execData, err = assembleBlock(api, parentHash, params)
 		if err != nil {
 			return nil, err
 		}
-		if have, want := len(execData.Transactions), want; have != want {
-			err = fmt.Errorf("invalid number of transactions, have %d want %d", have, want)
-			continue
+		have := len(execData.Transactions)
+		if have == want {
+			return execData, nil
 		}
-		return execData, nil
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("invalid number of transactions, have %d want %d", have, want)
+		}
 	}
-	return nil, err
 }
 
 func TestAssembleBlockWithAnotherBlocksTxs(t *testing.T) {
