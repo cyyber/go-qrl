@@ -52,21 +52,6 @@ type Wallet interface {
 	// encountered.
 	Status() (string, error)
 
-	// Open initializes access to a wallet instance. It is not meant to unlock or
-	// decrypt account keys.
-	//
-	// The passphrase parameter may or may not be used by the implementation of a
-	// particular wallet instance. The reason there is no passwordless open method
-	// is to strive towards a uniform wallet handling, oblivious to the different
-	// backend providers.
-	//
-	// Please note, if you open a wallet, you must close it to release any allocated
-	// resources.
-	Open(passphrase string) error
-
-	// Close releases any resources held by an open wallet instance.
-	Close() error
-
 	// Accounts retrieves the list of signing accounts the wallet is currently aware of.
 	Accounts() []Account
 
@@ -131,8 +116,6 @@ type Wallet interface {
 type Backend interface {
 	// Wallets retrieves the list of wallets the backend is currently aware of.
 	//
-	// The returned wallets are not opened by default.
-	//
 	// The resulting wallet list will be sorted alphabetically based on its internal
 	// URL assigned by the backend. Wallets may come and go, so the same wallet might
 	// appear at a different position in the list during subsequent retrievals.
@@ -179,9 +162,6 @@ const (
 	// WalletArrived is fired when a new wallet is detected either via a
 	// filesystem event in the keystore.
 	WalletArrived WalletEventType = iota
-
-		// WalletOpened is fired when a wallet is successfully opened.
-	WalletOpened
 
 	// WalletDropped is fired when a wallet is removed or disconnected due to a
 	// filesystem event in the keystore. This event indicates that the wallet

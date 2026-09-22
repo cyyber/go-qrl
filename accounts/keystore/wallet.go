@@ -48,14 +48,6 @@ func (w *keystoreWallet) Status() (string, error) {
 	return "Locked", nil
 }
 
-// Open implements accounts.Wallet, but is a noop for plain wallets since there
-// is no connection or decryption step necessary to access the list of accounts.
-func (w *keystoreWallet) Open(passphrase string) error { return nil }
-
-// Close implements accounts.Wallet, but is a noop for plain wallets since there
-// is no meaningful open operation.
-func (w *keystoreWallet) Close() error { return nil }
-
 // Accounts implements accounts.Wallet, returning an account list consisting of
 // a single account that the plain keystore wallet contains.
 func (w *keystoreWallet) Accounts() []accounts.Account {

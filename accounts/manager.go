@@ -46,8 +46,6 @@ type Manager struct {
 	newBackends chan newBackendEvent       // Incoming backends to be tracked by the manager
 	wallets     []Wallet                   // Cache of all wallets from all registered backends
 
-	feed event.Feed // Wallet feed notifying of arrivals/departures
-
 	quit chan chan error
 	term chan struct{} // Channel is closed upon termination of the update loop
 	lock sync.RWMutex
@@ -128,9 +126,6 @@ func (am *Manager) update() {
 				am.wallets = drop(am.wallets, event.Wallet)
 			}
 			am.lock.Unlock()
-
-			// Notify any listeners of the event
-			am.feed.Send(event)
 		case event := <-am.newBackends:
 			am.lock.Lock()
 			// Update caches
@@ -142,10 +137,6 @@ func (am *Manager) update() {
 			am.lock.Unlock()
 			close(event.processed)
 		case errc := <-am.quit:
-			// Close all owned wallets
-			for _, w := range am.wallets {
-				w.Close()
-			}
 			// Manager terminating, return
 			errc <- nil
 			// Signals event emitters the loop is not receiving values
@@ -223,12 +214,6 @@ func (am *Manager) Find(account Account) (Wallet, error) {
 		}
 	}
 	return nil, ErrUnknownAccount
-}
-
-// Subscribe creates an async subscription to receive notifications when the
-// manager detects the arrival or departure of a wallet from any of its backends.
-func (am *Manager) Subscribe(sink chan<- WalletEvent) event.Subscription {
-	return am.feed.Subscribe(sink)
 }
 
 // merge is a sorted analogue of append for wallets, where the ordering of the
