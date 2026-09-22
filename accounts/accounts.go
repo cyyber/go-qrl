@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math/big"
 
-	qrl "github.com/theQRL/go-qrl"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/event"
@@ -68,33 +67,11 @@ type Wallet interface {
 	// Close releases any resources held by an open wallet instance.
 	Close() error
 
-	// Accounts retrieves the list of signing accounts the wallet is currently aware
-	// of. For hierarchical deterministic wallets, the list will not be exhaustive,
-	// rather only contain the accounts explicitly pinned during account derivation.
+	// Accounts retrieves the list of signing accounts the wallet is currently aware of.
 	Accounts() []Account
 
 	// Contains returns whether an account is part of this particular wallet or not.
 	Contains(account Account) bool
-
-	// Derive attempts to explicitly derive a hierarchical deterministic account at
-	// the specified derivation path. If requested, the derived account will be added
-	// to the wallet's tracked account list.
-	Derive(path DerivationPath, pin bool) (Account, error)
-
-	// SelfDerive sets a base account derivation path from which the wallet attempts
-	// to discover non zero accounts and automatically add them to list of tracked
-	// accounts.
-	//
-	// Note, self derivation will increment the last component of the specified path
-	// opposed to descending into a child path to allow discovering accounts starting
-	// from non zero components.
-	//
-	// Multiple bases may be supplied. Only the last base is used to derive the
-	// next empty account.
-	//
-	// You can disable automatic account discovery by calling SelfDerive with a nil
-	// chain state reader.
-	SelfDerive(bases []DerivationPath, chain qrl.ChainStateReader)
 
 	// SignData requests the wallet to sign the hash of the given data
 	// It looks up the account specified either solely via its address contained within,

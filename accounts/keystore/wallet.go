@@ -19,7 +19,6 @@ package keystore
 import (
 	"math/big"
 
-	qrl "github.com/theQRL/go-qrl"
 	"github.com/theQRL/go-qrl/accounts"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/crypto"
@@ -67,17 +66,6 @@ func (w *keystoreWallet) Accounts() []accounts.Account {
 // or is not wrapped by this wallet instance.
 func (w *keystoreWallet) Contains(account accounts.Account) bool {
 	return account.Address == w.account.Address && (account.URL == (accounts.URL{}) || account.URL == w.account.URL)
-}
-
-// Derive implements accounts.Wallet, but is a noop for plain wallets since there
-// is no notion of hierarchical account derivation for plain keystore accounts.
-func (w *keystoreWallet) Derive(path accounts.DerivationPath, pin bool) (accounts.Account, error) {
-	return accounts.Account{}, accounts.ErrNotSupported
-}
-
-// SelfDerive implements accounts.Wallet, but is a noop for plain wallets since
-// there is no notion of hierarchical account derivation for plain keystore accounts.
-func (w *keystoreWallet) SelfDerive(bases []accounts.DerivationPath, chain qrl.ChainStateReader) {
 }
 
 // signHash attempts to sign the given hash with

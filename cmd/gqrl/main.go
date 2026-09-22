@@ -34,7 +34,6 @@ import (
 	"github.com/theQRL/go-qrl/metrics"
 	"github.com/theQRL/go-qrl/node"
 	"github.com/theQRL/go-qrl/qrl/downloader"
-	"github.com/theQRL/go-qrl/qrlclient"
 
 	// Force-load the tracer engines to trigger registration
 	_ "github.com/theQRL/go-qrl/qrl/tracers/js"
@@ -306,13 +305,9 @@ func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 	// Start up the node itself
 	utils.StartNode(ctx, stack, isConsole)
 
-	// Register wallet event handlers to open and auto-derive wallets
+	// Register wallet event handlers to open wallets
 	events := make(chan accounts.WalletEvent, 16)
 	stack.AccountManager().Subscribe(events)
-
-	// Create a client to interact with local gqrl node.
-	rpcClient := stack.Attach()
-	qrlClient := qrlclient.NewClient(rpcClient)
 
 	go func() {
 		// Open any wallets already attached
@@ -331,8 +326,6 @@ func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 			case accounts.WalletOpened:
 				status, _ := event.Wallet.Status()
 				log.Info("New wallet appeared", "url", event.Wallet.URL(), "status", status)
-
-				event.Wallet.SelfDerive([]accounts.DerivationPath{accounts.DefaultBaseDerivationPath}, qrlClient)
 
 			case accounts.WalletDropped:
 				log.Info("Old wallet dropped", "url", event.Wallet.URL())
