@@ -448,7 +448,6 @@ type Header struct {
         Time        uint64            `json:"timestamp"         gencodec:"required"`
         Extra       []byte            `json:"extraData"`
         Random   common.Hash          `json:"prevRandao"`
-        Nonce       *types.BlockNonce `json:"nonce"`
         BaseFee     *big.Int          `json:"baseFeePerGas"`
 }
 ```
