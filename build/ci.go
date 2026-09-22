@@ -27,6 +27,7 @@ Available commands are:
 	lint                                                               -- runs certain pre-selected linters
 	install    [ -arch architecture ] [ -cc compiler ] [ packages... ] -- builds packages and executables
 	test       [ -coverage ] [ packages... ]                           -- runs the tests
+	check_generate                                                     -- verifies that 'go generate' leaves the tree unchanged
 
 	nsis                                                                                        -- creates a Windows NSIS installer
 
@@ -36,6 +37,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -99,6 +101,8 @@ func main() {
 		doTest(os.Args[2:])
 	case "lint":
 		doLint(os.Args[2:])
+	case "check_generate":
+		doCheckGenerate()
 	case "dockerx":
 		doDockerBuildx(os.Args[2:])
 	case "nsis":
@@ -295,6 +299,57 @@ func doLint(cmdline []string) {
 		}
 	}
 	fmt.Println("You have achieved perfection.")
+}
+
+// doCheckGenerate runs 'go generate ./...' and fails if it changed, added or
+// removed any file that git tracks or would pick up as untracked.
+func doCheckGenerate() {
+	before := hashSourceFiles()
+	tc := new(build.GoToolchain)
+	build.MustRun(tc.Go("generate", "./..."))
+	after := hashSourceFiles()
+
+	var changed []string
+	for file, hash := range after {
+		if old, ok := before[file]; !ok || old != hash {
+			changed = append(changed, file)
+		}
+	}
+	for file := range before {
+		if _, ok := after[file]; !ok {
+			changed = append(changed, file)
+		}
+	}
+	if len(changed) > 0 {
+		slices.Sort(changed)
+		log.Fatalf("'go generate ./...' changed %d file(s), commit the regenerated output:\n\t%s",
+			len(changed), strings.Join(changed, "\n\t"))
+	}
+	fmt.Println("Generated files are up to date.")
+}
+
+// hashSourceFiles hashes every file that git tracks or would pick up as
+// untracked, keyed by path.
+func hashSourceFiles() map[string][32]byte {
+	out, err := exec.Command("git", "ls-files", "-z", "--cached", "--others", "--exclude-standard").Output()
+	if err != nil {
+		log.Fatalf("git ls-files: %v", err)
+	}
+	hashes := make(map[string][32]byte)
+	for _, file := range strings.Split(string(out), "\x00") {
+		if file == "" {
+			continue
+		}
+		content, err := os.ReadFile(file)
+		if os.IsNotExist(err) {
+			continue // tracked but deleted in the working tree
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		hashes[file] = sha256.Sum256(content)
+	}
+	return hashes
 }
 
 // downloadLinter downloads and unpacks golangci-lint.
