@@ -180,8 +180,7 @@ const (
 	// filesystem event in the keystore.
 	WalletArrived WalletEventType = iota
 
-	// WalletOpened is fired when a wallet is successfully opened with the purpose
-	// of starting any background processes such as automatic key derivation.
+		// WalletOpened is fired when a wallet is successfully opened.
 	WalletOpened
 
 	// WalletDropped is fired when a wallet is removed or disconnected due to a
