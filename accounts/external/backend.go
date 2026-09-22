@@ -22,7 +22,6 @@ import (
 	"math/big"
 	"sync"
 
-	qrl "github.com/theQRL/go-qrl"
 	"github.com/theQRL/go-qrl/accounts"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
@@ -143,14 +142,6 @@ func (api *ExternalSigner) Contains(account accounts.Account) bool {
 		}
 	}
 	return false
-}
-
-func (api *ExternalSigner) Derive(path accounts.DerivationPath, pin bool) (accounts.Account, error) {
-	return accounts.Account{}, errors.New("operation not supported on external signers")
-}
-
-func (api *ExternalSigner) SelfDerive(bases []accounts.DerivationPath, chain qrl.ChainStateReader) {
-	log.Error("operation SelfDerive not supported on external signers")
 }
 
 // SignData signs keccak256(data). The mimetype parameter describes the type of data being signed

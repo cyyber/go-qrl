@@ -90,25 +90,6 @@ func (api *UIServerAPI) ListWallets() []rawWallet {
 	return wallets
 }
 
-// DeriveAccount requests a HD wallet to derive a new account, optionally pinning
-// it for later reuse.
-// Example call
-// {"jsonrpc":"2.0","method":"clef_deriveAccount","params":["keystore:///path/to/keyfile","m/44'/60'/0'/0/0", false], "id":6}
-func (api *UIServerAPI) DeriveAccount(url string, path string, pin *bool) (accounts.Account, error) {
-	wallet, err := api.am.Wallet(url)
-	if err != nil {
-		return accounts.Account{}, err
-	}
-	derivPath, err := accounts.ParseDerivationPath(path)
-	if err != nil {
-		return accounts.Account{}, err
-	}
-	if pin == nil {
-		pin = new(bool)
-	}
-	return wallet.Derive(derivPath, *pin)
-}
-
 // fetchKeystore retrieves the encrypted keystore from the account manager.
 func fetchKeystore(am *accounts.Manager) *keystore.KeyStore {
 	ks := am.Backends(keystore.KeyStoreType)
