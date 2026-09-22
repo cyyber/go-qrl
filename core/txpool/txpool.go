@@ -81,6 +81,13 @@ type TxPool struct {
 // New creates a new transaction pool to gather, sort and filter inbound
 // transactions from the network.
 func New(gasTip *big.Int, chain BlockChain, subpools []SubPool) (*TxPool, error) {
+	// Subscribe to chain head events before reading the current head, so that
+	// a head change during initialization is delivered to the loop rather than
+	// lost in the gap before the loop starts.
+	var (
+		newHeadCh  = make(chan core.ChainHeadEvent)
+		newHeadSub = chain.SubscribeChainHeadEvent(newHeadCh)
+	)
 	// Retrieve the current head so that all subpools and this main coordinator
 	// pool will have the same starting state, even if the chain moves forward
 	// during initialization.
@@ -98,10 +105,11 @@ func New(gasTip *big.Int, chain BlockChain, subpools []SubPool) (*TxPool, error)
 			for j := i - 1; j >= 0; j-- {
 				subpools[j].Close()
 			}
+			newHeadSub.Unsubscribe()
 			return nil, err
 		}
 	}
-	go pool.loop(head, chain)
+	go pool.loop(head, newHeadCh, newHeadSub)
 	return pool, nil
 }
 
@@ -180,15 +188,11 @@ func (p *TxPool) Close() error {
 // loop is the transaction pool's main event loop, waiting for and reacting to
 // outside blockchain events as well as for various reporting and transaction
 // eviction events.
-func (p *TxPool) loop(head *types.Header, chain BlockChain) {
+func (p *TxPool) loop(head *types.Header, newHeadCh <-chan core.ChainHeadEvent, newHeadSub event.Subscription) {
 	// Close the termination marker when the pool stops
 	defer close(p.term)
 
-	// Subscribe to chain head events to trigger subpool resets
-	var (
-		newHeadCh  = make(chan core.ChainHeadEvent)
-		newHeadSub = chain.SubscribeChainHeadEvent(newHeadCh)
-	)
+	// Chain head events trigger subpool resets
 	defer newHeadSub.Unsubscribe()
 
 	// Track the previous and current head to feed to an idle reset
