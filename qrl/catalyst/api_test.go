@@ -290,7 +290,13 @@ func TestNewBlock(t *testing.T) {
 			Data:      logCode,
 		})
 		signedTx, _ := types.SignTx(tx, signer, testWallet)
-		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, false)
+		// The pool follows the new head asynchronously. Wait for it, or the
+		// transaction can be queued against the previous head and miss the
+		// payload built below.
+		if err := qrlservice.TxPool().Sync(); err != nil {
+			t.Fatalf("Failed to sync the transaction pool: %v", err)
+		}
+		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, true)
 
 		execData, err := assembleWithTransactions(api, parent.Hash(), &engine.PayloadAttributes{
 			Timestamp: parent.Time() + 5,
@@ -467,7 +473,13 @@ func TestFullAPI(t *testing.T) {
 			Data:  logCode,
 		})
 		signedTx, _ := types.SignTx(tx, signer, testWallet)
-		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, false)
+		// The pool follows the new head asynchronously. Wait for it, or the
+		// transaction can be queued against the previous head and miss the
+		// payload built below.
+		if err := qrlservice.TxPool().Sync(); err != nil {
+			t.Fatalf("Failed to sync the transaction pool: %v", err)
+		}
+		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, true)
 	}
 
 	setupBlocks(t, qrlservice, 10, parent, callback, nil)
