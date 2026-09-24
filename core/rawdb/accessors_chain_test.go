@@ -266,6 +266,16 @@ func TestBadBlockStorage(t *testing.T) {
 	if len(badBlocks) != 0 {
 		t.Fatalf("Failed to delete bad blocks")
 	}
+
+	// An undecodable list is replaced by the next write
+	if err := db.Put(badBlockKey, []byte{0xc1, 0x80}); err != nil {
+		t.Fatal(err)
+	}
+	WriteBadBlock(db, block)
+	badBlocks = ReadAllBadBlocks(db)
+	if len(badBlocks) != 1 || badBlocks[0].Hash() != block.Hash() {
+		t.Fatalf("Undecodable bad blocks not replaced: have %v, want only %x", badBlocks, block.Hash())
+	}
 }
 
 // Tests that canonical numbers can be mapped to hashes and retrieved.
