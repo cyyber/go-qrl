@@ -229,11 +229,14 @@ func makeChainForBench(db qrldb.Database, full bool, count uint64) {
 	var hash common.Hash
 	for n := range count {
 		header := &types.Header{
-			Coinbase:    common.Address{},
-			Number:      big.NewInt(int64(n)),
-			ParentHash:  hash,
-			TxHash:      types.EmptyTxsHash,
-			ReceiptHash: types.EmptyReceiptsHash,
+			Coinbase:        common.Address{},
+			Number:          big.NewInt(int64(n)),
+			ParentHash:      hash,
+			Root:            types.EmptyRootHash,
+			TxHash:          types.EmptyTxsHash,
+			ReceiptHash:     types.EmptyReceiptsHash,
+			BaseFee:         big.NewInt(params.InitialBaseFee),
+			WithdrawalsHash: &types.EmptyWithdrawalsHash,
 		}
 		hash = header.Hash()
 
