@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/theQRL/go-qrl/accounts"
 	"github.com/theQRL/go-qrl/cmd/utils"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/console/prompt"
@@ -303,6 +304,22 @@ func gqrl(ctx *cli.Context) error {
 func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 	// Start up the node itself
 	utils.StartNode(ctx, stack, isConsole)
+
+	// Log wallets as they arrive or leave, such as key files added to or
+	// removed from the keystore directory.
+	events := make(chan accounts.WalletEvent, 16)
+	stack.AccountManager().Subscribe(events)
+	go func() {
+		for event := range events {
+			switch event.Kind {
+			case accounts.WalletArrived:
+				status, _ := event.Wallet.Status()
+				log.Info("New wallet appeared", "url", event.Wallet.URL(), "status", status)
+			case accounts.WalletDropped:
+				log.Info("Old wallet dropped", "url", event.Wallet.URL())
+			}
+		}
+	}()
 
 	// Spawn a standalone goroutine for status synchronization monitoring,
 	// close the node when synchronization is complete if user required.
