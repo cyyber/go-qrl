@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/theQRL/go-qrl/cmd/devp2p/internal/qrltest"
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/p2p/rlpx"
 	"github.com/theQRL/go-qrl/rlp"
 	"github.com/urfave/cli/v2"
@@ -45,22 +47,30 @@ var (
 	}
 	rlpxQRLTestCommand = &cli.Command{
 		Name:      "qrl-test",
-		Usage:     "Runs tests against a node",
-		ArgsUsage: "<node> <chain.rlp> <genesis.json>",
+		Usage:     "Runs qrl protocol tests against a node",
+		ArgsUsage: "<node>",
 		Action:    rlpxQRLTest,
 		Flags: []cli.Flag{
 			testPatternFlag,
 			testTAPFlag,
+			testChainDirFlag,
+			testNodeFlag,
+			testNodeJWTFlag,
+			testNodeEngineFlag,
 		},
 	}
 	rlpxSnapTestCommand = &cli.Command{
 		Name:      "snap-test",
-		Usage:     "Runs tests against a node",
-		ArgsUsage: "<node> <chain.rlp> <genesis.json>",
+		Usage:     "Runs snap protocol tests against a node",
+		ArgsUsage: "",
 		Action:    rlpxSnapTest,
 		Flags: []cli.Flag{
 			testPatternFlag,
 			testTAPFlag,
+			testChainDirFlag,
+			testNodeFlag,
+			testNodeJWTFlag,
+			testNodeEngineFlag,
 		},
 	}
 )
@@ -83,12 +93,11 @@ func rlpxPing(ctx *cli.Context) error {
 	}
 	switch code {
 	case 0:
-		// TODO(now.youtrack.cloud/issue/TGZ-6)
-		// var h qrltest.Hello
-		// if err := rlp.DecodeBytes(data, &h); err != nil {
-		// 	return fmt.Errorf("invalid handshake: %v", err)
-		// }
-		// fmt.Printf("%+v\n", h)
+		var h qrltest.Hello
+		if err := rlp.DecodeBytes(data, &h); err != nil {
+			return fmt.Errorf("invalid handshake: %v", err)
+		}
+		fmt.Printf("%+v\n", h)
 	case 1:
 		var msg []p2p.DiscReason
 		if rlp.DecodeBytes(data, &msg); len(msg) == 0 {
@@ -103,28 +112,42 @@ func rlpxPing(ctx *cli.Context) error {
 
 // rlpxQRLTest runs the qrl protocol test suite.
 func rlpxQRLTest(ctx *cli.Context) error {
-	if ctx.NArg() < 3 {
-		exit("missing path to chain.rlp as command-line argument")
+	p := cliTestParams(ctx)
+	suite, err := qrltest.NewSuite(p.node, p.chainDir, p.engineAPI, p.jwt)
+	if err != nil {
+		exit(err)
 	}
-	// TODO(now.youtrack.cloud/issue/TGZ-6)
-	// suite, err := qrltest.NewSuite(getNodeArg(ctx), ctx.Args().Get(1), ctx.Args().Get(2))
-	// if err != nil {
-	// 	exit(err)
-	// }
-	// return runTests(ctx, suite.QRLTests())
-	return nil
+	return runTests(ctx, suite.QRLTests())
 }
 
 // rlpxSnapTest runs the snap protocol test suite.
 func rlpxSnapTest(ctx *cli.Context) error {
-	if ctx.NArg() < 3 {
-		exit("missing path to chain.rlp as command-line argument")
+	p := cliTestParams(ctx)
+	suite, err := qrltest.NewSuite(p.node, p.chainDir, p.engineAPI, p.jwt)
+	if err != nil {
+		exit(err)
 	}
-	// TODO(now.youtrack.cloud/issue/TGZ-6)
-	// suite, err := qrltest.NewSuite(getNodeArg(ctx), ctx.Args().Get(1), ctx.Args().Get(2))
-	// if err != nil {
-	// 	exit(err)
-	// }
-	// return runTests(ctx, suite.SnapTests())
-	return nil
+	return runTests(ctx, suite.SnapTests())
+}
+
+type testParams struct {
+	node      *qnode.Node
+	engineAPI string
+	jwt       string
+	chainDir  string
+}
+
+func cliTestParams(ctx *cli.Context) *testParams {
+	nodeStr := ctx.String(testNodeFlag.Name)
+	node, err := parseNode(nodeStr)
+	if err != nil {
+		exit(err)
+	}
+	p := testParams{
+		node:      node,
+		engineAPI: ctx.String(testNodeEngineFlag.Name),
+		jwt:       ctx.String(testNodeJWTFlag.Name),
+		chainDir:  ctx.String(testChainDirFlag.Name),
+	}
+	return &p
 }
