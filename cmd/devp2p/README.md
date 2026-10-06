@@ -20,7 +20,8 @@ corresponding to the given node key and address information.
 
 The devp2p command can create and publish DNS discovery node lists.
 
-Run `devp2p dns sign <directory>` to update the signature of a DNS discovery tree.
+Run `devp2p dns sign <directory> <keyfile>` to update the signature of a DNS discovery tree.
+The key file is a node key file, as created by `devp2p key generate`.
 
 Run `devp2p dns sync <qnrtree-URL>` to download a complete DNS discovery tree.
 
@@ -46,6 +47,7 @@ set to standard output. The following filters are supported:
 - `-min-age <duration>` filters nodes by 'first seen' time
 - `-qrl-network <mainnet>` filters nodes by "qrl" QNR entry
 - `-snap` filters nodes by snap protocol support
+- `-dialable` filters nodes that have a TCP port
 
 For example, given a node set in `nodes.json`, you could create a filtered set containing
 up to 20 qrl mainnet nodes which also support snap sync using this command:
