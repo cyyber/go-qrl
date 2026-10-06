@@ -138,6 +138,26 @@ func TestUDPv5_unknownPacket(t *testing.T) {
 	test.waitPacketOut(func(p *v5wire.Whoareyou, addr *net.UDPAddr, _ v5wire.Nonce) {
 		check(p, 0)
 	})
+}
+
+func TestUDPv5_unknownPacketKnownNode(t *testing.T) {
+	t.Parallel()
+	test := newUDPV5Test(t)
+	defer test.close()
+
+	nonce := v5wire.Nonce{1, 2, 3}
+	check := func(p *v5wire.Whoareyou, wantSeq uint64) {
+		t.Helper()
+		if p.Nonce != nonce {
+			t.Error("wrong nonce in WHOAREYOU:", p.Nonce, nonce)
+		}
+		if p.IDNonce == ([16]byte{}) {
+			t.Error("all zero ID nonce")
+		}
+		if p.RecordSeq != wantSeq {
+			t.Errorf("wrong record seq %d in WHOAREYOU, want %d", p.RecordSeq, wantSeq)
+		}
+	}
 
 	// Make node known.
 	n := test.getNode(test.remotekey, test.remoteaddr).Node()
@@ -146,6 +166,48 @@ func TestUDPv5_unknownPacket(t *testing.T) {
 	test.packetIn(&v5wire.Unknown{Nonce: nonce})
 	test.waitPacketOut(func(p *v5wire.Whoareyou, addr *net.UDPAddr, _ v5wire.Nonce) {
 		check(p, n.Seq())
+	})
+}
+
+// This test checks that, when multiple 'unknown' packets are received during a handshake,
+// the node sticks to the first handshake attempt.
+func TestUDPv5_handshakeRepeatChallenge(t *testing.T) {
+	t.Parallel()
+	test := newUDPV5Test(t)
+	defer test.close()
+
+	nonce1 := v5wire.Nonce{1}
+	nonce2 := v5wire.Nonce{2}
+	nonce3 := v5wire.Nonce{3}
+	var firstAuthTag *v5wire.Nonce
+	check := func(p *v5wire.Whoareyou, authTag, wantNonce v5wire.Nonce) {
+		t.Helper()
+		if p.Nonce != wantNonce {
+			t.Error("wrong nonce in WHOAREYOU:", p.Nonce, "want:", wantNonce)
+		}
+		if firstAuthTag == nil {
+			firstAuthTag = &authTag
+		} else if authTag != *firstAuthTag {
+			t.Error("wrong auth tag in WHOAREYOU header:", authTag, "want:", *firstAuthTag)
+		}
+	}
+
+	// Unknown packet from unknown node.
+	test.packetIn(&v5wire.Unknown{Nonce: nonce1})
+	test.waitPacketOut(func(p *v5wire.Whoareyou, addr *net.UDPAddr, authTag v5wire.Nonce) {
+		check(p, authTag, nonce1)
+	})
+
+	// Second unknown packet. Here we expect the response to reference the
+	// first unknown packet.
+	test.packetIn(&v5wire.Unknown{Nonce: nonce2})
+	test.waitPacketOut(func(p *v5wire.Whoareyou, addr *net.UDPAddr, authTag v5wire.Nonce) {
+		check(p, authTag, nonce1)
+	})
+	// Third unknown packet. This should still return the first nonce.
+	test.packetIn(&v5wire.Unknown{Nonce: nonce3})
+	test.waitPacketOut(func(p *v5wire.Whoareyou, addr *net.UDPAddr, authTag v5wire.Nonce) {
+		check(p, authTag, nonce1)
 	})
 }
 
@@ -698,6 +760,8 @@ type testCodec struct {
 	test *udpV5Test
 	id   qnode.ID
 	ctr  uint64
+
+	sentChallenges map[qnode.ID]*v5wire.Whoareyou
 }
 
 type testCodecFrame struct {
@@ -708,13 +772,35 @@ type testCodecFrame struct {
 }
 
 func (c *testCodec) Encode(toID qnode.ID, addr string, p v5wire.Packet, _ *v5wire.Whoareyou) ([]byte, v5wire.Nonce, error) {
+	if wp, ok := p.(*v5wire.Whoareyou); ok && len(wp.ChallengeData) > 0 {
+		// To match the behavior of v5wire.Codec, we return the cached encoding of
+		// WHOAREYOU challenges.
+		return wp.ChallengeData, wp.Nonce, nil
+	}
+
 	c.ctr++
 	var authTag v5wire.Nonce
 	binary.BigEndian.PutUint64(authTag[:], c.ctr)
-
 	penc, _ := rlp.EncodeToBytes(p)
 	frame, err := rlp.EncodeToBytes(testCodecFrame{c.id, authTag, p.Kind(), penc})
+	if err != nil {
+		return frame, authTag, err
+	}
+
+	// Store recently sent challenges.
+	if w, ok := p.(*v5wire.Whoareyou); ok {
+		w.Nonce = authTag
+		w.ChallengeData = frame
+		if c.sentChallenges == nil {
+			c.sentChallenges = make(map[qnode.ID]*v5wire.Whoareyou)
+		}
+		c.sentChallenges[toID] = w
+	}
 	return frame, authTag, err
+}
+
+func (c *testCodec) CurrentChallenge(id qnode.ID, addr string) *v5wire.Whoareyou {
+	return c.sentChallenges[id]
 }
 
 func (c *testCodec) Decode(input []byte, addr string) (qnode.ID, *qnode.Node, v5wire.Packet, error) {
@@ -737,6 +823,7 @@ func (c *testCodec) decodeFrame(input []byte) (frame testCodecFrame, p v5wire.Pa
 	case v5wire.WhoareyouPacket:
 		dec := new(v5wire.Whoareyou)
 		err = rlp.DecodeBytes(frame.Packet, &dec)
+		dec.ChallengeData = bytes.Clone(input)
 		p = dec
 	default:
 		p, err = v5wire.DecodeMessage(frame.Ptype, frame.Packet)
