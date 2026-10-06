@@ -119,7 +119,7 @@ func (t *rlpxTransport) close(err error) {
 			if err := t.conn.SetWriteDeadline(deadline); err == nil {
 				// Connection supports write deadline.
 				t.wbuf.Reset()
-				rlp.Encode(&t.wbuf, []DiscReason{r})
+				rlp.Encode(&t.wbuf, []any{r})
 				t.conn.Write(discMsg, t.wbuf.Bytes())
 			}
 		}
@@ -165,9 +165,7 @@ func readProtocolHandshake(rw MsgReader) (*protoHandshake, error) {
 		// spec and we send it ourself if the post-handshake checks fail.
 		// We can't return the reason directly, though, because it is echoed
 		// back otherwise. Wrap it in a string instead.
-		var reason [1]DiscReason
-		rlp.Decode(msg.Payload, &reason)
-		return nil, reason[0]
+		return nil, decodeDisconnectMessage(msg.Payload)
 	}
 	if msg.Code != handshakeMsg {
 		return nil, fmt.Errorf("expected handshake, got %x", msg.Code)

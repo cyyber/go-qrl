@@ -332,6 +332,27 @@ func (p *Peer) readLoop(errc chan<- error) {
 	}
 }
 
+// decodeDisconnectMessage decodes the payload of discMsg.
+func decodeDisconnectMessage(r io.Reader) (reason DiscReason) {
+	s := rlp.NewStream(r, 100)
+	k, _, err := s.Kind()
+	if err != nil {
+		return DiscInvalid
+	}
+	if k == rlp.List {
+		s.List()
+		err = s.Decode(&reason)
+	} else {
+		// Legacy path: some implementations, including gqrl, used to send the disconnect
+		// reason as a byte array by accident.
+		err = s.Decode(&reason)
+	}
+	if err != nil {
+		reason = DiscInvalid
+	}
+	return reason
+}
+
 func (p *Peer) handle(msg Msg) error {
 	switch {
 	case msg.Code == pingMsg:
@@ -343,9 +364,7 @@ func (p *Peer) handle(msg Msg) error {
 	case msg.Code == discMsg:
 		// This is the last message. We don't need to discard or
 		// check errors because, the connection will be closed after it.
-		var m struct{ R DiscReason }
-		rlp.Decode(msg.Payload, &m)
-		return m.R
+		return decodeDisconnectMessage(msg.Payload)
 	case msg.Code < baseProtocolLength:
 		// ignore other base protocol messages
 		return msg.Discard()
