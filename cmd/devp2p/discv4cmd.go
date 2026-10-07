@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +28,6 @@ import (
 	"github.com/theQRL/go-qrl/cmd/devp2p/internal/v4test"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/crypto"
-	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/theQRL/go-qrl/p2p/discover"
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/params"
@@ -79,7 +79,7 @@ var (
 		Name:   "crawl",
 		Usage:  "Updates a nodes.json file with random nodes found in the DHT",
 		Action: discv4Crawl,
-		Flags:  flags.Merge(discoveryNodeFlags, []cli.Flag{crawlTimeoutFlag, crawlParallelismFlag}),
+		Flags:  slices.Concat(discoveryNodeFlags, []cli.Flag{crawlTimeoutFlag, crawlParallelismFlag}),
 	}
 	discv4TestCommand = &cli.Command{
 		Name:   "test",
