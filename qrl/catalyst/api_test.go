@@ -101,7 +101,7 @@ func TestAssembleBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error signing transaction, err=%v", err)
 	}
-	qrlservice.TxPool().Add([]*types.Transaction{tx}, true, false)
+	qrlservice.TxPool().Add([]*types.Transaction{tx}, true, true)
 	blockParams := engine.PayloadAttributes{
 		Timestamp: blocks[9].Time() + 5,
 	}
@@ -288,7 +288,7 @@ func TestNewBlock(t *testing.T) {
 			Data:      logCode,
 		})
 		signedTx, _ := types.SignTx(tx, signer, testWallet)
-		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, false)
+		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, true)
 
 		execData, err := assembleWithTransactions(api, parent.Hash(), &engine.PayloadAttributes{
 			Timestamp: parent.Time() + 5,
@@ -438,6 +438,9 @@ func startQRLService(t *testing.T, genesis *core.Genesis, blocks []*types.Block)
 	if _, err := qrlservice.BlockChain().InsertChain(blocks); err != nil {
 		n.Close()
 		t.Fatal("can't import test blocks:", err)
+	}
+	if err := qrlservice.TxPool().Sync(); err != nil {
+		t.Fatal("failed to sync txpool after initial blockchain import:", err)
 	}
 
 	qrlservice.SetSynced()
