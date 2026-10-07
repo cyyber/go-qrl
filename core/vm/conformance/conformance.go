@@ -7,9 +7,9 @@
 // Both runtimes executing the same vector must produce identical outcomes;
 // any divergence is a consensus bug.
 //
-// This package contains the Go-side runner only. The matching C++ runner
-// lives in qrvmone/test/conformance; the driver script that compares both
-// outputs is hack/vm-conformance.sh.
+// This package contains the Go-side runner. The matching C++ runner lives in
+// qrvmone/test/conformance (target qrvmone-conformance); TestGoVMMatchesQrvmone
+// compares both, and hack/vm-conformance.sh builds the runner and runs it.
 package conformance
 
 import (
