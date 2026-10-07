@@ -34,7 +34,6 @@ import (
 	"github.com/theQRL/go-qrl/metrics"
 	"github.com/theQRL/go-qrl/node"
 	"github.com/theQRL/go-qrl/qrl/downloader"
-	"github.com/theQRL/go-qrl/qrlclient"
 
 	// Force-load the tracer engines to trigger registration
 	_ "github.com/theQRL/go-qrl/qrl/tracers/js"
@@ -306,43 +305,18 @@ func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 	// Start up the node itself
 	utils.StartNode(ctx, stack, isConsole)
 
-	// Register wallet event handlers to open and auto-derive wallets
+	// Log wallets as they arrive or leave, such as key files added to or
+	// removed from the keystore directory.
 	events := make(chan accounts.WalletEvent, 16)
 	stack.AccountManager().Subscribe(events)
-
-	// Create a client to interact with local gqrl node.
-	rpcClient := stack.Attach()
-	qrlClient := qrlclient.NewClient(rpcClient)
-
 	go func() {
-		// Open any wallets already attached
-		for _, wallet := range stack.AccountManager().Wallets() {
-			if err := wallet.Open(""); err != nil {
-				log.Warn("Failed to open wallet", "url", wallet.URL(), "err", err)
-			}
-		}
-		// Listen for wallet event till termination
 		for event := range events {
 			switch event.Kind {
 			case accounts.WalletArrived:
-				if err := event.Wallet.Open(""); err != nil {
-					log.Warn("New wallet appeared, failed to open", "url", event.Wallet.URL(), "err", err)
-				}
-			case accounts.WalletOpened:
 				status, _ := event.Wallet.Status()
 				log.Info("New wallet appeared", "url", event.Wallet.URL(), "status", status)
-
-				var derivationPaths []accounts.DerivationPath
-				if event.Wallet.URL().Scheme == "ledger" {
-					derivationPaths = append(derivationPaths, accounts.LegacyLedgerBaseDerivationPath)
-				}
-				derivationPaths = append(derivationPaths, accounts.DefaultBaseDerivationPath)
-
-				event.Wallet.SelfDerive(derivationPaths, qrlClient)
-
 			case accounts.WalletDropped:
 				log.Info("Old wallet dropped", "url", event.Wallet.URL())
-				event.Wallet.Close()
 			}
 		}
 	}()
