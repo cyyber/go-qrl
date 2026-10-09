@@ -236,7 +236,7 @@ func discv4Crawl(ctx *cli.Context) error {
 func discv4Test(ctx *cli.Context) error {
 	// Configure test package globals.
 	if !ctx.IsSet(remoteQnodeFlag.Name) {
-		return fmt.Errorf("Missing -%v", remoteQnodeFlag.Name)
+		return fmt.Errorf("missing -%v", remoteQnodeFlag.Name)
 	}
 	v4test.Remote = ctx.String(remoteQnodeFlag.Name)
 	v4test.Listen1 = ctx.String(testListen1Flag.Name)
