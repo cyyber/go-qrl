@@ -248,7 +248,7 @@ func (t *UDPv5) AllNodes() []*qnode.Node {
 	return nodes
 }
 
-// LocalNode returns the current local node running the
+// LocalNode returns the current local Node running the
 // protocol.
 func (t *UDPv5) LocalNode() *qnode.LocalNode {
 	return t.localNode
@@ -841,9 +841,8 @@ func (t *UDPv5) matchWithCall(fromID qnode.ID, nonce v5wire.Nonce) (*callV5, err
 // handlePing sends a PONG response.
 func (t *UDPv5) handlePing(p *v5wire.Ping, fromID qnode.ID, fromAddr *net.UDPAddr) {
 	remoteIP := fromAddr.IP
-	// Handle IPv4 mapped IPv6 addresses in the
-	// event the local node is binded to an
-	// ipv6 interface.
+	// Handle IPv4 mapped IPv6 addresses in the event the local node is binded
+	// to an ipv6 interface.
 	if remoteIP.To4() != nil {
 		remoteIP = remoteIP.To4()
 	}

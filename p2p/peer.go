@@ -173,7 +173,6 @@ func (p *Peer) Fullname() string {
 
 // Caps returns the capabilities (supported subprotocols) of the remote peer.
 func (p *Peer) Caps() []Cap {
-	// TODO: maybe return copy
 	return p.rw.caps
 }
 
@@ -218,7 +217,7 @@ func (p *Peer) String() string {
 	return fmt.Sprintf("Peer %x %v", id[:8], p.RemoteAddr())
 }
 
-// Inbound returns true if the peer is an inbound connection
+// Inbound returns true if the peer is an inbound (not dialed) connection.
 func (p *Peer) Inbound() bool {
 	return p.rw.is(inboundConn)
 }
