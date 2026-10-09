@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"slices"
 
 	"github.com/theQRL/go-qrl/common/mclock"
 	zcipher "github.com/theQRL/go-qrl/crypto/cipher"
@@ -229,7 +230,7 @@ func (c *Codec) Encode(id qnode.ID, addr string, packet Packet, challenge *Whoar
 
 	// Store sent WHOAREYOU challenges.
 	if challenge, ok := packet.(*Whoareyou); ok {
-		challenge.ChallengeData = bytesCopy(&c.buf)
+		challenge.ChallengeData = slices.Clone(c.buf.Bytes())
 		enc, err := c.EncodeRaw(id, head, msgData)
 		if err != nil {
 			return nil, Nonce{}, err
@@ -327,7 +328,6 @@ func (c *Codec) encodeWhoareyou(toID qnode.ID, packet *Whoareyou) (Header, error
 
 	// Create header.
 	head := c.makeHeader(toID, flagWhoareyou, 0)
-	head.AuthData = bytesCopy(&c.buf)
 	head.Nonce = packet.Nonce
 
 	// Encode auth data.
@@ -432,7 +432,7 @@ func (c *Codec) encodeMessageHeader(toID qnode.ID, s *session) (Header, error) {
 	auth := messageAuthData{SrcID: c.localnode.ID()}
 	c.buf.Reset()
 	binary.Write(&c.buf, binary.BigEndian, &auth)
-	head.AuthData = bytesCopy(&c.buf)
+	head.AuthData = slices.Clone(c.buf.Bytes())
 	head.Nonce = nonce
 	return head, err
 }
@@ -690,10 +690,4 @@ func applyMasking(destID qnode.ID, iv [16]byte, packet []byte) []byte {
 	mask := createMask(destID, iv)
 	mask.XORKeyStream(masked[:], masked[:])
 	return packet
-}
-
-func bytesCopy(r *bytes.Buffer) []byte {
-	b := make([]byte, r.Len())
-	copy(b, r.Bytes())
-	return b
 }
