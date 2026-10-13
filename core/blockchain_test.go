@@ -196,7 +196,7 @@ func testLastBlock(t *testing.T, scheme string) {
 
 // Test inserts the blocks/headers after the fork choice rule is changed.
 // The chain is reorged to whatever specified.
-func testInsertAfterMerge(t *testing.T, blockchain *BlockChain, i, n int, full bool, scheme string) {
+func testInsertPoS(t *testing.T, blockchain *BlockChain, i, n int, full bool, scheme string) {
 	// Copy old chain up to #i into a new db
 	genDb, _, blockchain2, err := newCanonical(beacon.NewFaker(), i, full, scheme)
 	if err != nil {
@@ -273,16 +273,16 @@ func testExtendCanonical(t *testing.T, full bool, scheme string) {
 
 // Tests that given a starting canonical chain of a given size, it can be extended
 // with various length chains.
-func TestExtendCanonicalHeadersAfterMerge(t *testing.T) {
-	testExtendCanonicalAfterMerge(t, false, rawdb.HashScheme)
-	testExtendCanonicalAfterMerge(t, false, rawdb.PathScheme)
+func TestExtendCanonicalHeadersPoS(t *testing.T) {
+	testExtendCanonicalPoS(t, false, rawdb.HashScheme)
+	testExtendCanonicalPoS(t, false, rawdb.PathScheme)
 }
-func TestExtendCanonicalBlocksAfterMerge(t *testing.T) {
-	testExtendCanonicalAfterMerge(t, true, rawdb.HashScheme)
-	testExtendCanonicalAfterMerge(t, true, rawdb.PathScheme)
+func TestExtendCanonicalBlocksPoS(t *testing.T) {
+	testExtendCanonicalPoS(t, true, rawdb.HashScheme)
+	testExtendCanonicalPoS(t, true, rawdb.PathScheme)
 }
 
-func testExtendCanonicalAfterMerge(t *testing.T, full bool, scheme string) {
+func testExtendCanonicalPoS(t *testing.T, full bool, scheme string) {
 	length := 5
 
 	// Make first chain starting from genesis
@@ -292,8 +292,8 @@ func testExtendCanonicalAfterMerge(t *testing.T, full bool, scheme string) {
 	}
 	defer processor.Stop()
 
-	testInsertAfterMerge(t, processor, length, 1, full, scheme)
-	testInsertAfterMerge(t, processor, length, 10, full, scheme)
+	testInsertPoS(t, processor, length, 1, full, scheme)
+	testInsertPoS(t, processor, length, 10, full, scheme)
 }
 
 // Tests that given a starting canonical chain of a given size, creating shorter
@@ -328,16 +328,16 @@ func testShorterFork(t *testing.T, full bool, scheme string) {
 
 // Tests that given a starting canonical chain of a given size, creating shorter
 // forks do not take canonical ownership.
-func TestShorterForkHeadersAfterMerge(t *testing.T) {
-	testShorterForkAfterMerge(t, false, rawdb.HashScheme)
-	testShorterForkAfterMerge(t, false, rawdb.PathScheme)
+func TestShorterForkHeadersPoS(t *testing.T) {
+	testShorterForkPoS(t, false, rawdb.HashScheme)
+	testShorterForkPoS(t, false, rawdb.PathScheme)
 }
-func TestShorterForkBlocksAfterMerge(t *testing.T) {
-	testShorterForkAfterMerge(t, true, rawdb.HashScheme)
-	testShorterForkAfterMerge(t, true, rawdb.PathScheme)
+func TestShorterForkBlocksPoS(t *testing.T) {
+	testShorterForkPoS(t, true, rawdb.HashScheme)
+	testShorterForkPoS(t, true, rawdb.PathScheme)
 }
 
-func testShorterForkAfterMerge(t *testing.T, full bool, scheme string) {
+func testShorterForkPoS(t *testing.T, full bool, scheme string) {
 	length := 10
 
 	// Make first chain starting from genesis
@@ -347,12 +347,12 @@ func testShorterForkAfterMerge(t *testing.T, full bool, scheme string) {
 	}
 	defer processor.Stop()
 
-	testInsertAfterMerge(t, processor, 0, 3, full, scheme)
-	testInsertAfterMerge(t, processor, 0, 7, full, scheme)
-	testInsertAfterMerge(t, processor, 1, 1, full, scheme)
-	testInsertAfterMerge(t, processor, 1, 7, full, scheme)
-	testInsertAfterMerge(t, processor, 5, 3, full, scheme)
-	testInsertAfterMerge(t, processor, 5, 4, full, scheme)
+	testInsertPoS(t, processor, 0, 3, full, scheme)
+	testInsertPoS(t, processor, 0, 7, full, scheme)
+	testInsertPoS(t, processor, 1, 1, full, scheme)
+	testInsertPoS(t, processor, 1, 7, full, scheme)
+	testInsertPoS(t, processor, 5, 3, full, scheme)
+	testInsertPoS(t, processor, 5, 4, full, scheme)
 }
 
 // Tests that given a starting canonical chain of a given size, creating longer
@@ -376,26 +376,26 @@ func testLongerFork(t *testing.T, full bool, scheme string) {
 	}
 	defer processor.Stop()
 
-	testInsertAfterMerge(t, processor, 0, 11, full, scheme)
-	testInsertAfterMerge(t, processor, 0, 15, full, scheme)
-	testInsertAfterMerge(t, processor, 1, 10, full, scheme)
-	testInsertAfterMerge(t, processor, 1, 12, full, scheme)
-	testInsertAfterMerge(t, processor, 5, 6, full, scheme)
-	testInsertAfterMerge(t, processor, 5, 8, full, scheme)
+	testInsertPoS(t, processor, 0, 11, full, scheme)
+	testInsertPoS(t, processor, 0, 15, full, scheme)
+	testInsertPoS(t, processor, 1, 10, full, scheme)
+	testInsertPoS(t, processor, 1, 12, full, scheme)
+	testInsertPoS(t, processor, 5, 6, full, scheme)
+	testInsertPoS(t, processor, 5, 8, full, scheme)
 }
 
 // Tests that given a starting canonical chain of a given size, creating longer
 // forks do take canonical ownership.
-func TestLongerForkHeadersAfterMerge(t *testing.T) {
-	testLongerForkAfterMerge(t, false, rawdb.HashScheme)
-	testLongerForkAfterMerge(t, false, rawdb.PathScheme)
+func TestLongerForkHeadersPoS(t *testing.T) {
+	testLongerForkPoS(t, false, rawdb.HashScheme)
+	testLongerForkPoS(t, false, rawdb.PathScheme)
 }
-func TestLongerForkBlocksAfterMerge(t *testing.T) {
-	testLongerForkAfterMerge(t, true, rawdb.HashScheme)
-	testLongerForkAfterMerge(t, true, rawdb.PathScheme)
+func TestLongerForkBlocksPoS(t *testing.T) {
+	testLongerForkPoS(t, true, rawdb.HashScheme)
+	testLongerForkPoS(t, true, rawdb.PathScheme)
 }
 
-func testLongerForkAfterMerge(t *testing.T, full bool, scheme string) {
+func testLongerForkPoS(t *testing.T, full bool, scheme string) {
 	length := 10
 
 	// Make first chain starting from genesis
@@ -405,12 +405,12 @@ func testLongerForkAfterMerge(t *testing.T, full bool, scheme string) {
 	}
 	defer processor.Stop()
 
-	testInsertAfterMerge(t, processor, 0, 11, full, scheme)
-	testInsertAfterMerge(t, processor, 0, 15, full, scheme)
-	testInsertAfterMerge(t, processor, 1, 10, full, scheme)
-	testInsertAfterMerge(t, processor, 1, 12, full, scheme)
-	testInsertAfterMerge(t, processor, 5, 6, full, scheme)
-	testInsertAfterMerge(t, processor, 5, 8, full, scheme)
+	testInsertPoS(t, processor, 0, 11, full, scheme)
+	testInsertPoS(t, processor, 0, 15, full, scheme)
+	testInsertPoS(t, processor, 1, 10, full, scheme)
+	testInsertPoS(t, processor, 1, 12, full, scheme)
+	testInsertPoS(t, processor, 5, 6, full, scheme)
+	testInsertPoS(t, processor, 5, 8, full, scheme)
 }
 
 // Tests that given a starting canonical chain of a given size, creating equal
@@ -445,16 +445,16 @@ func testEqualFork(t *testing.T, full bool, scheme string) {
 
 // Tests that given a starting canonical chain of a given size, creating equal
 // forks do take canonical ownership.
-func TestEqualForkHeadersAfterMerge(t *testing.T) {
-	testEqualForkAfterMerge(t, false, rawdb.HashScheme)
-	testEqualForkAfterMerge(t, false, rawdb.PathScheme)
+func TestEqualForkHeadersPoS(t *testing.T) {
+	testEqualForkPoS(t, false, rawdb.HashScheme)
+	testEqualForkPoS(t, false, rawdb.PathScheme)
 }
-func TestEqualForkBlocksAfterMerge(t *testing.T) {
-	testEqualForkAfterMerge(t, true, rawdb.HashScheme)
-	testEqualForkAfterMerge(t, true, rawdb.PathScheme)
+func TestEqualForkBlocksPoS(t *testing.T) {
+	testEqualForkPoS(t, true, rawdb.HashScheme)
+	testEqualForkPoS(t, true, rawdb.PathScheme)
 }
 
-func testEqualForkAfterMerge(t *testing.T, full bool, scheme string) {
+func testEqualForkPoS(t *testing.T, full bool, scheme string) {
 	length := 10
 
 	// Make first chain starting from genesis
@@ -464,12 +464,12 @@ func testEqualForkAfterMerge(t *testing.T, full bool, scheme string) {
 	}
 	defer processor.Stop()
 
-	testInsertAfterMerge(t, processor, 0, 10, full, scheme)
-	testInsertAfterMerge(t, processor, 1, 9, full, scheme)
-	testInsertAfterMerge(t, processor, 2, 8, full, scheme)
-	testInsertAfterMerge(t, processor, 5, 5, full, scheme)
-	testInsertAfterMerge(t, processor, 6, 4, full, scheme)
-	testInsertAfterMerge(t, processor, 9, 1, full, scheme)
+	testInsertPoS(t, processor, 0, 10, full, scheme)
+	testInsertPoS(t, processor, 1, 9, full, scheme)
+	testInsertPoS(t, processor, 2, 8, full, scheme)
+	testInsertPoS(t, processor, 5, 5, full, scheme)
+	testInsertPoS(t, processor, 6, 4, full, scheme)
+	testInsertPoS(t, processor, 9, 1, full, scheme)
 }
 
 // Tests that chains missing links do not get accepted by the processor.
@@ -1224,92 +1224,6 @@ func checkLogEvents(t *testing.T, logsCh <-chan []*types.Log, rmLogsCh <-chan Re
 	}
 	if countRm != wantRemoved {
 		t.Fatalf("wrong number of removed log events: got %d, want %d", countRm, wantRemoved)
-	}
-}
-
-func TestReorgSideEvent(t *testing.T) {
-	testReorgSideEvent(t, rawdb.HashScheme)
-	testReorgSideEvent(t, rawdb.PathScheme)
-}
-
-func testReorgSideEvent(t *testing.T, scheme string) {
-	var (
-		wallet1 = testutil.LoadAccount(t, "alice").Wallet(t)
-		addr1   = wallet1.GetAddress()
-		gspec   = &Genesis{
-			Config: params.TestChainConfig,
-			Alloc:  GenesisAlloc{addr1: {Balance: big.NewInt(1000000000000000000)}},
-		}
-		signer = types.LatestSigner(gspec.Config)
-	)
-	blockchain, _ := NewBlockChain(rawdb.NewMemoryDatabase(), DefaultCacheConfigWithScheme(scheme), gspec, beacon.NewFaker(), vm.Config{}, nil)
-	defer blockchain.Stop()
-
-	_, chain, _ := GenerateChainWithGenesis(gspec, beacon.NewFaker(), 3, func(i int, gen *BlockGen) {})
-	if _, err := blockchain.InsertChain(chain); err != nil {
-		t.Fatalf("failed to insert chain: %v", err)
-	}
-
-	_, replacementBlocks, _ := GenerateChainWithGenesis(gspec, beacon.NewFaker(), 4, func(i int, gen *BlockGen) {
-		tx := types.NewTx(&types.DynamicFeeTx{
-			Nonce:     gen.TxNonce(addr1),
-			Value:     new(big.Int),
-			Gas:       1000000,
-			GasFeeCap: gen.header.BaseFee,
-			Data:      nil,
-		})
-		tx, err := types.SignTx(tx, signer, wallet1)
-		if i == 2 {
-			gen.OffsetTime(-9)
-		}
-		if err != nil {
-			t.Fatalf("failed to create tx: %v", err)
-		}
-		gen.AddTx(tx)
-	})
-	chainSideCh := make(chan ChainSideEvent, 64)
-	blockchain.SubscribeChainSideEvent(chainSideCh)
-	if _, err := blockchain.InsertChain(replacementBlocks); err != nil {
-		t.Fatalf("failed to insert chain: %v", err)
-	}
-
-	expectedSideHashes := map[common.Hash]bool{
-		chain[0].Hash(): true,
-		chain[1].Hash(): true,
-		chain[2].Hash(): true,
-	}
-
-	i := 0
-
-	const timeoutDura = 10 * time.Second
-	timeout := time.NewTimer(timeoutDura)
-done:
-	for {
-		select {
-		case ev := <-chainSideCh:
-			block := ev.Block
-			if _, ok := expectedSideHashes[block.Hash()]; !ok {
-				t.Errorf("%d: didn't expect %x to be in side chain", i, block.Hash())
-			}
-			i++
-
-			if i == len(expectedSideHashes) {
-				timeout.Stop()
-
-				break done
-			}
-			timeout.Reset(timeoutDura)
-
-		case <-timeout.C:
-			t.Fatal("Timeout. Possibly not all blocks were triggered for sideevent")
-		}
-	}
-
-	// make sure no more events are fired
-	select {
-	case e := <-chainSideCh:
-		t.Errorf("unexpected event fired: %v", e)
-	case <-time.After(250 * time.Millisecond):
 	}
 }
 
@@ -2452,16 +2366,16 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 	}
 }
 
-// TestEIP2718Transition tests that an EIP-2718 transaction will be accepted
-// This is verified by sending an EIP-2930 access list transaction , which
+// TestAccessListGas tests that a typed transaction with an access list will be
+// accepted. This is verified by sending a dynamic fee transaction, which
 // specifies a single slot access, and then checking that the gas usage of a
 // hot SLOAD and a cold SLOAD are calculated correctly.
-func TestEIP2718Transition(t *testing.T) {
-	testEIP2718Transition(t, rawdb.HashScheme)
-	testEIP2718Transition(t, rawdb.PathScheme)
+func TestAccessListGas(t *testing.T) {
+	testAccessListGas(t, rawdb.HashScheme)
+	testAccessListGas(t, rawdb.PathScheme)
 }
 
-func testEIP2718Transition(t *testing.T, scheme string) {
+func testAccessListGas(t *testing.T, scheme string) {
 	var (
 		aa     = common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aaaa")
 		engine = beacon.NewFaker()
@@ -2530,7 +2444,7 @@ func testEIP2718Transition(t *testing.T, scheme string) {
 	}
 }
 
-// TestEIP1559Transition tests the following:
+// TestDynamicFeeTxAccounting tests the following:
 //
 //  1. A transaction whose gasFeeCap is greater than the baseFee is valid.
 //  2. Gas accounting for access lists on EIP-1559 transactions is correct.
@@ -2538,12 +2452,12 @@ func testEIP2718Transition(t *testing.T, scheme string) {
 //  4. The transaction sender pays for both the tip and baseFee.
 //  5. The coinbase receives only the partially realized tip when
 //     gasFeeCap - gasTipCap < baseFee.
-func TestEIP1559Transition(t *testing.T) {
-	testEIP1559Transition(t, rawdb.HashScheme)
-	testEIP1559Transition(t, rawdb.PathScheme)
+func TestDynamicFeeTxAccounting(t *testing.T) {
+	testDynamicFeeTxAccounting(t, rawdb.HashScheme)
+	testDynamicFeeTxAccounting(t, rawdb.PathScheme)
 }
 
-func testEIP1559Transition(t *testing.T, scheme string) {
+func testDynamicFeeTxAccounting(t *testing.T, scheme string) {
 	var (
 		aa     = common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aaaa")
 		engine = beacon.NewFaker()

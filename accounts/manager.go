@@ -142,10 +142,6 @@ func (am *Manager) update() {
 			am.lock.Unlock()
 			close(event.processed)
 		case errc := <-am.quit:
-			// Close all owned wallets
-			for _, w := range am.wallets {
-				w.Close()
-			}
 			// Manager terminating, return
 			errc <- nil
 			// Signals event emitters the loop is not receiving values

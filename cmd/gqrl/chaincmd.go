@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -34,7 +35,6 @@ import (
 	"github.com/theQRL/go-qrl/core/state"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/crypto"
-	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/metrics"
 	"github.com/theQRL/go-qrl/node"
@@ -48,7 +48,7 @@ var (
 		Name:      "init",
 		Usage:     "Bootstrap and initialize a new genesis block",
 		ArgsUsage: "<genesisPath>",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CachePreimagesFlag,
 			utils.StateSchemeFlag,
 		}, utils.DatabasePathFlags),
@@ -74,7 +74,7 @@ if one is set.  Otherwise it prints the genesis from the datadir.`,
 		Name:      "import",
 		Usage:     "Import a blockchain file",
 		ArgsUsage: "<filename> (<filename 2> ... <filename N>) ",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CacheFlag,
 			utils.SyncModeFlag,
 			utils.GCModeFlag,
@@ -111,7 +111,7 @@ processing will proceed even if an individual RLP-file import failure occurs.`,
 		Name:      "export",
 		Usage:     "Export blockchain into file",
 		ArgsUsage: "<filename> [<blockNumFirst> <blockNumLast>]",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CacheFlag,
 			utils.SyncModeFlag,
 			utils.StateSchemeFlag,
@@ -128,7 +128,7 @@ be gzipped.`,
 		Name:      "dump",
 		Usage:     "Dump a specific block from storage",
 		ArgsUsage: "[? <blockHash> | <blockNum>]",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CacheFlag,
 			utils.IterativeOutputFlag,
 			utils.ExcludeCodeFlag,

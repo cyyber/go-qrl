@@ -19,6 +19,7 @@ package vm
 import (
 	"bytes"
 	"crypto/sha3"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -501,4 +502,194 @@ func runMLDSA87Verify(t *testing.T, input []byte) []byte {
 		t.Fatalf("remaining gas %d, want 0", remaining)
 	}
 	return output
+}
+
+func TestPrecompiledXMSSVerify(t *testing.T) {
+	testJson("xmss_verify", precompileAddress("07"), t)
+}
+
+func BenchmarkPrecompiledXMSSVerify(b *testing.B) {
+	benchJson("xmss_verify", precompileAddress("07"), b)
+}
+
+func TestPrecompiledXMSSVerifyOOG(t *testing.T) {
+	tests, err := loadJson("xmss_verify")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range tests {
+		testPrecompiledOOG(precompileAddress("07"), test, t)
+	}
+}
+
+// xmssVerifyVector returns the message, signature and extended public key of
+// the first xmss_verify test vector, a valid SHA2-256 height 4 qrllib signature.
+func xmssVerifyVector(t *testing.T) (message, signature, extendedPK []byte) {
+	t.Helper()
+	tests, err := loadJson("xmss_verify")
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := common.Hex2Bytes(tests[0].Input)
+	messageEnd := xmssVerifyMessageLengthSize + int(binary.BigEndian.Uint32(input))
+	keyStart := len(input) - xmssVerifyExtendedPKSize
+	return input[xmssVerifyMessageLengthSize:messageEnd], input[messageEnd:keyStart], input[keyStart:]
+}
+
+func newXMSSVerifyInput(message, signature, extendedPK []byte) []byte {
+	input := binary.BigEndian.AppendUint32(nil, uint32(len(message)))
+	input = append(input, message...)
+	input = append(input, signature...)
+	return append(input, extendedPK...)
+}
+
+func runXMSSVerify(t *testing.T, input []byte) []byte {
+	t.Helper()
+	p := allPrecompiles[common.MustParseAddress(precompileAddress("07"))]
+	output, _, err := RunPrecompiledContract(p, input, p.RequiredGas(input))
+	if err != nil {
+		t.Fatalf("xmssverify failed: %v", err)
+	}
+	return output
+}
+
+func TestPrecompiledXMSSVerifyRejectsInvalidInput(t *testing.T) {
+	message, signature, extendedPK := xmssVerifyVector(t)
+	if output := runXMSSVerify(t, newXMSSVerifyInput(message, signature, extendedPK)); !bytes.Equal(output, trueWord) {
+		t.Fatalf("valid vector output %x, want true", output)
+	}
+	height := uint32(extendedPK[1]&0x0f) << 1
+	flipped := func(data []byte, index int) []byte {
+		data = common.CopyBytes(data)
+		data[index] ^= 0x01
+		return data
+	}
+	withDescriptor := func(b0, b1, b2 byte) []byte {
+		key := common.CopyBytes(extendedPK)
+		key[0], key[1], key[2] = b0, b1, b2
+		return key
+	}
+	withIndex := func(index uint32) []byte {
+		sig := common.CopyBytes(signature)
+		binary.BigEndian.PutUint32(sig, index)
+		return sig
+	}
+	tests := []struct {
+		name  string
+		input func() []byte
+	}{
+		{name: "empty input", input: func() []byte { return nil }},
+		{name: "length prefix only", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, extendedPK)[:xmssVerifyMessageLengthSize]
+		}},
+		{name: "key only", input: func() []byte { return newXMSSVerifyInput(nil, nil, extendedPK) }},
+		{name: "message length beyond input", input: func() []byte {
+			input := newXMSSVerifyInput(message, signature, extendedPK)
+			input[0] = 0xff
+			return input
+		}},
+		{name: "message length off by one", input: func() []byte {
+			input := newXMSSVerifyInput(message, signature, extendedPK)
+			input[3]++
+			return input
+		}},
+		{name: "wrong message", input: func() []byte { return newXMSSVerifyInput(flipped(message, 0), signature, extendedPK) }},
+		{name: "extended message", input: func() []byte {
+			return newXMSSVerifyInput(append(common.CopyBytes(message), 0), signature, extendedPK)
+		}},
+		{name: "wrong randomness", input: func() []byte { return newXMSSVerifyInput(message, flipped(signature, 4), extendedPK) }},
+		{name: "wrong WOTS+ signature", input: func() []byte {
+			return newXMSSVerifyInput(message, flipped(signature, 36+1000), extendedPK)
+		}},
+		{name: "wrong authentication path", input: func() []byte {
+			return newXMSSVerifyInput(message, flipped(signature, len(signature)-1), extendedPK)
+		}},
+		{name: "other leaf index", input: func() []byte { return newXMSSVerifyInput(message, withIndex(0), extendedPK) }},
+		{name: "leaf index out of range", input: func() []byte {
+			return newXMSSVerifyInput(message, withIndex(1<<height), extendedPK)
+		}},
+		{name: "truncated signature", input: func() []byte {
+			return newXMSSVerifyInput(message, signature[:len(signature)-xmssVerifyDigestSize], extendedPK)
+		}},
+		{name: "extended signature", input: func() []byte {
+			return newXMSSVerifyInput(message, append(common.CopyBytes(signature), make([]byte, xmssVerifyDigestSize)...), extendedPK)
+		}},
+		{name: "misaligned signature", input: func() []byte {
+			return newXMSSVerifyInput(message, signature[:len(signature)-1], extendedPK)
+		}},
+		{name: "wrong root", input: func() []byte { return newXMSSVerifyInput(message, signature, flipped(extendedPK, 3)) }},
+		{name: "wrong public seed", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, flipped(extendedPK, 35))
+		}},
+		// The key is the trailing 67 bytes, so a shorter key borrows the end of the signature.
+		{name: "key of 66 bytes", input: func() []byte { return newXMSSVerifyInput(message, signature, extendedPK[1:]) }},
+		{name: "key with a leading extra byte", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, append([]byte{0}, extendedPK...))
+		}},
+		{name: "reserved descriptor byte", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, withDescriptor(extendedPK[0], extendedPK[1], 0x01))
+		}},
+		{name: "address format", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, withDescriptor(extendedPK[0], extendedPK[1]|0x10, 0))
+		}},
+		{name: "multi-sig signature type", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, withDescriptor(0x10|extendedPK[0]&0x0f, extendedPK[1], 0))
+		}},
+		{name: "unknown signature type", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, withDescriptor(0x20|extendedPK[0]&0x0f, extendedPK[1], 0))
+		}},
+		{name: "unknown hash function", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, withDescriptor(extendedPK[0]&0xf0|0x03, extendedPK[1], 0))
+		}},
+		{name: "other hash function", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, withDescriptor(extendedPK[0]^0x01, extendedPK[1], 0))
+		}},
+		{name: "height 2 descriptor with a matching signature", input: func() []byte {
+			return newXMSSVerifyInput(message, signature[:xmssVerifySignatureBaseSize+2*xmssVerifyDigestSize], withDescriptor(extendedPK[0], extendedPK[1]&0xf0|0x01, 0))
+		}},
+		{name: "descriptor height mismatch", input: func() []byte {
+			return newXMSSVerifyInput(message, signature, withDescriptor(extendedPK[0], extendedPK[1]&0xf0|0x03, 0))
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if output := runXMSSVerify(t, test.input()); output != nil {
+				t.Fatalf("verification output %x, want nil", output)
+			}
+		})
+	}
+}
+
+func TestPrecompiledXMSSVerifyGas(t *testing.T) {
+	message, signature, extendedPK := xmssVerifyVector(t)
+	height := uint64(extendedPK[1]&0x0f) << 1
+	hashes := func(height uint64) uint64 {
+		return params.XMSSVerifyHashGas * (xmssVerifyFixedHashes + xmssVerifyHashesPerLevel*height)
+	}
+	messageHash := func(length int) uint64 {
+		return params.Sha256BaseGas + params.Sha256PerWordGas*toWordSize(uint64(xmssVerifyMessageHashKeyLength+length))
+	}
+	input := newXMSSVerifyInput(message, signature, extendedPK)
+	maxHeightKey := common.CopyBytes(extendedPK)
+	maxHeightKey[1] = 0 // height 0 is malformed and charged as the maximum height
+	oversizedLength := common.CopyBytes(input)
+	oversizedLength[0] = 0xff
+	tests := []struct {
+		name  string
+		input []byte
+		want  uint64
+	}{
+		{name: "valid vector", input: input, want: hashes(height) + messageHash(len(message))},
+		{name: "empty message", input: newXMSSVerifyInput(nil, signature, extendedPK), want: hashes(height) + messageHash(0)},
+		{name: "malformed height charges the maximum", input: newXMSSVerifyInput(message, signature, maxHeightKey), want: hashes(xmssVerifyMaxHeight) + messageHash(len(message))},
+		{name: "empty input", input: nil, want: hashes(xmssVerifyMaxHeight) + messageHash(0)},
+		{name: "message length is capped by the input", input: oversizedLength, want: hashes(height) + messageHash(len(input)-xmssVerifyMessageLengthSize)},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := (&xmssVerify{}).RequiredGas(test.input); got != test.want {
+				t.Fatalf("gas %d, want %d", got, test.want)
+			}
+		})
+	}
 }

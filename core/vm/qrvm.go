@@ -223,8 +223,8 @@ func (qrvm *QRVM) Call(caller ContractRef, addr common.Address, input []byte, ga
 		}
 	}
 	// When an error was returned by the QRVM or when setting the creation code
-	// above we revert to the snapshot and consume any gas remaining. Additionally
-	// when we're in homestead this also counts for code storage gas errors.
+	// above we revert to the snapshot and consume any gas remaining. This also
+	// counts for code storage gas errors.
 	if err != nil {
 		qrvm.StateDB.RevertToSnapshot(snapshot)
 		if err != ErrExecutionReverted {
@@ -290,17 +290,11 @@ func (qrvm *QRVM) StaticCall(caller ContractRef, addr common.Address, input []by
 	if qrvm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
-	// We take a snapshot here. This is a bit counter-intuitive, and could probably be skipped.
-	// However, even a staticcall is considered a 'touch'. On mainnet, static calls were introduced
-	// after all empty accounts were deleted, so this is not required. However, if we omit this,
-	// then certain tests start failing; stRevertTest/RevertPrecompiledTouchExactOOG.json.
-	// We could change this, but for now it's left for legacy reasons
+	// We take a snapshot here because even a staticcall touches the callee (see
+	// below), and a failed call must revert that touch with the rest of its state.
 	var snapshot = qrvm.StateDB.Snapshot()
 
 	// We do an AddBalance of zero here, just in order to trigger a touch.
-	// This doesn't matter on Mainnet, where all empties are gone at the time of Byzantium,
-	// but is the correct thing to do and matters on other networks, in tests, and potential
-	// future scenarios
 	qrvm.StateDB.AddBalance(addr, big0)
 
 	// Invoke tracer hooks that signal entering/exiting a call frame
@@ -323,8 +317,8 @@ func (qrvm *QRVM) StaticCall(caller ContractRef, addr common.Address, input []by
 		contract := NewContract(caller, AccountRef(addrCopy), new(big.Int), gas)
 		contract.SetCallCode(&addrCopy, qrvm.StateDB.GetCodeHash(addrCopy), qrvm.StateDB.GetCode(addrCopy))
 		// When an error was returned by the QRVM or when setting the creation code
-		// above we revert to the snapshot and consume any gas remaining. Additionally
-		// when we're in Homestead this also counts for code storage gas errors.
+		// above we revert to the snapshot and consume any gas remaining. This also
+		// counts for code storage gas errors.
 		ret, err = qrvm.interpreter.Run(contract, input, true)
 		gas = contract.Gas
 	}
@@ -398,7 +392,7 @@ func (qrvm *QRVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint6
 		err = ErrMaxCodeSizeExceeded
 	}
 
-	// Reject code starting with 0xEF if EIP-3541 is enabled.
+	// Reject code starting with 0xEF (EIP-3541).
 	if err == nil && len(ret) >= 1 && ret[0] == 0xEF {
 		err = ErrInvalidCode
 	}

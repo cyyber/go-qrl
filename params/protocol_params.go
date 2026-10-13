@@ -89,6 +89,9 @@ const (
 	IdentityBaseGas    uint64 = 15     // Base price for a data copy operation
 	IdentityPerWordGas uint64 = 3      // Per-work price for a data copy operation
 	MLDSA87VerifyGas   uint64 = 125000 // Gas cost for one ML-DSA-87 verification
+	// XMSSVerifyHashGas prices one of the hashes an XMSS signature verification performs like a
+	// SHA256 precompile call over its at most 160-byte (three-word) input.
+	XMSSVerifyHashGas uint64 = Sha256BaseGas + 3*Sha256PerWordGas
 
 	// The Refund Quotient is the cap on how much of the used gas can be refunded. Before EIP-3529,
 	// up to half the consumed gas could be refunded. Redefined as 1/5th in EIP-3529
