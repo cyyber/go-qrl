@@ -1,6 +1,6 @@
 module github.com/theQRL/go-qrl
 
-go 1.26.5
+go 1.27.2
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
