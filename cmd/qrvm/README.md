@@ -82,22 +82,28 @@ type Env struct {
     CurrentGasLimit  uint64              `json:"currentGasLimit"`
     CurrentNumber    uint64              `json:"currentNumber"`
     CurrentTimestamp uint64              `json:"currentTimestamp"`
+    CurrentRandom    *big.Int            `json:"currentRandom"`
     Withdrawals      []*Withdrawal       `json:"withdrawals"`
     // optional
-    CurrentRandom     *big.Int           `json:"currentRandom"`
     CurrentBaseFee    *big.Int           `json:"currentBaseFee"`
+    ParentBaseFee     *big.Int           `json:"parentBaseFee"`
     ParentGasUsed     uint64             `json:"parentGasUsed"`
     ParentGasLimit    uint64             `json:"parentGasLimit"`
-    ParentTimestamp   uint64             `json:"parentTimestamp"`
     BlockHashes       map[uint64]common.Hash `json:"blockHashes"`
 }
 type Withdrawal struct {
-    Index          uint64         `json:"index"`
-    ValidatorIndex uint64         `json:"validatorIndex"`
-    Recipient      common.Address `json:"recipient"`
-    Amount         *big.Int       `json:"amount"`
+    // required
+    Index          hexutil.Uint64 `json:"index"`
+    ValidatorIndex hexutil.Uint64 `json:"validatorIndex"`
+    Address        common.Address `json:"address"`
+    Amount         hexutil.Uint64 `json:"amount"` // in Shor
 }
 ```
+
+Either `currentBaseFee` or `parentBaseFee` must be set. Without `currentBaseFee`,
+`t8n` derives the base fee from `parentBaseFee`, `parentGasUsed` and
+`parentGasLimit`. That needs `currentNumber` above 0 and, when `parentGasUsed` is
+non-zero, a `parentGasLimit` of at least 2.
 
 ##### `txs`
 
@@ -132,15 +138,16 @@ information about the post-transition environment.
 
 ```go
 type ExecutionResult struct {
-    StateRoot   common.Hash    `json:"stateRoot"`
-    TxRoot      common.Hash    `json:"txRoot"`
-    ReceiptRoot common.Hash    `json:"receiptsRoot"`
-    LogsHash    common.Hash    `json:"logsHash"`
-    Bloom       types.Bloom    `json:"logsBloom"`
-    Receipts    types.Receipts `json:"receipts"`
-    Rejected    []*rejectedTx  `json:"rejected,omitempty"`
-    GasUsed     uint64         `json:"gasUsed"`
-    BaseFee     *big.Int       `json:"currentBaseFee,omitempty"`
+    StateRoot       common.Hash    `json:"stateRoot"`
+    TxRoot          common.Hash    `json:"txRoot"`
+    ReceiptRoot     common.Hash    `json:"receiptsRoot"`
+    LogsHash        common.Hash    `json:"logsHash"`
+    Bloom           types.Bloom    `json:"logsBloom"`
+    Receipts        types.Receipts `json:"receipts"`
+    Rejected        []*rejectedTx  `json:"rejected,omitempty"`
+    GasUsed         uint64         `json:"gasUsed"`
+    BaseFee         *big.Int       `json:"currentBaseFee"`
+    WithdrawalsRoot *common.Hash   `json:"withdrawalsRoot"`
 }
 ```
 
@@ -187,21 +194,20 @@ Two resulting files:
 `alloc.json`:
 ```json
 {
-  "Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020687fa825ab4ad40a89c303f22f65fef9778555": {
-    "balance": "0xebd44d22b000",
-    "nonce": "0x1"
+  "Q00000000000000000000000000000000c0DecafEc0dEcAfec0DECaFEC0DecaFEC0decAfec0DECAFec0DeCAFEC0DECafec0dEcaFEc0DecAfeC0DEcafeC0deCaFE": {
+    "balance": "0x1"
   },
-  "Q00000000000000000000000000000000be6c1fd78f40b86a24dc2d7d633e2912d71e5d166f8be2c850d5727f0adcc170c7741b784295eae0c4f28291d0928dc7": {
-    "balance": "0x5ffd4878be161d74",
-    "nonce": "0xac"
+  "Qe22eb845C3857b8CfD5F272FeD318C9463173C496173A37B72ce3372eAFB629EEe124d8B0fcDC329d0ef174374Aed94cA46beADf0E6b593bF71F5abD43E96853": {
+    "balance": "0xfffffffffffadf7",
+    "nonce": "0x1"
   }
 }
 ```
 `result.json`:
 ```json
 {
-  "stateRoot": "0x9ea46a9c1f83e9309b94788db918c497b966bcd64a7bc1e1353411b90f21da90",
-  "txRoot": "0xb59ce316b58ffc4c817b5765f6b3bc830c950c1bdce9dcd2898eb9bbc1c8de23",
+  "stateRoot": "0x9a84680b91717c76dad680e34d5ab28e808ccea239ec7341525ff3f493b9b0a7",
+  "txRoot": "0xaab45a3ce7b724d89704499075ebd2f0d1ac963336b91c9ea018cb8fc67be7d7",
   "receiptsRoot": "0xf78dfb743fbd92ade140711c8bbc542b5e307f0ab7984eff35d751969fe57efa",
   "logsHash": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
   "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -212,22 +218,16 @@ Two resulting files:
       "cumulativeGasUsed": "0x5208",
       "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
       "logs": null,
-      "transactionHash": "0x6973b7b3c04e2bd83821853ea3022a57604d903dd644f4a6289555a8c886c21d",
+      "transactionHash": "0xcb3aa0b10c0fd9f8bb316eaf12e310f16bda038815822415eccb578ef894954a",
       "contractAddress": "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
       "gasUsed": "0x5208",
-      "effectiveGasPrice": null,
+      "effectiveGasPrice": "0x1",
       "blockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "transactionIndex": "0x0"
     }
   ],
-  "rejected": [
-    {
-      "index": 1,
-      "error": "nonce too low: address Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020687Fa825ab4AD40A89C303F22F65FEf9778555, tx: 0 state: 1"
-    }
-  ],
   "gasUsed": "0x5208",
-  "currentBaseFee": "0x3b9aca00",
+  "currentBaseFee": "0x1",
   "withdrawalsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 }
 ```
@@ -240,44 +240,38 @@ Output:
 ```json
 {
   "alloc": {
-    "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000008a8eafb1cf62bfbeb1741769dae1a9dd47996192": {
-      "balance": "0xfeed1a9d",
+    "Q00000000000000000000000000000000c0DecafEc0dEcAfec0DECaFEC0DecaFEC0decAfec0DECAFec0DeCAFEC0DECafec0dEcaFEc0DecAfeC0DEcafeC0deCaFE": {
+      "balance": "0x1"
+    },
+    "Qe22eb845C3857b8CfD5F272FeD318C9463173C496173A37B72ce3372eAFB629EEe124d8B0fcDC329d0ef174374Aed94cA46beADf0E6b593bF71F5abD43E96853": {
+      "balance": "0xfffffffffffadf7",
       "nonce": "0x1"
-    },
-    "Q00000000000000000000000000000000be6c1fd78f40b86a24dc2d7d633e2912d71e5d166f8be2c850d5727f0adcc170c7741b784295eae0c4f28291d0928dc7": {
-      "balance": "0x5ffd4878be161d74",
-      "nonce": "0xac"
-    },
-    "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
-      "balance": "0xa410"
     }
   },
   "result": {
-    "stateRoot": "0x84208a19bc2b46ada7445180c1db162be5b39b9abc8c0a54b05d32943eae4e13",
-    "txRoot": "0xc4761fd7b87ff2364c7c60b6c5c8d02e522e815328aaea3f20e3b7b7ef52c42d",
-    "receiptsRoot": "0x056b23fbba480696b65fe5a59b8f2148a1299103c4f57df839233af2cf4ca2d2",
+    "stateRoot": "0x9a84680b91717c76dad680e34d5ab28e808ccea239ec7341525ff3f493b9b0a7",
+    "txRoot": "0xaab45a3ce7b724d89704499075ebd2f0d1ac963336b91c9ea018cb8fc67be7d7",
+    "receiptsRoot": "0xf78dfb743fbd92ade140711c8bbc542b5e307f0ab7984eff35d751969fe57efa",
     "logsHash": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "receipts": [
       {
+        "type": "0x2",
         "status": "0x1",
         "cumulativeGasUsed": "0x5208",
         "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "logs": null,
-        "transactionHash": "0x0557bacce3375c98d806609b8d5043072f0b6a8bae45ae5a67a00d3a1a18d673",
+        "transactionHash": "0xcb3aa0b10c0fd9f8bb316eaf12e310f16bda038815822415eccb578ef894954a",
         "contractAddress": "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "gasUsed": "0x5208",
+        "effectiveGasPrice": "0x1",
         "blockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "transactionIndex": "0x0"
       }
     ],
-    "rejected": [
-      {
-        "index": 1,
-        "error": "nonce too low: address Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000008A8eAFb1cf62BfBeb1741769DAE1a9dd47996192, tx: 0 state: 1"
-      }
-    ],
-    "gasUsed": "0x5208"
+    "gasUsed": "0x5208",
+    "currentBaseFee": "0x1",
+    "withdrawalsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
   }
 }
 ```
@@ -414,9 +408,10 @@ Command line params that need to be supported are:
 
 ```
     --input.header value        `stdin` or file name of where to find the block header to use. (default: "header.json")
+    --input.withdrawals value   `stdin` or file name of where to find the list of withdrawals to use.
     --input.txs value           `stdin` or file name of where to find the transactions list in RLP form. (default: "txs.rlp")
     --output.basedir value      Specifies where output files are placed. Will be created if it does not exist.
-    --output.block value        Determines where to put the alloc of the post-state. (default: "block.json")
+    --output.block value        Determines where to put the `block` after building. (default: "block.json")
                                 <file> - into the file <file>
                                 `stdout` - into the stdout output
                                 `stderr` - into the stderr output
@@ -443,8 +438,8 @@ type Header struct {
         Time            uint64          `json:"timestamp"        gencodec:"required"`
         Extra           []byte          `json:"extraData"`
         Random          common.Hash     `json:"prevRandao"`
-        BaseFee         *big.Int        `json:"baseFeePerGas"`
-        WithdrawalsHash *common.Hash    `json:"withdrawalsRoot"`
+        BaseFee         *big.Int        `json:"baseFeePerGas"    gencodec:"required"`
+        WithdrawalsHash *common.Hash    `json:"withdrawalsRoot"  gencodec:"required"`
 }
 ```
 #### `txs`
