@@ -348,3 +348,11 @@ func TestBodyRequiresWithdrawals(t *testing.T) {
 		t.Fatal("decoded a body without a withdrawals list")
 	}
 }
+
+// Tests that WithBody gives a block an empty withdrawals list when the body has none.
+func TestWithBodyNilWithdrawals(t *testing.T) {
+	block := NewBlockWithHeader(&Header{Number: big.NewInt(1)}).WithBody(Body{})
+	if block.Withdrawals() == nil {
+		t.Fatal("withdrawals are nil, want an empty list")
+	}
+}

@@ -58,31 +58,29 @@ type ExecutionResult struct {
 
 //go:generate go run github.com/fjl/gencodec -type stEnv -field-override stEnvMarshaling -out gen_stenv.go
 type stEnv struct {
-	Coinbase        common.Address                      `json:"currentCoinbase"   gencodec:"required"`
-	Random          *big.Int                            `json:"currentRandom"`
-	ParentBaseFee   *big.Int                            `json:"parentBaseFee,omitempty"`
-	ParentGasUsed   uint64                              `json:"parentGasUsed,omitempty"`
-	ParentGasLimit  uint64                              `json:"parentGasLimit,omitempty"`
-	GasLimit        uint64                              `json:"currentGasLimit"   gencodec:"required"`
-	Number          uint64                              `json:"currentNumber"     gencodec:"required"`
-	Timestamp       uint64                              `json:"currentTimestamp"  gencodec:"required"`
-	ParentTimestamp uint64                              `json:"parentTimestamp,omitempty"`
-	BlockHashes     map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
-	Withdrawals     []*types.Withdrawal                 `json:"withdrawals,omitempty"`
-	BaseFee         *big.Int                            `json:"currentBaseFee,omitempty"`
+	Coinbase       common.Address                      `json:"currentCoinbase"   gencodec:"required"`
+	Random         *big.Int                            `json:"currentRandom"`
+	ParentBaseFee  *big.Int                            `json:"parentBaseFee,omitempty"`
+	ParentGasUsed  uint64                              `json:"parentGasUsed,omitempty"`
+	ParentGasLimit uint64                              `json:"parentGasLimit,omitempty"`
+	GasLimit       uint64                              `json:"currentGasLimit"   gencodec:"required"`
+	Number         uint64                              `json:"currentNumber"     gencodec:"required"`
+	Timestamp      uint64                              `json:"currentTimestamp"  gencodec:"required"`
+	BlockHashes    map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
+	Withdrawals    []*types.Withdrawal                 `json:"withdrawals,omitempty"`
+	BaseFee        *big.Int                            `json:"currentBaseFee,omitempty"`
 }
 
 type stEnvMarshaling struct {
-	Coinbase        common.Address
-	Random          *math.HexOrDecimal256
-	ParentBaseFee   *math.HexOrDecimal256
-	ParentGasUsed   math.HexOrDecimal64
-	ParentGasLimit  math.HexOrDecimal64
-	GasLimit        math.HexOrDecimal64
-	Number          math.HexOrDecimal64
-	Timestamp       math.HexOrDecimal64
-	ParentTimestamp math.HexOrDecimal64
-	BaseFee         *math.HexOrDecimal256
+	Coinbase       common.Address
+	Random         *math.HexOrDecimal256
+	ParentBaseFee  *math.HexOrDecimal256
+	ParentGasUsed  math.HexOrDecimal64
+	ParentGasLimit math.HexOrDecimal64
+	GasLimit       math.HexOrDecimal64
+	Number         math.HexOrDecimal64
+	Timestamp      math.HexOrDecimal64
+	BaseFee        *math.HexOrDecimal256
 }
 
 type rejectedTx struct {

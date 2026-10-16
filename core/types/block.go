@@ -299,6 +299,10 @@ func (b *Block) WithBody(body Body) *Block {
 		transactions: slices.Clone(body.Transactions),
 		withdrawals:  slices.Clone(body.Withdrawals),
 	}
+	// Match NewBlock: a block always has a withdrawals list, even an empty one.
+	if block.withdrawals == nil {
+		block.withdrawals = Withdrawals{}
+	}
 	return block
 }
 
