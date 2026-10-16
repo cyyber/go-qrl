@@ -17,18 +17,17 @@ var _ = (*stEnvMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (s stEnv) MarshalJSON() ([]byte, error) {
 	type stEnv struct {
-		Coinbase        common.Address                      `json:"currentCoinbase"   gencodec:"required"`
-		Random          *math.HexOrDecimal256               `json:"currentRandom"`
-		ParentBaseFee   *math.HexOrDecimal256               `json:"parentBaseFee,omitempty"`
-		ParentGasUsed   math.HexOrDecimal64                 `json:"parentGasUsed,omitempty"`
-		ParentGasLimit  math.HexOrDecimal64                 `json:"parentGasLimit,omitempty"`
-		GasLimit        math.HexOrDecimal64                 `json:"currentGasLimit"   gencodec:"required"`
-		Number          math.HexOrDecimal64                 `json:"currentNumber"     gencodec:"required"`
-		Timestamp       math.HexOrDecimal64                 `json:"currentTimestamp"  gencodec:"required"`
-		ParentTimestamp math.HexOrDecimal64                 `json:"parentTimestamp,omitempty"`
-		BlockHashes     map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
-		Withdrawals     []*types.Withdrawal                 `json:"withdrawals,omitempty"`
-		BaseFee         *math.HexOrDecimal256               `json:"currentBaseFee,omitempty"`
+		Coinbase       common.Address                      `json:"currentCoinbase"   gencodec:"required"`
+		Random         *math.HexOrDecimal256               `json:"currentRandom"`
+		ParentBaseFee  *math.HexOrDecimal256               `json:"parentBaseFee,omitempty"`
+		ParentGasUsed  math.HexOrDecimal64                 `json:"parentGasUsed,omitempty"`
+		ParentGasLimit math.HexOrDecimal64                 `json:"parentGasLimit,omitempty"`
+		GasLimit       math.HexOrDecimal64                 `json:"currentGasLimit"   gencodec:"required"`
+		Number         math.HexOrDecimal64                 `json:"currentNumber"     gencodec:"required"`
+		Timestamp      math.HexOrDecimal64                 `json:"currentTimestamp"  gencodec:"required"`
+		BlockHashes    map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
+		Withdrawals    []*types.Withdrawal                 `json:"withdrawals,omitempty"`
+		BaseFee        *math.HexOrDecimal256               `json:"currentBaseFee,omitempty"`
 	}
 	var enc stEnv
 	enc.Coinbase = s.Coinbase
@@ -39,7 +38,6 @@ func (s stEnv) MarshalJSON() ([]byte, error) {
 	enc.GasLimit = math.HexOrDecimal64(s.GasLimit)
 	enc.Number = math.HexOrDecimal64(s.Number)
 	enc.Timestamp = math.HexOrDecimal64(s.Timestamp)
-	enc.ParentTimestamp = math.HexOrDecimal64(s.ParentTimestamp)
 	enc.BlockHashes = s.BlockHashes
 	enc.Withdrawals = s.Withdrawals
 	enc.BaseFee = (*math.HexOrDecimal256)(s.BaseFee)
@@ -49,18 +47,17 @@ func (s stEnv) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (s *stEnv) UnmarshalJSON(input []byte) error {
 	type stEnv struct {
-		Coinbase        *common.Address                     `json:"currentCoinbase"   gencodec:"required"`
-		Random          *math.HexOrDecimal256               `json:"currentRandom"`
-		ParentBaseFee   *math.HexOrDecimal256               `json:"parentBaseFee,omitempty"`
-		ParentGasUsed   *math.HexOrDecimal64                `json:"parentGasUsed,omitempty"`
-		ParentGasLimit  *math.HexOrDecimal64                `json:"parentGasLimit,omitempty"`
-		GasLimit        *math.HexOrDecimal64                `json:"currentGasLimit"   gencodec:"required"`
-		Number          *math.HexOrDecimal64                `json:"currentNumber"     gencodec:"required"`
-		Timestamp       *math.HexOrDecimal64                `json:"currentTimestamp"  gencodec:"required"`
-		ParentTimestamp *math.HexOrDecimal64                `json:"parentTimestamp,omitempty"`
-		BlockHashes     map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
-		Withdrawals     []*types.Withdrawal                 `json:"withdrawals,omitempty"`
-		BaseFee         *math.HexOrDecimal256               `json:"currentBaseFee,omitempty"`
+		Coinbase       *common.Address                     `json:"currentCoinbase"   gencodec:"required"`
+		Random         *math.HexOrDecimal256               `json:"currentRandom"`
+		ParentBaseFee  *math.HexOrDecimal256               `json:"parentBaseFee,omitempty"`
+		ParentGasUsed  *math.HexOrDecimal64                `json:"parentGasUsed,omitempty"`
+		ParentGasLimit *math.HexOrDecimal64                `json:"parentGasLimit,omitempty"`
+		GasLimit       *math.HexOrDecimal64                `json:"currentGasLimit"   gencodec:"required"`
+		Number         *math.HexOrDecimal64                `json:"currentNumber"     gencodec:"required"`
+		Timestamp      *math.HexOrDecimal64                `json:"currentTimestamp"  gencodec:"required"`
+		BlockHashes    map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
+		Withdrawals    []*types.Withdrawal                 `json:"withdrawals,omitempty"`
+		BaseFee        *math.HexOrDecimal256               `json:"currentBaseFee,omitempty"`
 	}
 	var dec stEnv
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -94,9 +91,6 @@ func (s *stEnv) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'currentTimestamp' for stEnv")
 	}
 	s.Timestamp = uint64(*dec.Timestamp)
-	if dec.ParentTimestamp != nil {
-		s.ParentTimestamp = uint64(*dec.ParentTimestamp)
-	}
 	if dec.BlockHashes != nil {
 		s.BlockHashes = dec.BlockHashes
 	}
