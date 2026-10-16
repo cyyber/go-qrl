@@ -58,14 +58,6 @@ go run ./build/ci.go check_generate
 
 Ensures that all generated files (e.g., `gen_*.go`) are up to date. If this fails, first install the required code generators by running `make devtools`, then run the appropriate `go generate` commands and include the updated files in your commit.
 
-### 6. Dependency Hygiene
-
-```sh
-go run ./build/ci.go check_baddeps
-```
-
-Verifies that no forbidden dependencies have been introduced.
-
 ## What to include in commits
 
 Do not commit binaries, whether they are produced by the main build or byproducts of investigations.
