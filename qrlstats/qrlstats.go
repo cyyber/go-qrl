@@ -59,22 +59,16 @@ const (
 	messageSizeLimit = 15 * 1024 * 1024
 )
 
-// backend encompasses the bare-minimum functionality needed for qrlstats reporting
+// backend encompasses the functionality needed for qrlstats reporting
 type backend interface {
 	SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
 	SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Subscription
 	CurrentHeader() *types.Header
+	CurrentBlock() *types.Header
 	HeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Header, error)
+	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
 	Stats() (pending int, queued int)
 	SyncProgress() qrl.SyncProgress
-}
-
-// fullNodeBackend encompasses the functionality necessary for a full node
-// reporting to qrlstats
-type fullNodeBackend interface {
-	backend
-	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
-	CurrentBlock() *types.Header
 	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 }
 
@@ -611,33 +605,21 @@ func (s *Service) reportBlock(conn *connWrapper, header *types.Header) error {
 // assembleBlockStats retrieves any required metadata to report a single block
 // and assembles the block stats. If block is nil, the current head is processed.
 func (s *Service) assembleBlockStats(header *types.Header) *blockStats {
-	// Gather the block infos from the local blockchain
-	var (
-		txs []txStats
-	)
-
-	// check if backend is a full node
-	fullBackend, ok := s.backend.(fullNodeBackend)
-	if ok {
-		// Retrieve current chain head if no block is given.
-		if header == nil {
-			header = fullBackend.CurrentBlock()
-		}
-		block, _ := fullBackend.BlockByNumber(context.Background(), rpc.BlockNumber(header.Number.Uint64()))
-		if block == nil {
-			return nil
-		}
-		txs = make([]txStats, len(block.Transactions()))
-		for i, tx := range block.Transactions() {
-			txs[i].Hash = tx.Hash()
-		}
-	} else {
-		// Light nodes would need on-demand lookups for transactions, skip
-		if header == nil {
-			header = s.backend.CurrentHeader()
-		}
-		txs = []txStats{}
+	// Retrieve current chain head if no block is given.
+	if header == nil {
+		header = s.backend.CurrentBlock()
 	}
+
+	// Gather the block infos from the local blockchain
+	block, _ := s.backend.BlockByNumber(context.Background(), rpc.BlockNumber(header.Number.Uint64()))
+	if block == nil {
+		return nil
+	}
+	txs := make([]txStats, len(block.Transactions()))
+	for i, tx := range block.Transactions() {
+		txs[i].Hash = tx.Hash()
+	}
+
 	// Assemble and return the block stats
 	author, _ := s.engine.Author(header)
 
@@ -738,24 +720,15 @@ type nodeStats struct {
 // and reports it to the stats server.
 func (s *Service) reportStats(conn *connWrapper) error {
 	// Gather the syncing infos from the local miner instance
-	var (
-		syncing  bool
-		gasprice int
-	)
-	// check if backend is a full node
-	if fullBackend, ok := s.backend.(fullNodeBackend); ok {
-		sync := fullBackend.SyncProgress()
-		syncing = !sync.Done()
+	sync := s.backend.SyncProgress()
+	syncing := !sync.Done()
 
-		price, _ := fullBackend.SuggestGasTipCap(context.Background())
-		gasprice = int(price.Uint64())
-		if basefee := fullBackend.CurrentHeader().BaseFee; basefee != nil {
-			gasprice += int(basefee.Uint64())
-		}
-	} else {
-		sync := s.backend.SyncProgress()
-		syncing = !sync.Done()
+	price, _ := s.backend.SuggestGasTipCap(context.Background())
+	gasprice := int(price.Uint64())
+	if basefee := s.backend.CurrentHeader().BaseFee; basefee != nil {
+		gasprice += int(basefee.Uint64())
 	}
+
 	// Assemble the node stats and send it to the server
 	log.Trace("Sending node details to qrlstats")
 
