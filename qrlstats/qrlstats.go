@@ -74,7 +74,7 @@ type backend interface {
 type fullNodeBackend interface {
 	backend
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
-	CurrentBlock() *types.Block
+	CurrentBlock() *types.Header
 	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
 }
 
@@ -218,7 +218,7 @@ func (s *Service) loop(chainHeadCh chan core.ChainHeadEvent, txEventCh chan core
 	// Start a goroutine that exhausts the subscriptions to avoid events piling up
 	var (
 		quitCh = make(chan struct{})
-		headCh = make(chan *types.Block, 1)
+		headCh = make(chan *types.Header, 1)
 		txCh   = make(chan struct{}, 1)
 	)
 	go func() {
@@ -230,7 +230,7 @@ func (s *Service) loop(chainHeadCh chan core.ChainHeadEvent, txEventCh chan core
 			// Notify of chain head events, but drop if too frequent
 			case head := <-chainHeadCh:
 				select {
-				case headCh <- head.Block:
+				case headCh <- head.Block.Header():
 				default:
 				}
 
@@ -587,9 +587,9 @@ type txStats struct {
 }
 
 // reportBlock retrieves the current chain head and reports it to the stats server.
-func (s *Service) reportBlock(conn *connWrapper, block *types.Block) error {
+func (s *Service) reportBlock(conn *connWrapper, header *types.Header) error {
 	// Gather the block details from the header or block chain
-	details := s.assembleBlockStats(block)
+	details := s.assembleBlockStats(header)
 
 	// Short circuit if the block detail is not available.
 	if details == nil {
@@ -610,30 +610,30 @@ func (s *Service) reportBlock(conn *connWrapper, block *types.Block) error {
 
 // assembleBlockStats retrieves any required metadata to report a single block
 // and assembles the block stats. If block is nil, the current head is processed.
-func (s *Service) assembleBlockStats(block *types.Block) *blockStats {
+func (s *Service) assembleBlockStats(header *types.Header) *blockStats {
 	// Gather the block infos from the local blockchain
 	var (
-		header *types.Header
-		txs    []txStats
+		txs []txStats
 	)
 
 	// check if backend is a full node
 	fullBackend, ok := s.backend.(fullNodeBackend)
 	if ok {
-		if block == nil {
-			block = fullBackend.CurrentBlock()
+		// Retrieve current chain head if no block is given.
+		if header == nil {
+			header = fullBackend.CurrentBlock()
 		}
-		header = block.Header()
-
+		block, _ := fullBackend.BlockByNumber(context.Background(), rpc.BlockNumber(header.Number.Uint64()))
+		if block == nil {
+			return nil
+		}
 		txs = make([]txStats, len(block.Transactions()))
 		for i, tx := range block.Transactions() {
 			txs[i].Hash = tx.Hash()
 		}
 	} else {
 		// Light nodes would need on-demand lookups for transactions, skip
-		if block != nil {
-			header = block.Header()
-		} else {
+		if header == nil {
 			header = s.backend.CurrentHeader()
 		}
 		txs = []txStats{}
@@ -674,19 +674,10 @@ func (s *Service) reportHistory(conn *connWrapper, list []uint64) error {
 	// Gather the batch of blocks to report
 	history := make([]*blockStats, len(indexes))
 	for i, number := range indexes {
-		fullBackend, ok := s.backend.(fullNodeBackend)
 		// Retrieve the next block if it's known to us
-		var block *types.Block
-		if ok {
-			block, _ = fullBackend.BlockByNumber(context.Background(), rpc.BlockNumber(number)) // TODO ignore error here ?
-		} else {
-			if header, _ := s.backend.HeaderByNumber(context.Background(), rpc.BlockNumber(number)); header != nil {
-				block = types.NewBlockWithHeader(header)
-			}
-		}
-		// If we do have the block, add to the history and continue
-		if block != nil {
-			history[len(history)-1-i] = s.assembleBlockStats(block)
+		header, _ := s.backend.HeaderByNumber(context.Background(), rpc.BlockNumber(number))
+		if header != nil {
+			history[len(history)-1-i] = s.assembleBlockStats(header)
 			continue
 		}
 		// Ran out of blocks, cut the report short and send
@@ -752,8 +743,7 @@ func (s *Service) reportStats(conn *connWrapper) error {
 		gasprice int
 	)
 	// check if backend is a full node
-	fullBackend, ok := s.backend.(fullNodeBackend)
-	if ok {
+	if fullBackend, ok := s.backend.(fullNodeBackend); ok {
 		sync := fullBackend.SyncProgress()
 		syncing = fullBackend.CurrentHeader().Number.Uint64() >= sync.HighestBlock
 
