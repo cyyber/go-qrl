@@ -17,7 +17,6 @@
 package core
 
 import (
-	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core/types"
 )
 
@@ -28,9 +27,9 @@ type NewTxsEvent struct{ Txs []*types.Transaction }
 type RemovedLogsEvent struct{ Logs []*types.Log }
 
 type ChainEvent struct {
-	Block *types.Block
-	Hash  common.Hash
-	Logs  []*types.Log
+	Header *types.Header
 }
 
-type ChainHeadEvent struct{ Block *types.Block }
+type ChainHeadEvent struct {
+	Header *types.Header
+}

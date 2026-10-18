@@ -122,16 +122,16 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 	timer := time.NewTimer(12 * time.Second)
 	for {
 		select {
-		case evt := <-chainHeadCh:
-			for _, includedTx := range evt.Block.Transactions() {
+		case ev := <-chainHeadCh:
+			block := qrlService.BlockChain().GetBlock(ev.Header.Hash(), ev.Header.Number.Uint64())
+			for _, includedTx := range block.Transactions() {
 				includedTxs[includedTx.Hash()] = struct{}{}
 			}
-			for _, includedWithdrawal := range evt.Block.Withdrawals() {
+			for _, includedWithdrawal := range block.Withdrawals() {
 				includedWithdrawals = append(includedWithdrawals, includedWithdrawal.Index)
 			}
-
 			// ensure all withdrawals/txs included. this will take two blocks b/c number of withdrawals > 10
-			if len(includedTxs) == len(txs) && len(includedWithdrawals) == len(withdrawals) && evt.Block.Number().Cmp(big.NewInt(2)) == 0 {
+			if len(includedTxs) == len(txs) && len(includedWithdrawals) == len(withdrawals) && ev.Header.Number.Cmp(big.NewInt(2)) == 0 {
 				return
 			}
 		case <-timer.C:

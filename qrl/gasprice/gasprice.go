@@ -122,10 +122,10 @@ func NewOracle(backend OracleBackend, params Config) *Oracle {
 	go func() {
 		var lastHead common.Hash
 		for ev := range headEvent {
-			if ev.Block.ParentHash() != lastHead {
+			if ev.Header.ParentHash != lastHead {
 				cache.Purge()
 			}
-			lastHead = ev.Block.Hash()
+			lastHead = ev.Header.Hash()
 		}
 	}()
 
