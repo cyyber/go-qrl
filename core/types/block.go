@@ -48,7 +48,7 @@ type Header struct {
 	Extra           []byte         `json:"extraData"        gencodec:"required"`
 	Random          common.Hash    `json:"prevRandao"       gencodec:"required"`
 	BaseFee         *big.Int       `json:"baseFeePerGas"    gencodec:"required"`
-	WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"  gencodec:"required"`
+	WithdrawalsHash common.Hash    `json:"withdrawalsRoot"  gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -102,10 +102,7 @@ func (h *Header) SanityCheck() error {
 // EmptyBody returns true if there is no additional 'body' to complete the header
 // that is: no transactions and no withdrawals.
 func (h *Header) EmptyBody() bool {
-	var (
-		emptyWithdrawals = h.WithdrawalsHash == nil || *h.WithdrawalsHash == EmptyWithdrawalsHash
-	)
-	return h.TxHash == EmptyTxsHash && emptyWithdrawals
+	return h.TxHash == EmptyTxsHash && h.WithdrawalsHash == EmptyWithdrawalsHash
 }
 
 // EmptyReceipts returns true if there are no receipts for this header/block.
@@ -185,14 +182,11 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 		b.header.Bloom = CreateBloom(receipts)
 	}
 
-	if withdrawals == nil {
-		b.header.WithdrawalsHash = nil
-	} else if len(withdrawals) == 0 {
-		b.header.WithdrawalsHash = &EmptyWithdrawalsHash
+	if len(withdrawals) == 0 {
+		b.header.WithdrawalsHash = EmptyWithdrawalsHash
 		b.withdrawals = Withdrawals{}
 	} else {
-		hash := DeriveSha(Withdrawals(withdrawals), hasher)
-		b.header.WithdrawalsHash = &hash
+		b.header.WithdrawalsHash = DeriveSha(Withdrawals(withdrawals), hasher)
 		b.withdrawals = slices.Clone(withdrawals)
 	}
 
@@ -211,10 +205,6 @@ func CopyHeader(h *Header) *Header {
 	if len(h.Extra) > 0 {
 		cpy.Extra = make([]byte, len(h.Extra))
 		copy(cpy.Extra, h.Extra)
-	}
-	if h.WithdrawalsHash != nil {
-		cpy.WithdrawalsHash = new(common.Hash)
-		*cpy.WithdrawalsHash = *h.WithdrawalsHash
 	}
 	return &cpy
 }

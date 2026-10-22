@@ -150,9 +150,7 @@ func decodeTransactions(enc [][]byte) ([]*types.Transaction, error) {
 //
 //	len(extraData) <= 32
 //
-// and that the blockhash of the constructed block matches the parameters. Nil
-// Withdrawals value will propagate through the returned block. Empty
-// Withdrawals value must be passed via non-nil, length 0 value in data.
+// and that the blockhash of the constructed block matches the parameters.
 func ExecutableDataToBlock(data ExecutableData) (*types.Block, error) {
 	block, err := ExecutableDataToBlockNoHash(data)
 	if err != nil {
@@ -182,14 +180,7 @@ func ExecutableDataToBlockNoHash(data ExecutableData) (*types.Block, error) {
 	if data.BaseFeePerGas != nil && (data.BaseFeePerGas.Sign() == -1 || data.BaseFeePerGas.BitLen() > 256) {
 		return nil, fmt.Errorf("invalid baseFeePerGas: %v", data.BaseFeePerGas)
 	}
-	// Only set withdrawalsRoot if it is non-nil. This allows CLs to use
-	// ExecutableData before withdrawals are enabled by marshaling
-	// Withdrawals as the json null value.
-	var withdrawalsRoot *common.Hash
-	if data.Withdrawals != nil {
-		h := types.DeriveSha(types.Withdrawals(data.Withdrawals), trie.NewStackTrie(nil))
-		withdrawalsRoot = &h
-	}
+	withdrawalsRoot := types.DeriveSha(types.Withdrawals(data.Withdrawals), trie.NewStackTrie(nil))
 	header := &types.Header{
 		ParentHash:      data.ParentHash,
 		Coinbase:        data.FeeRecipient,

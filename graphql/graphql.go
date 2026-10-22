@@ -861,7 +861,7 @@ func (b *Block) WithdrawalsRoot(ctx context.Context) (common.Hash, error) {
 	if err != nil {
 		return common.Hash{}, err
 	}
-	return *header.WithdrawalsHash, nil
+	return header.WithdrawalsHash, nil
 }
 
 func (b *Block) Withdrawals(ctx context.Context) (*[]*Withdrawal, error) {

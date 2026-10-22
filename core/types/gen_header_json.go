@@ -29,7 +29,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		Extra           hexutil.Bytes  `json:"extraData"        gencodec:"required"`
 		Random          common.Hash    `json:"prevRandao"       gencodec:"required"`
 		BaseFee         *hexutil.Big   `json:"baseFeePerGas"    gencodec:"required"`
-		WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"  gencodec:"required"`
+		WithdrawalsHash common.Hash    `json:"withdrawalsRoot"  gencodec:"required"`
 		Hash            common.Hash    `json:"hash"`
 	}
 	var enc Header
@@ -127,6 +127,6 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	if dec.WithdrawalsHash == nil {
 		return errors.New("missing required field 'withdrawalsRoot' for Header")
 	}
-	h.WithdrawalsHash = dec.WithdrawalsHash
+	h.WithdrawalsHash = *dec.WithdrawalsHash
 	return nil
 }

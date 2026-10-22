@@ -128,7 +128,7 @@ func roundTripBlockEncoding(t *testing.T, makeTx func(Signer, wallet.Wallet) *Tr
 		Time:            9150,
 		Extra:           []byte{},
 		BaseFee:         big.NewInt(0),
-		WithdrawalsHash: &EmptyWithdrawalsHash,
+		WithdrawalsHash: EmptyWithdrawalsHash,
 	}
 
 	// Pass an empty Withdrawals slice (not nil) so NewBlock keeps
@@ -335,7 +335,7 @@ func TestMaxBlockSize(t *testing.T) {
 	}
 	// Block layout widened for 64-byte addresses (Coinbase, tx To fields,
 	// bloom topic words). Re-run the test and print if that ever changes again.
-	const expectedBlockSize = uint64(6967857)
+	const expectedBlockSize = uint64(6967889)
 	if blockSize != expectedBlockSize {
 		t.Errorf("block size mismatch: got %d, want %d", blockSize, expectedBlockSize)
 	}
