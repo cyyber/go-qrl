@@ -127,17 +127,13 @@ func TestMessages(t *testing.T) {
 
 		err error
 	)
-	// Fill WithdrawalsHash with a concrete value so the RLP-generated
-	// encoder emits every optional trailing field and the round-trip
-	// decoder sees the same number of elements it expects.
-	withdrawalsHash := types.EmptyWithdrawalsHash
 	header = &types.Header{
 		Number:          big.NewInt(3333),
 		GasLimit:        4444,
 		GasUsed:         5555,
 		Time:            6666,
 		Extra:           []byte{0x77, 0x88},
-		WithdrawalsHash: &withdrawalsHash,
+		WithdrawalsHash: types.EmptyWithdrawalsHash,
 	}
 	{
 		genWallet := testutil.LoadAccount(t, "alice").DeterministicWallet(t)
