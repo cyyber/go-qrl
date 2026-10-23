@@ -52,37 +52,35 @@ type ExecutionResult struct {
 	Receipts        types.Receipts        `json:"receipts"`
 	Rejected        []*rejectedTx         `json:"rejected,omitempty"`
 	GasUsed         math.HexOrDecimal64   `json:"gasUsed"`
-	BaseFee         *math.HexOrDecimal256 `json:"currentBaseFee,omitempty"`
-	WithdrawalsRoot *common.Hash          `json:"withdrawalsRoot,omitempty"`
+	BaseFee         *math.HexOrDecimal256 `json:"currentBaseFee"`
+	WithdrawalsRoot common.Hash           `json:"withdrawalsRoot"`
 }
 
 //go:generate go run github.com/fjl/gencodec -type stEnv -field-override stEnvMarshaling -out gen_stenv.go
 type stEnv struct {
-	Coinbase        common.Address                      `json:"currentCoinbase"   gencodec:"required"`
-	Random          *big.Int                            `json:"currentRandom"`
-	ParentBaseFee   *big.Int                            `json:"parentBaseFee,omitempty"`
-	ParentGasUsed   uint64                              `json:"parentGasUsed,omitempty"`
-	ParentGasLimit  uint64                              `json:"parentGasLimit,omitempty"`
-	GasLimit        uint64                              `json:"currentGasLimit"   gencodec:"required"`
-	Number          uint64                              `json:"currentNumber"     gencodec:"required"`
-	Timestamp       uint64                              `json:"currentTimestamp"  gencodec:"required"`
-	ParentTimestamp uint64                              `json:"parentTimestamp,omitempty"`
-	BlockHashes     map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
-	Withdrawals     []*types.Withdrawal                 `json:"withdrawals,omitempty"`
-	BaseFee         *big.Int                            `json:"currentBaseFee,omitempty"`
+	Coinbase       common.Address                      `json:"currentCoinbase"   gencodec:"required"`
+	Random         *big.Int                            `json:"currentRandom"`
+	ParentBaseFee  *big.Int                            `json:"parentBaseFee,omitempty"`
+	ParentGasUsed  uint64                              `json:"parentGasUsed,omitempty"`
+	ParentGasLimit uint64                              `json:"parentGasLimit,omitempty"`
+	GasLimit       uint64                              `json:"currentGasLimit"   gencodec:"required"`
+	Number         uint64                              `json:"currentNumber"     gencodec:"required"`
+	Timestamp      uint64                              `json:"currentTimestamp"  gencodec:"required"`
+	BlockHashes    map[math.HexOrDecimal64]common.Hash `json:"blockHashes,omitempty"`
+	Withdrawals    []*types.Withdrawal                 `json:"withdrawals,omitempty"`
+	BaseFee        *big.Int                            `json:"currentBaseFee,omitempty"`
 }
 
 type stEnvMarshaling struct {
-	Coinbase        common.Address
-	Random          *math.HexOrDecimal256
-	ParentBaseFee   *math.HexOrDecimal256
-	ParentGasUsed   math.HexOrDecimal64
-	ParentGasLimit  math.HexOrDecimal64
-	GasLimit        math.HexOrDecimal64
-	Number          math.HexOrDecimal64
-	Timestamp       math.HexOrDecimal64
-	ParentTimestamp math.HexOrDecimal64
-	BaseFee         *math.HexOrDecimal256
+	Coinbase       common.Address
+	Random         *math.HexOrDecimal256
+	ParentBaseFee  *math.HexOrDecimal256
+	ParentGasUsed  math.HexOrDecimal64
+	ParentGasLimit math.HexOrDecimal64
+	GasLimit       math.HexOrDecimal64
+	Number         math.HexOrDecimal64
+	Timestamp      math.HexOrDecimal64
+	BaseFee        *math.HexOrDecimal256
 }
 
 type rejectedTx struct {
@@ -120,6 +118,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 		txIndex     = 0
 	)
 	gaspool.AddGas(pre.Env.GasLimit)
+	random := common.BigToHash(pre.Env.Random)
 	vmContext := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
@@ -128,15 +127,8 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 		Time:        pre.Env.Timestamp,
 		GasLimit:    pre.Env.GasLimit,
 		GetHash:     getHash,
-	}
-	// If currentBaseFee is defined, add it to the vmContext.
-	if pre.Env.BaseFee != nil {
-		vmContext.BaseFee = new(big.Int).Set(pre.Env.BaseFee)
-	}
-	// If random is defined, add it to the vmContext.
-	if pre.Env.Random != nil {
-		rnd := common.BigToHash(pre.Env.Random)
-		vmContext.Random = &rnd
+		BaseFee:     new(big.Int).Set(pre.Env.BaseFee),
+		Random:      &random,
 	}
 
 	for i, tx := range txs {
@@ -189,6 +181,8 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 			}
 			receipt.TxHash = tx.Hash()
 			receipt.GasUsed = msgResult.UsedGas
+			// The message gas price is min(tip + baseFee, feeCap).
+			receipt.EffectiveGasPrice = new(big.Int).Set(msg.GasPrice)
 
 			// If the transaction created a contract, store the creation address in the receipt.
 			if msg.To == nil {
@@ -230,10 +224,8 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 		GasUsed:     (math.HexOrDecimal64)(gasUsed),
 		BaseFee:     (*math.HexOrDecimal256)(vmContext.BaseFee),
 	}
-	if pre.Env.Withdrawals != nil {
-		h := types.DeriveSha(types.Withdrawals(pre.Env.Withdrawals), trie.NewStackTrie(nil))
-		execRs.WithdrawalsRoot = &h
-	}
+	withdrawalsRoot := types.DeriveSha(types.Withdrawals(pre.Env.Withdrawals), trie.NewStackTrie(nil))
+	execRs.WithdrawalsRoot = withdrawalsRoot
 	// Re-create statedb instance with new root upon the updated database
 	// for accessing latest states.
 	statedb, err = state.New(root, statedb.Database(), nil)

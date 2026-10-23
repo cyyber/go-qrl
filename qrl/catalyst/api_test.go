@@ -195,6 +195,34 @@ func TestPrepareAndGetPayload(t *testing.T) {
 	}
 }
 
+// Tests that payload attributes without withdrawals decode and are then rejected
+// by ForkchoiceUpdatedV2 as invalid payload attributes (-38003).
+func TestForkchoiceUpdatedV2MissingWithdrawals(t *testing.T) {
+	genesis, blocks := generateChain(10)
+	n, qrlservice := startQRLService(t, genesis, blocks)
+	defer n.Close()
+
+	api := NewConsensusAPI(qrlservice)
+
+	var attrs engine.PayloadAttributes
+	input := fmt.Sprintf(`{"timestamp":"%#x","prevRandao":"%s","suggestedFeeRecipient":"%s"}`,
+		blocks[9].Time()+5, common.Hash{}.Hex(), common.Address{}.Hex())
+	if err := attrs.UnmarshalJSON([]byte(input)); err != nil {
+		t.Fatalf("failed to decode payload attributes without withdrawals: %v", err)
+	}
+	fcState := engine.ForkchoiceStateV1{HeadBlockHash: blocks[9].Hash()}
+	resp, err := api.ForkchoiceUpdatedV2(fcState, &attrs)
+	if err == nil {
+		t.Fatal("expected an error for missing withdrawals")
+	}
+	if rpcErr, ok := err.(rpc.Error); !ok || rpcErr.ErrorCode() != engine.InvalidPayloadAttributes.ErrorCode() {
+		t.Fatalf("wrong error: have %v, want code %d", err, engine.InvalidPayloadAttributes.ErrorCode())
+	}
+	if resp.PayloadStatus.Status != engine.INVALID {
+		t.Fatalf("wrong status: have %s, want %s", resp.PayloadStatus.Status, engine.INVALID)
+	}
+}
+
 func checkLogEvents(t *testing.T, logsCh <-chan []*types.Log, rmLogsCh <-chan core.RemovedLogsEvent, wantNew, wantRemoved int) {
 	t.Helper()
 
@@ -721,7 +749,7 @@ func setBlockhash(data *engine.ExecutableData) *engine.ExecutableData {
 		BaseFee:         data.BaseFeePerGas,
 		Extra:           data.ExtraData,
 		Random:          data.Random,
-		WithdrawalsHash: &types.EmptyWithdrawalsHash,
+		WithdrawalsHash: types.EmptyWithdrawalsHash,
 	}
 	block := types.NewBlockWithHeader(header).WithBody(types.Body{Transactions: txs})
 	data.BlockHash = block.Hash()
