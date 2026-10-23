@@ -266,23 +266,6 @@ func (t *Transaction) Gas(ctx context.Context) hexutil.Uint64 {
 	return hexutil.Uint64(tx.Gas())
 }
 
-func (t *Transaction) GasPrice(ctx context.Context) hexutil.Big {
-	tx, block := t.resolve(ctx)
-	if tx == nil {
-		return hexutil.Big{}
-	}
-	switch tx.Type() {
-	default:
-		if block != nil {
-			if baseFee, _ := block.BaseFeePerGas(ctx); baseFee != nil {
-				// price = min(gasTipCap + baseFee, gasFeeCap)
-				return (hexutil.Big)(*math.BigMin(new(big.Int).Add(tx.GasTipCap(), baseFee.ToInt()), tx.GasFeeCap()))
-			}
-		}
-		return hexutil.Big(*tx.GasPrice())
-	}
-}
-
 func (t *Transaction) EffectiveGasPrice(ctx context.Context) (*hexutil.Big, error) {
 	tx, block := t.resolve(ctx)
 	if tx == nil {
@@ -302,30 +285,20 @@ func (t *Transaction) EffectiveGasPrice(ctx context.Context) (*hexutil.Big, erro
 	return (*hexutil.Big)(math.BigMin(new(big.Int).Add(tx.GasTipCap(), header.BaseFee), tx.GasFeeCap())), nil
 }
 
-func (t *Transaction) MaxFeePerGas(ctx context.Context) *hexutil.Big {
+func (t *Transaction) MaxFeePerGas(ctx context.Context) hexutil.Big {
 	tx, _ := t.resolve(ctx)
 	if tx == nil {
-		return nil
+		return hexutil.Big{}
 	}
-	switch tx.Type() {
-	case types.DynamicFeeTxType:
-		return (*hexutil.Big)(tx.GasFeeCap())
-	default:
-		return nil
-	}
+	return hexutil.Big(*tx.GasFeeCap())
 }
 
-func (t *Transaction) MaxPriorityFeePerGas(ctx context.Context) *hexutil.Big {
+func (t *Transaction) MaxPriorityFeePerGas(ctx context.Context) hexutil.Big {
 	tx, _ := t.resolve(ctx)
 	if tx == nil {
-		return nil
+		return hexutil.Big{}
 	}
-	switch tx.Type() {
-	case types.DynamicFeeTxType:
-		return (*hexutil.Big)(tx.GasTipCap())
-	default:
-		return nil
-	}
+	return hexutil.Big(*tx.GasTipCap())
 }
 
 func (t *Transaction) EffectiveTip(ctx context.Context) (*hexutil.Big, error) {
@@ -506,19 +479,18 @@ func (t *Transaction) getLogs(ctx context.Context, hash common.Hash) (*[]*Log, e
 	return &ret, nil
 }
 
-func (t *Transaction) Type(ctx context.Context) *hexutil.Uint64 {
+func (t *Transaction) Type(ctx context.Context) hexutil.Uint64 {
 	tx, _ := t.resolve(ctx)
 	if tx == nil {
-		return nil
+		return 0
 	}
-	txType := hexutil.Uint64(tx.Type())
-	return &txType
+	return hexutil.Uint64(tx.Type())
 }
 
-func (t *Transaction) AccessList(ctx context.Context) *[]*AccessTuple {
+func (t *Transaction) AccessList(ctx context.Context) []*AccessTuple {
 	tx, _ := t.resolve(ctx)
 	if tx == nil {
-		return nil
+		return []*AccessTuple{}
 	}
 	accessList := tx.AccessList()
 	ret := make([]*AccessTuple, 0, len(accessList))
@@ -528,7 +500,7 @@ func (t *Transaction) AccessList(ctx context.Context) *[]*AccessTuple {
 			storageKeys: al.StorageKeys,
 		})
 	}
-	return &ret
+	return ret
 }
 func (t *Transaction) PublicKey(ctx context.Context) (hexutil.Bytes, error) {
 	tx, _ := t.resolve(ctx)
@@ -690,25 +662,22 @@ func (b *Block) GasUsed(ctx context.Context) (hexutil.Uint64, error) {
 	return hexutil.Uint64(header.GasUsed), nil
 }
 
-func (b *Block) BaseFeePerGas(ctx context.Context) (*hexutil.Big, error) {
+func (b *Block) BaseFeePerGas(ctx context.Context) (hexutil.Big, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return nil, err
+		return hexutil.Big{}, err
 	}
-	if header.BaseFee == nil {
-		return nil, nil
-	}
-	return (*hexutil.Big)(header.BaseFee), nil
+	return hexutil.Big(*header.BaseFee), nil
 }
 
-func (b *Block) NextBaseFeePerGas(ctx context.Context) (*hexutil.Big, error) {
+func (b *Block) NextBaseFeePerGas(ctx context.Context) (hexutil.Big, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return nil, err
+		return hexutil.Big{}, err
 	}
 	chaincfg := b.r.backend.ChainConfig()
 	nextBaseFee := eip1559.CalcBaseFee(chaincfg, header)
-	return (*hexutil.Big)(nextBaseFee), nil
+	return hexutil.Big(*nextBaseFee), nil
 }
 
 func (b *Block) Parent(ctx context.Context) (*Block, error) {
@@ -887,26 +856,18 @@ func (b *Block) TransactionAt(ctx context.Context, args struct{ Index Long }) (*
 	}, nil
 }
 
-func (b *Block) WithdrawalsRoot(ctx context.Context) (*common.Hash, error) {
+func (b *Block) WithdrawalsRoot(ctx context.Context) (common.Hash, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return nil, err
+		return common.Hash{}, err
 	}
-	// Pre-zond blocks
-	if header.WithdrawalsHash == nil {
-		return nil, nil
-	}
-	return header.WithdrawalsHash, nil
+	return *header.WithdrawalsHash, nil
 }
 
 func (b *Block) Withdrawals(ctx context.Context) (*[]*Withdrawal, error) {
 	block, err := b.resolve(ctx)
 	if err != nil || block == nil {
 		return nil, err
-	}
-	// Pre-zond blocks
-	if block.Header().WithdrawalsHash == nil {
-		return nil, nil
 	}
 	ret := make([]*Withdrawal, 0, len(block.Withdrawals()))
 	for _, w := range block.Withdrawals() {

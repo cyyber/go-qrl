@@ -61,7 +61,7 @@ type ExecutableData struct {
 	BaseFeePerGas *big.Int            `json:"baseFeePerGas" gencodec:"required"`
 	BlockHash     common.Hash         `json:"blockHash"     gencodec:"required"`
 	Transactions  [][]byte            `json:"transactions"  gencodec:"required"`
-	Withdrawals   []*types.Withdrawal `json:"withdrawals"`
+	Withdrawals   []*types.Withdrawal `json:"withdrawals"   gencodec:"required"`
 }
 
 // JSON type overrides for executableData.

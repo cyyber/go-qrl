@@ -46,9 +46,9 @@ type Header struct {
 	GasUsed         uint64         `json:"gasUsed"          gencodec:"required"`
 	Time            uint64         `json:"timestamp"        gencodec:"required"`
 	Extra           []byte         `json:"extraData"        gencodec:"required"`
-	Random          common.Hash    `json:"prevRandao"`
-	BaseFee         *big.Int       `json:"baseFeePerGas"`
-	WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"`
+	Random          common.Hash    `json:"prevRandao"       gencodec:"required"`
+	BaseFee         *big.Int       `json:"baseFeePerGas"    gencodec:"required"`
+	WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"  gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -117,7 +117,7 @@ func (h *Header) EmptyReceipts() bool {
 // a block's data contents (transactions) together.
 type Body struct {
 	Transactions []*Transaction
-	Withdrawals  []*Withdrawal `rlp:"optional"`
+	Withdrawals  []*Withdrawal
 }
 
 // Block represents a QRL block.
@@ -151,7 +151,7 @@ type Block struct {
 type extblock struct {
 	Header      *Header
 	Txs         []*Transaction
-	Withdrawals []*Withdrawal `rlp:"optional"`
+	Withdrawals []*Withdrawal
 }
 
 // NewBlock creates a new block. The input data is copied, changes to header and to the

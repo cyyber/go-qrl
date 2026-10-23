@@ -121,7 +121,7 @@ func (qc *Client) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumb
 type rpcBlock struct {
 	Hash         common.Hash         `json:"hash"`
 	Transactions []rpcTransaction    `json:"transactions"`
-	Withdrawals  []*types.Withdrawal `json:"withdrawals,omitempty"`
+	Withdrawals  []*types.Withdrawal `json:"withdrawals"`
 }
 
 func (qc *Client) getBlock(ctx context.Context, method string, args ...any) (*types.Block, error) {
