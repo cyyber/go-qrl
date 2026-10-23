@@ -53,7 +53,7 @@ type ExecutionResult struct {
 	Rejected        []*rejectedTx         `json:"rejected,omitempty"`
 	GasUsed         math.HexOrDecimal64   `json:"gasUsed"`
 	BaseFee         *math.HexOrDecimal256 `json:"currentBaseFee"`
-	WithdrawalsRoot *common.Hash          `json:"withdrawalsRoot"`
+	WithdrawalsRoot common.Hash           `json:"withdrawalsRoot"`
 }
 
 //go:generate go run github.com/fjl/gencodec -type stEnv -field-override stEnvMarshaling -out gen_stenv.go
@@ -225,7 +225,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 		BaseFee:     (*math.HexOrDecimal256)(vmContext.BaseFee),
 	}
 	withdrawalsRoot := types.DeriveSha(types.Withdrawals(pre.Env.Withdrawals), trie.NewStackTrie(nil))
-	execRs.WithdrawalsRoot = &withdrawalsRoot
+	execRs.WithdrawalsRoot = withdrawalsRoot
 	// Re-create statedb instance with new root upon the updated database
 	// for accessing latest states.
 	statedb, err = state.New(root, statedb.Database(), nil)
