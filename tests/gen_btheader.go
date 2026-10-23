@@ -31,7 +31,7 @@ func (b btHeader) MarshalJSON() ([]byte, error) {
 		GasUsed          math.HexOrDecimal64
 		Timestamp        math.HexOrDecimal64
 		BaseFeePerGas    *math.HexOrDecimal256
-		WithdrawalsRoot  *common.Hash
+		WithdrawalsRoot  common.Hash
 	}
 	var enc btHeader
 	enc.Bloom = b.Bloom
@@ -118,7 +118,7 @@ func (b *btHeader) UnmarshalJSON(input []byte) error {
 		b.BaseFeePerGas = (*big.Int)(dec.BaseFeePerGas)
 	}
 	if dec.WithdrawalsRoot != nil {
-		b.WithdrawalsRoot = dec.WithdrawalsRoot
+		b.WithdrawalsRoot = *dec.WithdrawalsRoot
 	}
 	return nil
 }
