@@ -937,12 +937,10 @@ func RPCMarshalHeader(head *types.Header) map[string]any {
 		"timestamp":        hexutil.Uint64(head.Time),
 		"transactionsRoot": head.TxHash,
 		"receiptsRoot":     head.ReceiptHash,
+		"withdrawalsRoot":  head.WithdrawalsHash,
 	}
 	if head.BaseFee != nil {
 		result["baseFeePerGas"] = (*hexutil.Big)(head.BaseFee)
-	}
-	if head.WithdrawalsHash != nil {
-		result["withdrawalsRoot"] = head.WithdrawalsHash
 	}
 	return result
 }
@@ -970,9 +968,7 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool, config *param
 		}
 		fields["transactions"] = transactions
 	}
-	if block.Header().WithdrawalsHash != nil {
-		fields["withdrawals"] = block.Withdrawals()
-	}
+	fields["withdrawals"] = block.Withdrawals()
 	return fields
 }
 
@@ -997,8 +993,8 @@ type RPCTransaction struct {
 	// NOTE(rgeraldes24): keeping GasPrice for now because it provides
 	// the effective gas price if the transaction has been included
 	GasPrice         *hexutil.Big      `json:"gasPrice"`
-	GasFeeCap        *hexutil.Big      `json:"maxFeePerGas,omitempty"`
-	GasTipCap        *hexutil.Big      `json:"maxPriorityFeePerGas,omitempty"`
+	GasFeeCap        *hexutil.Big      `json:"maxFeePerGas"`
+	GasTipCap        *hexutil.Big      `json:"maxPriorityFeePerGas"`
 	Hash             common.Hash       `json:"hash"`
 	Input            hexutil.Bytes     `json:"input"`
 	Nonce            hexutil.Uint64    `json:"nonce"`
@@ -1006,8 +1002,8 @@ type RPCTransaction struct {
 	TransactionIndex *hexutil.Uint64   `json:"transactionIndex"`
 	Value            *hexutil.Big      `json:"value"`
 	Type             hexutil.Uint64    `json:"type"`
-	Accesses         *types.AccessList `json:"accessList,omitempty"`
-	ChainID          *hexutil.Big      `json:"chainId,omitempty"`
+	Accesses         *types.AccessList `json:"accessList"`
+	ChainID          *hexutil.Big      `json:"chainId"`
 	Descriptor       hexutil.Bytes     `json:"descriptor"`
 	ExtraParams      hexutil.Bytes     `json:"extraParams"`
 	PublicKey        hexutil.Bytes     `json:"publicKey"`
