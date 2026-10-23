@@ -154,9 +154,9 @@ type extblock struct {
 // NewBlock creates a new block. The input data is copied, changes to header and to the
 // field values will not affect the block.
 //
-// The values of TxHash, ReceiptHash and Bloom in header
-// are ignored and set to values derived from the given txs
-// and receipts.
+// The values of TxHash, ReceiptHash, Bloom and WithdrawalsHash in header
+// are ignored and set to values derived from the given txs, receipts and
+// withdrawals.
 func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher) *Block {
 	if body == nil {
 		body = &Body{}
@@ -184,7 +184,6 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 
 	if len(withdrawals) == 0 {
 		b.header.WithdrawalsHash = EmptyWithdrawalsHash
-		b.withdrawals = Withdrawals{}
 	} else {
 		b.header.WithdrawalsHash = DeriveSha(Withdrawals(withdrawals), hasher)
 		b.withdrawals = slices.Clone(withdrawals)
@@ -305,11 +304,11 @@ func (c *writeCounter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// NewBlockWithHeader creates a block with the given header data. The
-// header data is copied, changes to header and to the field values
-// will not affect the block.
+// NewBlockWithHeader creates a block with the given header data, no
+// transactions and an empty withdrawals list. The header data is copied,
+// changes to header and to the field values will not affect the block.
 func NewBlockWithHeader(header *Header) *Block {
-	return &Block{header: CopyHeader(header)}
+	return &Block{header: CopyHeader(header), withdrawals: Withdrawals{}}
 }
 
 // WithBody returns a new block with the original header and a deep copy of the
@@ -319,6 +318,10 @@ func (b *Block) WithBody(body Body) *Block {
 		header:       b.header,
 		transactions: slices.Clone(body.Transactions),
 		withdrawals:  slices.Clone(body.Withdrawals),
+	}
+	// A block always has a withdrawals list, even an empty one.
+	if block.withdrawals == nil {
+		block.withdrawals = Withdrawals{}
 	}
 	return block
 }
