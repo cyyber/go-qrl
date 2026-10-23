@@ -85,11 +85,23 @@ func (qc *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Blo
 	return qc.getBlock(ctx, "qrl_getBlockByHash", hash, true)
 }
 
-// BlockByNumber returns a block from the current canonical chain. If number is nil, the
-// latest known block is returned.
+// BlockByNumber returns a block from the current canonical chain.
+// If `number` is nil, the latest known block is returned.
 //
-// Note that loading full blocks requires two requests. Use HeaderByNumber
-// if you don't need all transactions.
+// Use `HeaderByNumber` if you don't need full transaction data.
+//
+// Supported special block number tags:
+// - `earliest`  : The genesis (earliest) block
+// - `latest`    : The most recently included block
+// - `safe`      : The latest safe head block
+// - `finalized` : The latest finalized block
+// - `pending`   : The pending block
+//
+// Example usage:
+//
+// ```go
+// BlockByNumber(context.Background(), big.NewInt(int64(rpc.LatestBlockNumber)))
+// ```
 func (qc *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	return qc.getBlock(ctx, "qrl_getBlockByNumber", toBlockNumArg(number), true)
 }
@@ -108,7 +120,7 @@ func (qc *Client) PeerCount(ctx context.Context) (uint64, error) {
 	return uint64(result), err
 }
 
-// BlockReceipts returns the receipts of a given block number or hash
+// BlockReceipts returns the receipts of a given block number or hash.
 func (qc *Client) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*types.Receipt, error) {
 	var r []*types.Receipt
 	err := qc.c.CallContext(ctx, &r, "qrl_getBlockReceipts", blockNrOrHash)
@@ -182,8 +194,21 @@ func (qc *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.He
 	return head, err
 }
 
-// HeaderByNumber returns a block header from the current canonical chain. If number is
-// nil, the latest known header is returned.
+// HeaderByNumber returns a block header from the current canonical chain.
+// If `number` is nil, the latest known block header is returned.
+//
+// Supported special block number tags:
+// - `earliest`  : The genesis (earliest) block
+// - `latest`    : The most recently included block
+// - `safe`      : The latest safe head block
+// - `finalized` : The latest finalized block
+// - `pending`   : The pending block
+//
+// Example usage:
+//
+// ```go
+// HeaderByNumber(context.Background(), big.NewInt(int64(rpc.LatestBlockNumber)))
+// ```
 func (qc *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
 	var head *types.Header
 	err := qc.c.CallContext(ctx, &head, "qrl_getBlockByNumber", toBlockNumArg(number), false)
@@ -257,9 +282,15 @@ func (qc *Client) TransactionSender(ctx context.Context, tx *types.Transaction, 
 
 // TransactionCount returns the total number of transactions in the given block.
 func (qc *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
-	var num hexutil.Uint
+	var num *hexutil.Uint
 	err := qc.c.CallContext(ctx, &num, "qrl_getBlockTransactionCountByHash", blockHash)
-	return uint(num), err
+	if err != nil {
+		return 0, err
+	}
+	if num == nil {
+		return 0, qrl.NotFound
+	}
+	return uint(*num), err
 }
 
 // TransactionInBlock returns a single transaction at index in the given block.
@@ -553,9 +584,13 @@ func (qc *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *
 }
 
 // EstimateGas tries to estimate the gas needed to execute a specific transaction based on
-// the current pending state of the backend blockchain. There is no guarantee that this is
-// the true gas limit requirement as other transactions may be added or removed by miners,
-// but it should provide a basis for setting a reasonable default.
+// the current state of the backend blockchain. There is no guarantee that this is the
+// true gas limit requirement as other transactions may be added or removed by miners, but
+// it should provide a basis for setting a reasonable default.
+//
+// Note that the state used by this method is implementation-defined by the remote RPC
+// server, but it's reasonable to assume that it will either be the pending or latest
+// state.
 func (qc *Client) EstimateGas(ctx context.Context, msg qrl.CallMsg) (uint64, error) {
 	var hex hexutil.Uint64
 	err := qc.c.CallContext(ctx, &hex, "qrl_estimateGas", toCallArg(msg))
