@@ -127,7 +127,7 @@ func (s *QRLAPI) Syncing() (any, error) {
 	progress := s.b.SyncProgress()
 
 	// Return not syncing if the synchronisation already completed
-	if progress.CurrentBlock >= progress.HighestBlock {
+	if progress.Done() {
 		return false, nil
 	}
 	// Otherwise gather the block sync stats
