@@ -18,7 +18,6 @@
 package types
 
 import (
-	"fmt"
 	"io"
 	"math/big"
 	"reflect"
@@ -78,25 +77,6 @@ func (h *Header) Size() common.StorageSize {
 		baseFeeBits = h.BaseFee.BitLen()
 	}
 	return headerSize + common.StorageSize(len(h.Extra)+(h.Number.BitLen()+baseFeeBits)/8)
-}
-
-// SanityCheck checks a few basic things -- these checks are way beyond what
-// any 'sane' production values should hold, and can mainly be used to prevent
-// that the unbounded fields are stuffed with junk data to add processing
-// overhead
-func (h *Header) SanityCheck() error {
-	if h.Number != nil && !h.Number.IsUint64() {
-		return fmt.Errorf("too large block number: bitlen %d", h.Number.BitLen())
-	}
-	if eLen := len(h.Extra); eLen > 100*1024 {
-		return fmt.Errorf("too large block extradata: size %d", eLen)
-	}
-	if h.BaseFee != nil {
-		if bfLen := h.BaseFee.BitLen(); bfLen > 256 {
-			return fmt.Errorf("too large base fee: bitlen %d", bfLen)
-		}
-	}
-	return nil
 }
 
 // EmptyBody returns true if there is no additional 'body' to complete the header
@@ -290,12 +270,6 @@ func (b *Block) Size() uint64 {
 	rlp.Encode(&c, b)
 	b.size.Store(uint64(c))
 	return uint64(c)
-}
-
-// SanityCheck can be used to prevent that unbounded fields are
-// stuffed with junk data to add processing overhead
-func (b *Block) SanityCheck() error {
-	return b.header.SanityCheck()
 }
 
 type writeCounter uint64
