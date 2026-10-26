@@ -44,8 +44,8 @@ type header struct {
 	Time            uint64          `json:"timestamp"        gencodec:"required"`
 	Extra           []byte          `json:"extraData"`
 	Random          common.Hash     `json:"prevRandao"`
-	BaseFee         *big.Int        `json:"baseFeePerGas" rlp:"optional"`
-	WithdrawalsHash *common.Hash    `json:"withdrawalsRoot" rlp:"optional"`
+	BaseFee         *big.Int        `json:"baseFeePerGas"    gencodec:"required"`
+	WithdrawalsHash *common.Hash    `json:"withdrawalsRoot"`
 }
 
 type headerMarshaling struct {
@@ -81,7 +81,7 @@ func (i *bbInput) ToBlock() *types.Block {
 		Extra:           i.Header.Extra,
 		Random:          i.Header.Random,
 		BaseFee:         i.Header.BaseFee,
-		WithdrawalsHash: i.Header.WithdrawalsHash,
+		WithdrawalsHash: types.EmptyWithdrawalsHash,
 	}
 
 	// Fill optional values.
@@ -93,6 +93,9 @@ func (i *bbInput) ToBlock() *types.Block {
 	}
 	if i.Header.ReceiptHash != nil {
 		header.ReceiptHash = *i.Header.ReceiptHash
+	}
+	if i.Header.WithdrawalsHash != nil {
+		header.WithdrawalsHash = *i.Header.WithdrawalsHash
 	}
 	return types.NewBlockWithHeader(header).WithBody(types.Body{Transactions: i.Txs, Withdrawals: i.Withdrawals})
 }

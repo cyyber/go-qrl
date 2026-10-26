@@ -498,7 +498,7 @@ func (g *Genesis) ToBlock() *types.Block {
 	}
 	var withdrawals []*types.Withdrawal
 	if conf := g.Config; conf != nil {
-		head.WithdrawalsHash = &types.EmptyWithdrawalsHash
+		head.WithdrawalsHash = types.EmptyWithdrawalsHash
 		withdrawals = make([]*types.Withdrawal, 0)
 	}
 	return types.NewBlock(head, &types.Body{Withdrawals: withdrawals}, nil, trie.NewStackTrie(nil))
