@@ -1278,6 +1278,31 @@ func TestRPCGetTransactionReceipt(t *testing.T) {
 	}
 }
 
+// missingHeaderBackend simulates a tx lookup entry that points at a block whose
+// header is no longer available.
+type missingHeaderBackend struct {
+	*testBackend
+}
+
+func (b missingHeaderBackend) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+	return nil, nil
+}
+
+func TestRPCGetTransactionByHashMissingHeader(t *testing.T) {
+	t.Parallel()
+
+	backend, txHashes := setupReceiptBackend(t, 1)
+	api := NewTransactionAPI(missingHeaderBackend{backend}, new(AddrLocker))
+
+	tx, err := api.GetTransactionByHash(t.Context(), txHashes[0])
+	if err != nil {
+		t.Fatalf("want no error, have %v", err)
+	}
+	if tx != nil {
+		t.Fatalf("want nil transaction, have %v", tx)
+	}
+}
+
 func TestSendRawTransactionRejectsNonEmptyExtraParams(t *testing.T) {
 	t.Parallel()
 
