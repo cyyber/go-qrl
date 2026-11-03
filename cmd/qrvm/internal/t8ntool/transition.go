@@ -330,6 +330,11 @@ func applyZondChecks(env *stEnv) error {
 	if env.Withdrawals == nil {
 		return NewError(ErrorConfig, errors.New("missing 'withdrawals' in env section"))
 	}
+	for i, w := range env.Withdrawals {
+		if w == nil {
+			return NewError(ErrorConfig, fmt.Errorf("nil withdrawal at index %d in env section", i))
+		}
+	}
 	if env.Random == nil {
 		return NewError(ErrorConfig, errors.New("missing 'currentRandom' in env section"))
 	}

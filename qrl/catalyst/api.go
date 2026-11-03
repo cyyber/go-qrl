@@ -159,6 +159,13 @@ func (api *ConsensusAPI) ForkchoiceUpdatedV2(update engine.ForkchoiceStateV1, pa
 	if params != nil && params.Withdrawals == nil {
 		return engine.STATUS_INVALID, engine.InvalidPayloadAttributes.With(errors.New("missing withdrawals"))
 	}
+	if params != nil {
+		for i, w := range params.Withdrawals {
+			if w == nil {
+				return engine.STATUS_INVALID, engine.InvalidPayloadAttributes.With(fmt.Errorf("nil withdrawal at index %d", i))
+			}
+		}
+	}
 	return api.forkchoiceUpdated(update, params, false)
 }
 

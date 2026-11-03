@@ -1086,6 +1086,13 @@ func TestNilWithdrawals(t *testing.T) {
 		},
 		{
 			blockParams: engine.PayloadAttributes{
+				Timestamp:   parent.Time + 5,
+				Withdrawals: []*types.Withdrawal{nil},
+			},
+			wantErr: true,
+		},
+		{
+			blockParams: engine.PayloadAttributes{
 				Timestamp: parent.Time + 5,
 				Withdrawals: []*types.Withdrawal{
 					{
@@ -1131,6 +1138,62 @@ func TestNilWithdrawals(t *testing.T) {
 		} else if status.Status != engine.VALID {
 			t.Fatalf("invalid payload")
 		}
+	}
+}
+
+// TestNewPayloadNilWithdrawal checks that a payload whose withdrawals list
+// contains a nil element (e.g. JSON "withdrawals": [null]) is rejected as
+// invalid instead of panicking during block processing.
+func TestNewPayloadNilWithdrawal(t *testing.T) {
+	genesis, blocks := generateChain(10)
+
+	n, qrlservice := startQRLService(t, genesis, blocks)
+	defer n.Close()
+
+	api := NewConsensusAPI(qrlservice)
+	parent := qrlservice.BlockChain().CurrentHeader()
+
+	blockParams := engine.PayloadAttributes{
+		Timestamp:   parent.Time + 5,
+		Withdrawals: make([]*types.Withdrawal, 0),
+	}
+	fcState := engine.ForkchoiceStateV1{
+		HeadBlockHash: parent.Hash(),
+	}
+	if _, err := api.ForkchoiceUpdatedV2(fcState, &blockParams); err != nil {
+		t.Fatalf("error preparing payload, err=%v", err)
+	}
+
+	payloadID := (&miner.BuildPayloadArgs{
+		Parent:       fcState.HeadBlockHash,
+		Timestamp:    blockParams.Timestamp,
+		FeeRecipient: blockParams.SuggestedFeeRecipient,
+		Random:       blockParams.Random,
+		Withdrawals:  blockParams.Withdrawals,
+	}).Id()
+	execData, err := api.GetPayloadV2(payloadID)
+	if err != nil {
+		t.Fatalf("error getting payload, err=%v", err)
+	}
+
+	// Swap in a nil withdrawal and fix up the block hash so the payload
+	// passes the hash check and would otherwise reach block processing.
+	payload := *execData.ExecutionPayload
+	payload.Withdrawals = []*types.Withdrawal{nil}
+	block, err := engine.ExecutableDataToBlock(*execData.ExecutionPayload)
+	if err != nil {
+		t.Fatalf("error converting payload, err=%v", err)
+	}
+	header := block.Header()
+	header.WithdrawalsHash = types.DeriveSha(types.Withdrawals(payload.Withdrawals), trie.NewStackTrie(nil))
+	payload.BlockHash = header.Hash()
+
+	status, err := api.NewPayloadV2(payload)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status.Status != engine.INVALID {
+		t.Fatalf("unexpected status (got: %s, want: %s)", status.Status, engine.INVALID)
 	}
 }
 
