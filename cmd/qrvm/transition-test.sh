@@ -167,7 +167,7 @@ type ExecutionResult struct {
     Rejected        []*rejectedTx  `json:"rejected,omitempty"`
     GasUsed         uint64         `json:"gasUsed"`
     BaseFee         *big.Int       `json:"currentBaseFee"`
-    WithdrawalsRoot *common.Hash   `json:"withdrawalsRoot"`
+    WithdrawalsRoot common.Hash    `json:"withdrawalsRoot"`
 }
 ```
 
@@ -375,7 +375,7 @@ type Header struct {
         Extra           []byte          `json:"extraData"`
         Random          common.Hash     `json:"prevRandao"`
         BaseFee         *big.Int        `json:"baseFeePerGas"    gencodec:"required"`
-        WithdrawalsHash *common.Hash    `json:"withdrawalsRoot"  gencodec:"required"`
+        WithdrawalsHash *common.Hash    `json:"withdrawalsRoot"`
 }
 ```
 #### `txs`
