@@ -555,13 +555,9 @@ func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, txListH
 		if txListHashes[index] != header.TxHash {
 			return errInvalidBody
 		}
-		if withdrawalLists[index] == nil {
-			return errInvalidBody
-		}
 		if withdrawalListHashes[index] != header.WithdrawalsHash {
 			return errInvalidBody
 		}
-
 		return nil
 	}
 
