@@ -1290,6 +1290,10 @@ func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.H
 		if err != nil {
 			return nil, err
 		}
+		if header == nil {
+			// The lookup entry points at a block that is not available (e.g. reorged out).
+			return nil, nil
+		}
 		return newRPCTransaction(tx, blockHash, blockNumber, index, header.BaseFee, s.b.ChainConfig()), nil
 	}
 	// No finalized transaction, try to retrieve it from the pool
