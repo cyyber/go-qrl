@@ -171,6 +171,14 @@ func TestT8n(t *testing.T) {
 			output:      t8nOutput{alloc: false, result: false},
 			expExitCode: t8ntool.ErrorConfig,
 		},
+		{ // Zond env must not contain nil withdrawals
+			base: "./testdata/24",
+			input: t8nInput{
+				"alloc.json", "txs.json", "env-nilwithdrawal.json", "Zond",
+			},
+			output:      t8nOutput{alloc: false, result: false},
+			expExitCode: t8ntool.ErrorConfig,
+		},
 		{
 			base: "./testdata/25",
 			input: t8nInput{

@@ -328,6 +328,11 @@ func applyZondChecks(env *stEnv, chainConfig *params.ChainConfig) error {
 	if env.Withdrawals == nil {
 		return NewError(ErrorConfig, errors.New("zond config but missing 'withdrawals' in env section"))
 	}
+	for i, w := range env.Withdrawals {
+		if w == nil {
+			return NewError(ErrorConfig, fmt.Errorf("nil withdrawal at index %d in env section", i))
+		}
+	}
 	return nil
 }
 
