@@ -36,6 +36,7 @@ import (
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var (
@@ -427,6 +428,12 @@ func TestGetBlockBodiesMaxBlockSize1(t *testing.T) {
 }
 
 func newTestBackendMaxBlocks(blocks int, gen func(int, *core.BlockGen)) *testBackend {
+	return newTestBackendMaxBlocksWithAlloc(blocks, nil, gen)
+}
+
+// newTestBackendMaxBlocksWithAlloc is newTestBackendMaxBlocks with extra
+// genesis accounts.
+func newTestBackendMaxBlocksWithAlloc(blocks int, alloc core.GenesisAlloc, gen func(int, *core.BlockGen)) *testBackend {
 	var (
 		db                      = rawdb.NewMemoryDatabase()
 		config                  = params.MainnetChainConfig
@@ -438,6 +445,9 @@ func newTestBackendMaxBlocks(blocks int, gen func(int, *core.BlockGen)) *testBac
 		Config:   config,
 		GasLimit: params.MaxGasLimit,
 		Alloc:    core.GenesisAlloc{testAddr: {Balance: balance}},
+	}
+	for address, account := range alloc {
+		gspec.Alloc[address] = account
 	}
 	chain, _ := core.NewBlockChain(db, nil, gspec, engine, vm.Config{}, nil)
 	_, bs, _ := core.GenerateChainWithGenesis(gspec, engine, blocks, gen)
@@ -452,6 +462,15 @@ func newTestBackendMaxBlocks(blocks int, gen func(int, *core.BlockGen)) *testBac
 	pool := legacypool.New(txconfig, chain)
 	txpool, _ := txpool.New(new(big.Int).SetUint64(txconfig.PriceLimit), chain, []txpool.SubPool{pool})
 	return &testBackend{db: db, chain: chain, txpool: txpool}
+}
+
+// expectAcceptedSize fails if a peer would refuse the message: handleMessage
+// drops the peer that sends one above maxMessageSize.
+func expectAcceptedSize(t *testing.T, msg p2p.Msg) {
+	t.Helper()
+	if msg.Size > maxMessageSize {
+		t.Fatalf("message of %d bytes is above maxMessageSize (%d), the receiver would drop the peer", msg.Size, maxMessageSize)
+	}
 }
 
 func testGetBlockBodiesMaxBlockSize(t *testing.T, protocol uint) {
@@ -536,6 +555,7 @@ func testGetBlockBodiesMaxBlockSize(t *testing.T, protocol uint) {
 		if msg.Code != BlockBodiesMsg {
 			t.Fatalf("expected BlockBodiesMsg (%d), got %d", BlockBodiesMsg, msg.Code)
 		}
+		expectAcceptedSize(t, msg)
 
 		var resp BlockBodiesPacket
 		if err := msg.Decode(&resp); err != nil {
@@ -551,8 +571,8 @@ func testGetBlockBodiesMaxBlockSize(t *testing.T, protocol uint) {
 }
 
 // Tests that requesting large blocks correctly limits the response.
-// With ~6.9 MB per block, the softResponseLimit (10 MB) should cap the
-// response to fewer bodies than requested.
+// With ~6.9 MB per block, the softResponseLimit should cap the response to
+// fewer bodies than requested.
 func TestGetBlockBodiesMaxServeMaxSize1(t *testing.T) {
 	testGetBlockBodiesMaxServeMaxSize(t, QRL1)
 }
@@ -618,6 +638,7 @@ func testGetBlockBodiesMaxServeMaxSize(t *testing.T, protocol uint) {
 	if msg.Code != BlockBodiesMsg {
 		t.Fatalf("expected BlockBodiesMsg (%d), got %d", BlockBodiesMsg, msg.Code)
 	}
+	expectAcceptedSize(t, msg)
 
 	var resp BlockBodiesPacket
 	if err := msg.Decode(&resp); err != nil {
@@ -632,9 +653,224 @@ func testGetBlockBodiesMaxServeMaxSize(t *testing.T, protocol uint) {
 		t.Fatalf("expected fewer than %d bodies due to softResponseLimit, got %d", numBlocks, received)
 	}
 
-	// With ~6.9 MB blocks and 10 MB softResponseLimit, expect only 1-2 bodies
+	// A block of ~6.9 MB is above softResponseLimit, so expect one body
 	t.Logf("Requested %d max-size blocks, received %d bodies (softResponseLimit=%d)",
 		numBlocks, received, softResponseLimit)
+}
+
+// Tests that the largest block bodies reply still fits in a message. A reply
+// stops at the first body that takes it to softResponseLimit, so it is largest
+// when the bodies before the last one end just under the limit and the last
+// one is a full block.
+func TestGetBlockBodiesLargestReply1(t *testing.T) { testGetBlockBodiesLargestReply(t, QRL1) }
+
+func testGetBlockBodiesLargestReply(t *testing.T, protocol uint) {
+	t.Parallel()
+
+	var (
+		signer = types.NewZondSigner(params.MainnetChainConfig.ChainID)
+		to     = common.Address{0x01}
+		nonce  uint64
+	)
+	transfer := func(baseFee *big.Int) *types.Transaction {
+		tx := types.MustSignNewTx(testWallet, signer, &types.DynamicFeeTx{
+			ChainID:   params.MainnetChainConfig.ChainID,
+			Nonce:     nonce,
+			GasTipCap: big.NewInt(1),
+			GasFeeCap: new(big.Int).Mul(baseFee, big.NewInt(10)),
+			Gas:       params.TxGas,
+			To:        &to,
+			Value:     big.NewInt(1),
+		})
+		nonce++
+		return tx
+	}
+	// A full block holds as many transfers as the gas limit allows, which is
+	// the most bytes a body can have: no transaction is larger per gas.
+	fullBlock := int(params.MaxGasLimit / params.TxGas)
+
+	// The blocks before the last one are full until the next would reach the
+	// limit, then one holds the transfers that still fit under it.
+	sample, err := rlp.EncodeToBytes(types.Transactions{transfer(big.NewInt(params.InitialBaseFee))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonce = 0
+	// A fee that takes more bytes makes a later transfer slightly larger.
+	transferSize := len(sample) + 32
+	var txs []int
+	for room := softResponseLimit - 1; ; {
+		count := min(fullBlock, room/transferSize)
+		if count == 0 {
+			break
+		}
+		txs = append(txs, count)
+		if room -= count * transferSize; count < fullBlock {
+			break
+		}
+	}
+	txs = append(txs, fullBlock)
+
+	backend := newTestBackendMaxBlocks(len(txs), func(n int, g *core.BlockGen) {
+		for range txs[n] {
+			g.AddTx(transfer(g.BaseFee()))
+		}
+	})
+	defer backend.close()
+
+	peer, _ := newTestPeer("peer", protocol, backend)
+	defer peer.close()
+
+	var (
+		hashes []common.Hash
+		before int
+	)
+	for number := 1; number <= len(txs); number++ {
+		hash := backend.chain.GetBlockByNumber(uint64(number)).Hash()
+		hashes = append(hashes, hash)
+		if number < len(txs) {
+			before += len(backend.chain.GetBodyRLP(hash))
+		}
+	}
+	if before >= softResponseLimit {
+		t.Fatalf("the bodies before the last one have %d bytes, want under softResponseLimit (%d)", before, softResponseLimit)
+	}
+
+	p2p.Send(peer.app, GetBlockBodiesMsg, &GetBlockBodiesPacket{RequestId: 1, GetBlockBodiesRequest: hashes})
+	msg, err := peer.app.ReadMsg()
+	if err != nil {
+		t.Fatalf("failed to read response: %v", err)
+	}
+	defer msg.Discard()
+	expectAcceptedSize(t, msg)
+
+	var resp BlockBodiesRLPPacket
+	if err := msg.Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(resp.BlockBodiesRLPResponse) != len(hashes) {
+		t.Fatalf("received %d bodies, want all %d: the last one starts under softResponseLimit", len(resp.BlockBodiesRLPResponse), len(hashes))
+	}
+	t.Logf("%d bodies with %v transfers, %d bytes before the last one (softResponseLimit=%d), reply of %d bytes (maxMessageSize=%d)",
+		len(hashes), txs, before, softResponseLimit, msg.Size, maxMessageSize)
+}
+
+// Tests that the largest receipts reply still fits in a message. A reply stops
+// at the first block's receipts that take it to softResponseLimit, so it is
+// largest when the receipts before the last block's end just under the limit
+// and the last block has the most receipt bytes a block can have.
+func TestGetReceiptsLargestReply1(t *testing.T) { testGetReceiptsLargestReply(t, QRL1) }
+
+func testGetReceiptsLargestReply(t *testing.T, protocol uint) {
+	t.Parallel()
+
+	// Log data is the cheapest receipt data, and a log as long as a contract's
+	// largest code keeps the memory it is read from cheap. A block's receipts
+	// are largest when one call spends the block's gas on such logs.
+	const logSize = params.MaxCodeSize
+	logGas := params.LogGas + params.LogDataGas*logSize + 2*vm.GasFastestStep
+	// The call's intrinsic gas and the memory the logs are read from leave
+	// room for one log less.
+	fullBlock := int((params.MaxGasLimit-params.TxGas)/logGas) - 1
+
+	// logger returns the code of a contract that emits the given logs.
+	logger := func(logs int) []byte {
+		var code []byte
+		for range logs {
+			code = append(code, byte(vm.PUSH3), byte(logSize>>16), byte(logSize>>8), byte(logSize&0xff), byte(vm.PUSH0), byte(vm.LOG0))
+		}
+		return append(code, byte(vm.STOP))
+	}
+	// receiptsSize returns the encoded size of a block's receipts for one
+	// call that emits the given logs.
+	receiptsSize := func(logs int) int {
+		receipt := &types.Receipt{Type: types.DynamicFeeTxType, Status: types.ReceiptStatusSuccessful, CumulativeGasUsed: params.MaxGasLimit}
+		for range logs {
+			receipt.Logs = append(receipt.Logs, &types.Log{Address: common.Address{0xff}, Data: make([]byte, logSize)})
+		}
+		encoded, err := rlp.EncodeToBytes(types.Receipts{receipt})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return len(encoded)
+	}
+
+	// The blocks before the last one are full until the next would reach the
+	// limit, then one has the logs that still fit under it.
+	var (
+		full     = common.Address{0xf0}
+		partial  = common.Address{0xf1}
+		alloc    = core.GenesisAlloc{full: {Code: logger(fullBlock)}}
+		calls    []common.Address
+		fullSize = receiptsSize(fullBlock)
+		logBytes = receiptsSize(2) - receiptsSize(1)
+		room     = softResponseLimit - 1
+	)
+	for ; room >= fullSize; room -= fullSize {
+		calls = append(calls, full)
+	}
+	if logs := (room - receiptsSize(0) - 16) / logBytes; logs > 0 {
+		alloc[partial] = core.GenesisAccount{Code: logger(logs)}
+		calls = append(calls, partial)
+	}
+	calls = append(calls, full)
+
+	signer := types.NewZondSigner(params.MainnetChainConfig.ChainID)
+	backend := newTestBackendMaxBlocksWithAlloc(len(calls), alloc, func(n int, g *core.BlockGen) {
+		g.AddTx(types.MustSignNewTx(testWallet, signer, &types.DynamicFeeTx{
+			ChainID:   params.MainnetChainConfig.ChainID,
+			Nonce:     uint64(n),
+			GasTipCap: big.NewInt(1),
+			GasFeeCap: new(big.Int).Mul(g.BaseFee(), big.NewInt(10)),
+			Gas:       params.MaxGasLimit,
+			To:        &calls[n],
+		}))
+	})
+	defer backend.close()
+
+	peer, _ := newTestPeer("peer", protocol, backend)
+	defer peer.close()
+
+	var (
+		hashes []common.Hash
+		before int
+	)
+	for number := 1; number <= len(calls); number++ {
+		block := backend.chain.GetBlockByNumber(uint64(number))
+		hashes = append(hashes, block.Hash())
+		receipts := backend.chain.GetReceiptsByHash(block.Hash())
+		if len(receipts) != 1 || receipts[0].Status != types.ReceiptStatusSuccessful {
+			t.Fatalf("block %d: the call to the logger failed", number)
+		}
+		if number < len(calls) {
+			encoded, err := rlp.EncodeToBytes(receipts)
+			if err != nil {
+				t.Fatal(err)
+			}
+			before += len(encoded)
+		}
+	}
+	if before >= softResponseLimit {
+		t.Fatalf("the receipts before the last block have %d bytes, want under softResponseLimit (%d)", before, softResponseLimit)
+	}
+
+	p2p.Send(peer.app, GetReceiptsMsg, &GetReceiptsPacket{RequestId: 1, GetReceiptsRequest: hashes})
+	msg, err := peer.app.ReadMsg()
+	if err != nil {
+		t.Fatalf("failed to read response: %v", err)
+	}
+	defer msg.Discard()
+	expectAcceptedSize(t, msg)
+
+	var resp ReceiptsRLPPacket
+	if err := msg.Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if len(resp.ReceiptsRLPResponse) != len(hashes) {
+		t.Fatalf("received the receipts of %d blocks, want all %d: the last block starts under softResponseLimit", len(resp.ReceiptsRLPResponse), len(hashes))
+	}
+	t.Logf("receipts of %d blocks, a full one of %d bytes, %d bytes before the last block (softResponseLimit=%d), reply of %d bytes (maxMessageSize=%d)",
+		len(hashes), fullSize, before, softResponseLimit, msg.Size, maxMessageSize)
 }
 
 // Tests that the transaction receipts can be retrieved based on hashes.
