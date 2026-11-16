@@ -451,6 +451,51 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 	}
 }
 
+// TestExceedLogQueryLimit tests log queries and filters with more addresses,
+// or more topics at one position, than the configured limit.
+func TestExceedLogQueryLimit(t *testing.T) {
+	t.Parallel()
+
+	addresses := make([]common.Address, 6)
+	topics := make([]common.LogTopic, 6)
+	for _, test := range []struct {
+		name  string
+		limit int
+		crit  FilterCriteria
+		err   error
+	}{
+		{name: "addresses at the limit", limit: 5, crit: FilterCriteria{Addresses: addresses[:5]}},
+		{name: "addresses over the limit", limit: 5, crit: FilterCriteria{Addresses: addresses}, err: errExceedLogQueryLimit},
+		{name: "topics at the limit", limit: 5, crit: FilterCriteria{Topics: [][]common.LogTopic{topics[:5]}}},
+		{name: "topics over the limit", limit: 5, crit: FilterCriteria{Topics: [][]common.LogTopic{nil, topics}}, err: errExceedLogQueryLimit},
+		{name: "no limit", limit: 0, crit: FilterCriteria{Addresses: addresses, Topics: [][]common.LogTopic{topics}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var (
+				db     = rawdb.NewMemoryDatabase()
+				_, sys = newTestFilterSystem(t, db, Config{LogQueryLimit: test.limit})
+				api    = NewFilterAPI(sys)
+			)
+
+			id, err := api.NewFilter(test.crit)
+			if err != test.err {
+				t.Fatalf("NewFilter: got error %v, want %v", err, test.err)
+			}
+			if err == nil {
+				api.UninstallFilter(id)
+			}
+
+			_, err = api.GetLogs(t.Context(), test.crit)
+			if test.err != nil && err != test.err {
+				t.Fatalf("GetLogs: got error %v, want %v", err, test.err)
+			}
+			if test.err == nil && err == errExceedLogQueryLimit {
+				t.Fatalf("GetLogs: got error %v, want none from the limit", err)
+			}
+		})
+	}
+}
+
 // TestInvalidGetRangeLogsRequest tests getLogs with invalid block range
 func TestInvalidGetRangeLogsRequest(t *testing.T) {
 	t.Parallel()
