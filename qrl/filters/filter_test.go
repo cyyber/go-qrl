@@ -19,6 +19,7 @@ package filters
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strings"
 	"testing"
@@ -100,7 +101,7 @@ func BenchmarkFilters(b *testing.B) {
 		rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), receipts[i])
 	}
 
-	filter := sys.NewRangeFilter(0, -1, []common.Address{addr1, addr2, addr3, addr4}, nil)
+	filter := sys.NewRangeFilter(0, -1, []common.Address{addr1, addr2, addr3, addr4}, nil, 0)
 
 	for b.Loop() {
 		logs, _ := filter.Logs(b.Context())
@@ -303,7 +304,7 @@ func TestFilters(t *testing.T) {
 			want: mustJSON(mkLog(2, 0, 0, contract, hash2.Bytes(), hash1.Bytes())),
 		},
 		{
-			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{contract}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash1.Bytes()), common.BytesToRightAlignedLogTopic(hash2.Bytes()), common.BytesToRightAlignedLogTopic(hash3.Bytes()), common.BytesToRightAlignedLogTopic(hash4.Bytes())}}),
+			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{contract}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash1.Bytes()), common.BytesToRightAlignedLogTopic(hash2.Bytes()), common.BytesToRightAlignedLogTopic(hash3.Bytes()), common.BytesToRightAlignedLogTopic(hash4.Bytes())}}, 0),
 			want: mustJSON(
 				mkLog(1, 0, 0, contract, hash1.Bytes()),
 				mkLog(2, 0, 0, contract, hash2.Bytes(), hash1.Bytes()),
@@ -311,14 +312,14 @@ func TestFilters(t *testing.T) {
 			),
 		},
 		{
-			f: sys.NewRangeFilter(900, 999, []common.Address{contract}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash3.Bytes())}}),
+			f: sys.NewRangeFilter(900, 999, []common.Address{contract}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash3.Bytes())}}, 0),
 		},
 		{
-			f:    sys.NewRangeFilter(990, int64(rpc.LatestBlockNumber), []common.Address{contract2}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash3.Bytes())}}),
+			f:    sys.NewRangeFilter(990, int64(rpc.LatestBlockNumber), []common.Address{contract2}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash3.Bytes())}}, 0),
 			want: mustJSON(mkLog(998, 0, 0, contract2, hash3.Bytes())),
 		},
 		{
-			f: sys.NewRangeFilter(1, 10, nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash1.Bytes()), common.BytesToRightAlignedLogTopic(hash2.Bytes())}}),
+			f: sys.NewRangeFilter(1, 10, nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash1.Bytes()), common.BytesToRightAlignedLogTopic(hash2.Bytes())}}, 0),
 			want: mustJSON(
 				mkLog(1, 0, 0, contract, hash1.Bytes()),
 				mkLog(1, 1, 1, contract2, hash1.Bytes()),
@@ -326,54 +327,54 @@ func TestFilters(t *testing.T) {
 			),
 		},
 		{
-			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic([]byte("fail"))}}),
+			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic([]byte("fail"))}}, 0),
 		},
 		{
-			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{common.BytesToAddress([]byte("failmenow"))}, nil),
+			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{common.BytesToAddress([]byte("failmenow"))}, nil, 0),
 		},
 		{
-			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic([]byte("fail"))}, {common.BytesToRightAlignedLogTopic(hash1.Bytes())}}),
+			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic([]byte("fail"))}, {common.BytesToRightAlignedLogTopic(hash1.Bytes())}}, 0),
 		},
 		{
-			f:    sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.LatestBlockNumber), nil, nil),
+			f:    sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.LatestBlockNumber), nil, nil, 0),
 			want: mustJSON(mkLog(999, 0, 0, contract, hash4.Bytes())),
 		},
 		{
-			f: sys.NewRangeFilter(int64(rpc.FinalizedBlockNumber), int64(rpc.LatestBlockNumber), nil, nil),
+			f: sys.NewRangeFilter(int64(rpc.FinalizedBlockNumber), int64(rpc.LatestBlockNumber), nil, nil, 0),
 			want: mustJSON(
 				mkLog(998, 0, 0, contract2, hash3.Bytes()),
 				mkLog(999, 0, 0, contract, hash4.Bytes()),
 			),
 		},
 		{
-			f:    sys.NewRangeFilter(int64(rpc.FinalizedBlockNumber), int64(rpc.FinalizedBlockNumber), nil, nil),
+			f:    sys.NewRangeFilter(int64(rpc.FinalizedBlockNumber), int64(rpc.FinalizedBlockNumber), nil, nil, 0),
 			want: mustJSON(mkLog(998, 0, 0, contract2, hash3.Bytes())),
 		},
 		{
-			f: sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.FinalizedBlockNumber), nil, nil),
+			f: sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.FinalizedBlockNumber), nil, nil, 0),
 		},
 		{
-			f:   sys.NewRangeFilter(int64(rpc.SafeBlockNumber), int64(rpc.LatestBlockNumber), nil, nil),
+			f:   sys.NewRangeFilter(int64(rpc.SafeBlockNumber), int64(rpc.LatestBlockNumber), nil, nil, 0),
 			err: "safe header not found",
 		},
 		{
-			f:   sys.NewRangeFilter(int64(rpc.SafeBlockNumber), int64(rpc.SafeBlockNumber), nil, nil),
+			f:   sys.NewRangeFilter(int64(rpc.SafeBlockNumber), int64(rpc.SafeBlockNumber), nil, nil, 0),
 			err: "safe header not found",
 		},
 		{
-			f:   sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.SafeBlockNumber), nil, nil),
+			f:   sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.SafeBlockNumber), nil, nil, 0),
 			err: "safe header not found",
 		},
 		{
-			f:   sys.NewRangeFilter(int64(rpc.PendingBlockNumber), int64(rpc.PendingBlockNumber), nil, nil),
+			f:   sys.NewRangeFilter(int64(rpc.PendingBlockNumber), int64(rpc.PendingBlockNumber), nil, nil, 0),
 			err: errPendingLogsUnsupported.Error(),
 		},
 		{
-			f:   sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.PendingBlockNumber), nil, nil),
+			f:   sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.PendingBlockNumber), nil, nil, 0),
 			err: errPendingLogsUnsupported.Error(),
 		},
 		{
-			f:   sys.NewRangeFilter(int64(rpc.PendingBlockNumber), int64(rpc.LatestBlockNumber), nil, nil),
+			f:   sys.NewRangeFilter(int64(rpc.PendingBlockNumber), int64(rpc.LatestBlockNumber), nil, nil, 0),
 			err: errPendingLogsUnsupported.Error(),
 		},
 	} {
@@ -396,7 +397,7 @@ func TestFilters(t *testing.T) {
 	}
 
 	t.Run("timeout", func(t *testing.T) {
-		f := sys.NewRangeFilter(0, rpc.LatestBlockNumber.Int64(), nil, nil)
+		f := sys.NewRangeFilter(0, rpc.LatestBlockNumber.Int64(), nil, nil, 0)
 		ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Hour))
 		defer cancel()
 		_, err := f.Logs(ctx)
@@ -407,4 +408,58 @@ func TestFilters(t *testing.T) {
 			t.Fatalf("expected context.DeadlineExceeded, got %v", err)
 		}
 	})
+}
+
+func TestRangeLimit(t *testing.T) {
+	var (
+		db     = rawdb.NewMemoryDatabase()
+		_, sys = newTestFilterSystem(t, db, Config{RangeLimit: 5})
+		gspec  = &core.Genesis{
+			Config:  params.TestChainConfig,
+			Alloc:   core.GenesisAlloc{},
+			BaseFee: big.NewInt(params.InitialBaseFee),
+		}
+	)
+	if _, err := gspec.Commit(db, trie.NewDatabase(db, nil)); err != nil {
+		t.Fatal(err)
+	}
+	chain, _ := core.GenerateChain(gspec.Config, gspec.ToBlock(), beacon.NewFaker(), db, 10, func(i int, gen *core.BlockGen) {})
+	var limit uint64
+	bc, err := core.NewBlockChain(db, nil, gspec, beacon.NewFaker(), vm.Config{}, &limit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := bc.InsertChain(chain); err != nil {
+		t.Fatal(err)
+	}
+
+	// A range of 9 blocks (end - begin) is over a limit of 5.
+	_, err = sys.NewRangeFilter(0, 9, nil, nil, 5).Logs(t.Context())
+	var rpcErr rpc.Error
+	if !errors.As(err, &rpcErr) {
+		t.Fatalf("expected an RPC error for a range over the limit, got %v", err)
+	}
+	if rpcErr.ErrorCode() != -32602 {
+		t.Fatalf("expected error code -32602, got %d", rpcErr.ErrorCode())
+	}
+	if rpcErr.Error() != "exceed maximum block range 5" {
+		t.Fatalf("unexpected error message %q", rpcErr.Error())
+	}
+
+	// A range at the limit, and any range without a limit, are served.
+	if _, err := sys.NewRangeFilter(0, 5, nil, nil, 5).Logs(t.Context()); err != nil {
+		t.Fatalf("range at the limit: %v", err)
+	}
+	if _, err := sys.NewRangeFilter(0, 9, nil, nil, 0).Logs(t.Context()); err != nil {
+		t.Fatalf("range without a limit: %v", err)
+	}
+
+	// The API takes the limit from the filter system's configuration.
+	api := NewFilterAPI(sys)
+	if _, err := api.GetLogs(t.Context(), FilterCriteria{FromBlock: big.NewInt(0), ToBlock: big.NewInt(9)}); !errors.As(err, &rpcErr) {
+		t.Fatalf("expected the API to refuse a range over the limit, got %v", err)
+	}
+	if _, err := api.GetLogs(t.Context(), FilterCriteria{FromBlock: big.NewInt(4), ToBlock: big.NewInt(9)}); err != nil {
+		t.Fatalf("the API refused a range at the limit: %v", err)
+	}
 }
