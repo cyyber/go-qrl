@@ -42,6 +42,7 @@ import (
 type Config struct {
 	LogCacheSize int           // maximum number of cached blocks (default: 32)
 	Timeout      time.Duration // how long filters stay active (default: 5min)
+	RangeLimit   uint64        // maximum block range allowed in filter criteria (0 = no limit)
 }
 
 func (cfg Config) withDefaults() Config {
