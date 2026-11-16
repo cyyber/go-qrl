@@ -40,9 +40,10 @@ import (
 
 // Config represents the configuration of the filter system.
 type Config struct {
-	LogCacheSize int           // maximum number of cached blocks (default: 32)
-	Timeout      time.Duration // how long filters stay active (default: 5min)
-	RangeLimit   uint64        // maximum block range allowed in filter criteria (0 = no limit)
+	LogCacheSize  int           // maximum number of cached blocks (default: 32)
+	Timeout       time.Duration // how long filters stay active (default: 5min)
+	RangeLimit    uint64        // maximum block range allowed in filter criteria (0 = no limit)
+	LogQueryLimit int           // maximum addresses, or topics at one position, in filter criteria (0 = no limit)
 }
 
 func (cfg Config) withDefaults() Config {
@@ -288,6 +289,9 @@ func (es *EventSystem) subscribe(sub *subscription) *Subscription {
 func (es *EventSystem) SubscribeLogs(crit qrl.FilterQuery, logs chan []*types.Log) (*Subscription, error) {
 	if len(crit.Topics) > maxTopics {
 		return nil, errExceedMaxTopics
+	}
+	if err := checkLogQueryLimit(es.sys.cfg.LogQueryLimit, crit.Addresses, crit.Topics); err != nil {
+		return nil, err
 	}
 	var from, to rpc.BlockNumber
 	if crit.FromBlock == nil {

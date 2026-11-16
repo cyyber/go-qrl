@@ -39,6 +39,7 @@ var (
 	errInvalidBlockRange      = errors.New("invalid block range params")
 	errPendingLogsUnsupported = errors.New("pending logs are not supported")
 	errExceedMaxTopics        = errors.New("exceed max topics")
+	errExceedLogQueryLimit    = errors.New("exceed max addresses or topics per search position")
 )
 
 // The maximum number of topic criteria allowed, vm.LOG4 - vm.LOG0
@@ -348,10 +349,31 @@ func (api *FilterAPI) NewFilter(crit FilterCriteria) (rpc.ID, error) {
 	return logsSub.ID, nil
 }
 
+// checkLogQueryLimit returns errExceedLogQueryLimit when the criteria hold more
+// than limit addresses, or more than limit topics at one position. A limit of 0
+// allows any number.
+func checkLogQueryLimit(limit int, addresses []common.Address, topics [][]common.LogTopic) error {
+	if limit == 0 {
+		return nil
+	}
+	if len(addresses) > limit {
+		return errExceedLogQueryLimit
+	}
+	for _, position := range topics {
+		if len(position) > limit {
+			return errExceedLogQueryLimit
+		}
+	}
+	return nil
+}
+
 // GetLogs returns logs matching the given argument that are stored within the state.
 func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*types.Log, error) {
 	if len(crit.Topics) > maxTopics {
 		return nil, errExceedMaxTopics
+	}
+	if err := checkLogQueryLimit(api.sys.cfg.LogQueryLimit, crit.Addresses, crit.Topics); err != nil {
+		return nil, err
 	}
 	var filter *Filter
 	if crit.BlockHash != nil {
