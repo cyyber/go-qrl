@@ -17,7 +17,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/theQRL/go-qrl/consensus"
@@ -62,10 +61,6 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 		return fmt.Errorf("transaction root hash mismatch (header value %x, calculated %x)", header.TxHash, hash)
 	}
 
-	// Withdrawals list must be present in body.
-	if block.Withdrawals() == nil {
-		return errors.New("missing withdrawals in block body")
-	}
 	if hash := types.DeriveSha(block.Withdrawals(), trie.NewStackTrie(nil)); hash != header.WithdrawalsHash {
 		return fmt.Errorf("withdrawals root hash mismatch (header value %x, calculated %x)", header.WithdrawalsHash, hash)
 	}

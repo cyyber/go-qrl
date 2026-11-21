@@ -176,9 +176,14 @@ func ExecutableDataToBlockNoHash(data ExecutableData) (*types.Block, error) {
 	if len(data.LogsBloom) != 256 {
 		return nil, fmt.Errorf("invalid logsBloom length: %v", len(data.LogsBloom))
 	}
-	// Check that baseFeePerGas is not negative or too big
-	if data.BaseFeePerGas != nil && (data.BaseFeePerGas.Sign() == -1 || data.BaseFeePerGas.BitLen() > 256) {
+	// Check that baseFeePerGas is set and not negative or too big
+	if data.BaseFeePerGas == nil || data.BaseFeePerGas.Sign() == -1 || data.BaseFeePerGas.BitLen() > 256 {
 		return nil, fmt.Errorf("invalid baseFeePerGas: %v", data.BaseFeePerGas)
+	}
+	for i, w := range data.Withdrawals {
+		if w == nil {
+			return nil, fmt.Errorf("nil withdrawal at index %d", i)
+		}
 	}
 	withdrawalsRoot := types.DeriveSha(types.Withdrawals(data.Withdrawals), trie.NewStackTrie(nil))
 	header := &types.Header{

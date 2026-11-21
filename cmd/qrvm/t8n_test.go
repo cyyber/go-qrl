@@ -163,10 +163,42 @@ func TestT8n(t *testing.T) {
 			expOut:               "exp.json",
 			ignoreSignedTxHashes: true,
 		},
-		{ // Post-merge/Zond env must include currentRandom
+		{ // Exit 3 on missing currentRandom
 			base: "./testdata/24",
 			input: t8nInput{
 				"alloc.json", "txs.json", "env-missingrandom.json", "Zond",
+			},
+			output:      t8nOutput{alloc: false, result: false},
+			expExitCode: t8ntool.ErrorConfig,
+		},
+		{ // Exit 3 on missing withdrawals
+			base: "./testdata/24",
+			input: t8nInput{
+				"alloc.json", "txs.json", "env-missingwithdrawals.json", "Zond",
+			},
+			output:      t8nOutput{alloc: false, result: false},
+			expExitCode: t8ntool.ErrorConfig,
+		},
+		{ // Exit 3 on a parentGasLimit below the elasticity multiplier when the parent used gas
+			base: "./testdata/24",
+			input: t8nInput{
+				"alloc.json", "txs.json", "env-lowparentgaslimit.json", "Zond",
+			},
+			output:      t8nOutput{alloc: false, result: false},
+			expExitCode: t8ntool.ErrorConfig,
+		},
+		{ // Exit 3 on missing currentBaseFee and parentBaseFee
+			base: "./testdata/11",
+			input: t8nInput{
+				"alloc.json", "txs.json", "env.json", "Zond",
+			},
+			output:      t8nOutput{alloc: false, result: false},
+			expExitCode: t8ntool.ErrorConfig,
+		},
+		{ // Exit 3 on a nil withdrawal
+			base: "./testdata/24",
+			input: t8nInput{
+				"alloc.json", "txs.json", "env-nilwithdrawal.json", "Zond",
 			},
 			output:      t8nOutput{alloc: false, result: false},
 			expExitCode: t8ntool.ErrorConfig,

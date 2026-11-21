@@ -121,7 +121,7 @@ func readInput(ctx *cli.Context) (*bbInput, error) {
 		txsStr         = ctx.String(InputTxsRlpFlag.Name)
 		inputData      = &bbInput{}
 	)
-	if headerStr == stdinSelector || txsStr == stdinSelector {
+	if headerStr == stdinSelector || withdrawalsStr == stdinSelector || txsStr == stdinSelector {
 		decoder := json.NewDecoder(os.Stdin)
 		if err := decoder.Decode(inputData); err != nil {
 			return nil, NewError(ErrorJson, fmt.Errorf("failed unmarshaling stdin: %v", err))

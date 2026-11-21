@@ -826,7 +826,7 @@ func TestRPCMarshalBlock(t *testing.T) {
 		require.NoError(t, err)
 		txs = append(txs, tx)
 	}
-	block := types.NewBlock(&types.Header{Number: big.NewInt(100)}, &types.Body{Transactions: txs}, nil, blocktest.NewHasher())
+	block := types.NewBlock(&types.Header{Number: big.NewInt(100), BaseFee: big.NewInt(params.InitialBaseFee)}, &types.Body{Transactions: txs}, nil, blocktest.NewHasher())
 
 	var testSuite = []struct {
 		inclTx bool
@@ -880,7 +880,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 		Data:      []byte{0x11, 0x11, 0x11},
 	}), signer, acc1Wallet)
 	require.NoError(t, err)
-	pending := types.NewBlock(&types.Header{Number: big.NewInt(11), Time: 42}, &types.Body{Transactions: types.Transactions{tx}, Withdrawals: types.Withdrawals{withdrawal}}, nil, blocktest.NewHasher())
+	pending := types.NewBlock(&types.Header{Number: big.NewInt(11), Time: 42, BaseFee: big.NewInt(params.InitialBaseFee)}, &types.Body{Transactions: types.Transactions{tx}, Withdrawals: types.Withdrawals{withdrawal}}, nil, blocktest.NewHasher())
 	backend := newTestBackend(t, genBlocks, genesis, beacon.NewFaker(), func(i int, b *core.BlockGen) {
 		// Transfer from account[0] to account[1]
 		//    value: 1000 planck
@@ -1275,6 +1275,31 @@ func TestRPCGetTransactionReceipt(t *testing.T) {
 			continue
 		}
 		testRPCResponseWithFile(t, i, result, "qrl_getTransactionReceipt", tt.file)
+	}
+}
+
+// missingHeaderBackend simulates a tx lookup entry that points at a block whose
+// header is no longer available.
+type missingHeaderBackend struct {
+	*testBackend
+}
+
+func (b missingHeaderBackend) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+	return nil, nil
+}
+
+func TestRPCGetTransactionByHashMissingHeader(t *testing.T) {
+	t.Parallel()
+
+	backend, txHashes := setupReceiptBackend(t, 1)
+	api := NewTransactionAPI(missingHeaderBackend{backend}, new(AddrLocker))
+
+	tx, err := api.GetTransactionByHash(t.Context(), txHashes[0])
+	if err != nil {
+		t.Fatalf("want no error, have %v", err)
+	}
+	if tx != nil {
+		t.Fatalf("want nil transaction, have %v", tx)
 	}
 }
 

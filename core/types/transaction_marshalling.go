@@ -19,6 +19,7 @@ package types
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/theQRL/go-qrl/common"
@@ -121,11 +122,17 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 			return errors.New("missing required field 'input' in transaction")
 		}
 		itx.Data = *dec.Input
+		// A missing access list is an empty one.
+		itx.AccessList = AccessList{}
 		if dec.AccessList != nil {
 			itx.AccessList = *dec.AccessList
 		}
 		if dec.Descriptor == nil {
 			return errors.New("missing required field 'descriptor' in transaction")
+		}
+		// An unsigned transaction may leave the descriptor empty.
+		if n := len(*dec.Descriptor); n != 0 && n != len(itx.Descriptor) {
+			return fmt.Errorf("invalid descriptor length %d in transaction, want %d", n, len(itx.Descriptor))
 		}
 		copy(itx.Descriptor[:], *dec.Descriptor)
 		if dec.ExtraParams == nil {

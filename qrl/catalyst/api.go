@@ -159,6 +159,13 @@ func (api *ConsensusAPI) ForkchoiceUpdatedV2(update engine.ForkchoiceStateV1, pa
 	if params != nil && params.Withdrawals == nil {
 		return engine.STATUS_INVALID, engine.InvalidPayloadAttributes.With(errors.New("missing withdrawals"))
 	}
+	if params != nil {
+		for i, w := range params.Withdrawals {
+			if w == nil {
+				return engine.STATUS_INVALID, engine.InvalidPayloadAttributes.With(fmt.Errorf("nil withdrawal at index %d", i))
+			}
+		}
+	}
 	return api.forkchoiceUpdated(update, params, false)
 }
 
@@ -323,10 +330,6 @@ func (api *ConsensusAPI) getPayload(payloadID engine.PayloadID, full bool) (*eng
 
 // NewPayloadV2 creates a QRL execution block, inserts it in the chain, and returns the status of the chain.
 func (api *ConsensusAPI) NewPayloadV2(params engine.ExecutableData) (engine.PayloadStatusV1, error) {
-	if params.Withdrawals == nil {
-		return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("nil withdrawals post-zond"))
-	}
-
 	return api.newPayload(params)
 }
 
@@ -620,9 +623,8 @@ func getBody(block *types.Block) *engine.ExecutionPayloadBodyV1 {
 	}
 
 	var (
-		body        = block.Body()
-		txs         = make([]hexutil.Bytes, len(body.Transactions))
-		withdrawals = body.Withdrawals
+		body = block.Body()
+		txs  = make([]hexutil.Bytes, len(body.Transactions))
 	)
 
 	for j, tx := range body.Transactions {
@@ -630,13 +632,8 @@ func getBody(block *types.Block) *engine.ExecutionPayloadBodyV1 {
 		txs[j] = hexutil.Bytes(data)
 	}
 
-	// Withdrawals MUST be an empty slice instead of nil
-	if withdrawals == nil {
-		withdrawals = make([]*types.Withdrawal, 0)
-	}
-
 	return &engine.ExecutionPayloadBodyV1{
 		TransactionData: txs,
-		Withdrawals:     withdrawals,
+		Withdrawals:     body.Withdrawals,
 	}
 }
