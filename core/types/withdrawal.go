@@ -18,6 +18,7 @@ package types
 
 import (
 	"bytes"
+	"reflect"
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
@@ -47,6 +48,13 @@ type Withdrawals []*Withdrawal
 
 // Len returns the length of s.
 func (s Withdrawals) Len() int { return len(s) }
+
+var withdrawalSize = int(reflect.TypeFor[Withdrawal]().Size())
+
+// Size returns the approximate memory used by all withdrawals.
+func (s Withdrawals) Size() int {
+	return withdrawalSize * len(s)
+}
 
 // EncodeIndex encodes the i'th withdrawal to w. Note that this does not check for errors
 // because we assume that *Withdrawal will only ever contain valid withdrawals that were either

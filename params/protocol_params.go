@@ -76,6 +76,11 @@ const (
 	MaxCodeSize     = 24576           // Maximum bytecode to permit for a contract
 	MaxInitCodeSize = 2 * MaxCodeSize // Maximum initcode to permit in a creation transaction and create instructions
 
+	// MaxBlockSize is the maximum size of an RLP-encoded block (EIP-7934). The
+	// consensus layer gossips at most 10 MiB per block, of which 2.5 MiB is
+	// reserved for the beacon block contents around the execution payload.
+	MaxBlockSize = 7_864_320
+
 	// Precompiled contract gas prices
 	DepositrootGas     uint64 = 18000  // Price for one deposit-root computation
 	Sha256BaseGas      uint64 = 60     // Base price for a SHA256 operation

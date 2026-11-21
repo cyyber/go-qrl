@@ -50,6 +50,10 @@ func NewBlockValidator(config *params.ChainConfig, blockchain *BlockChain, engin
 // ValidateBody verifies the block header's transaction root. The
 // headers are assumed to be already validated at this point.
 func (v *BlockValidator) ValidateBody(block *types.Block) error {
+	// check EIP 7934 RLP-encoded block size cap
+	if block.Size() > params.MaxBlockSize {
+		return ErrBlockOversized
+	}
 	// Check whether the block is already imported.
 	if v.bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
 		return ErrKnownBlock
