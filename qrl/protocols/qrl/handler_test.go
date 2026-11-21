@@ -551,7 +551,7 @@ func testGetBlockBodiesMaxBlockSize(t *testing.T, protocol uint) {
 }
 
 // Tests that requesting large blocks correctly limits the response.
-// With ~6.9 MB per block, the softResponseLimit (10 MB) should cap the
+// With ~6.9 MB per block, the softResponseLimit (2 MB) should cap the
 // response to fewer bodies than requested.
 func TestGetBlockBodiesMaxServeMaxSize1(t *testing.T) {
 	testGetBlockBodiesMaxServeMaxSize(t, QRL1)
@@ -618,6 +618,10 @@ func testGetBlockBodiesMaxServeMaxSize(t *testing.T, protocol uint) {
 	if msg.Code != BlockBodiesMsg {
 		t.Fatalf("expected BlockBodiesMsg (%d), got %d", BlockBodiesMsg, msg.Code)
 	}
+	// The receiving peer drops any message above maxMessageSize.
+	if msg.Size > maxMessageSize {
+		t.Fatalf("response size %d exceeds maxMessageSize %d", msg.Size, maxMessageSize)
+	}
 
 	var resp BlockBodiesPacket
 	if err := msg.Decode(&resp); err != nil {
@@ -632,7 +636,7 @@ func testGetBlockBodiesMaxServeMaxSize(t *testing.T, protocol uint) {
 		t.Fatalf("expected fewer than %d bodies due to softResponseLimit, got %d", numBlocks, received)
 	}
 
-	// With ~6.9 MB blocks and 10 MB softResponseLimit, expect only 1-2 bodies
+	// With ~6.9 MB blocks and 2 MB softResponseLimit, expect only 1 body
 	t.Logf("Requested %d max-size blocks, received %d bodies (softResponseLimit=%d)",
 		numBlocks, received, softResponseLimit)
 }
