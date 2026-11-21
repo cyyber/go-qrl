@@ -39,6 +39,7 @@ var (
 	errInvalidBlockRange      = errors.New("invalid block range params")
 	errPendingLogsUnsupported = errors.New("pending logs are not supported")
 	errExceedMaxTopics        = errors.New("exceed max topics")
+	errExceedLogQueryLimit    = errors.New("exceed max addresses or topics per search position")
 )
 
 // The maximum number of topic criteria allowed, vm.LOG4 - vm.LOG0
@@ -46,6 +47,20 @@ const maxTopics = 4
 
 // The maximum number of allowed topics within a topic criteria
 const maxSubTopics = 1000
+
+// invalidParamsError is the error for criteria that the caller can correct.
+// It carries the JSON-RPC code for invalid parameters.
+type invalidParamsError struct {
+	message string
+}
+
+func invalidParamsErr(format string, args ...any) error {
+	return &invalidParamsError{message: fmt.Sprintf(format, args...)}
+}
+
+func (err *invalidParamsError) Error() string { return err.message }
+
+func (err *invalidParamsError) ErrorCode() int { return -32602 }
 
 // filter is a helper struct that holds meta information over the filter type
 // and associated subscription in the event system.
@@ -68,15 +83,18 @@ type FilterAPI struct {
 	filtersMu sync.Mutex
 	filters   map[rpc.ID]*filter
 	timeout   time.Duration
+	// rangeLimit is the maximum block range of a log query, 0 for no limit.
+	rangeLimit uint64
 }
 
 // NewFilterAPI returns a new FilterAPI instance.
 func NewFilterAPI(system *FilterSystem) *FilterAPI {
 	api := &FilterAPI{
-		sys:     system,
-		events:  NewEventSystem(system),
-		filters: make(map[rpc.ID]*filter),
-		timeout: system.cfg.Timeout,
+		sys:        system,
+		events:     NewEventSystem(system),
+		filters:    make(map[rpc.ID]*filter),
+		timeout:    system.cfg.Timeout,
+		rangeLimit: system.cfg.RangeLimit,
 	}
 	go api.timeoutLoop(system.cfg.Timeout)
 
@@ -331,10 +349,31 @@ func (api *FilterAPI) NewFilter(crit FilterCriteria) (rpc.ID, error) {
 	return logsSub.ID, nil
 }
 
+// checkLogQueryLimit returns errExceedLogQueryLimit when the criteria hold more
+// than limit addresses, or more than limit topics at one position. A limit of 0
+// allows any number.
+func checkLogQueryLimit(limit int, addresses []common.Address, topics [][]common.LogTopic) error {
+	if limit == 0 {
+		return nil
+	}
+	if len(addresses) > limit {
+		return errExceedLogQueryLimit
+	}
+	for _, position := range topics {
+		if len(position) > limit {
+			return errExceedLogQueryLimit
+		}
+	}
+	return nil
+}
+
 // GetLogs returns logs matching the given argument that are stored within the state.
 func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*types.Log, error) {
 	if len(crit.Topics) > maxTopics {
 		return nil, errExceedMaxTopics
+	}
+	if err := checkLogQueryLimit(api.sys.cfg.LogQueryLimit, crit.Addresses, crit.Topics); err != nil {
+		return nil, err
 	}
 	var filter *Filter
 	if crit.BlockHash != nil {
@@ -354,7 +393,7 @@ func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*type
 			return nil, errInvalidBlockRange
 		}
 		// Construct the range filter
-		filter = api.sys.NewRangeFilter(begin, end, crit.Addresses, crit.Topics)
+		filter = api.sys.NewRangeFilter(begin, end, crit.Addresses, crit.Topics, api.rangeLimit)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)
@@ -405,7 +444,7 @@ func (api *FilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*types.Lo
 			end = f.crit.ToBlock.Int64()
 		}
 		// Construct the range filter
-		filter = api.sys.NewRangeFilter(begin, end, f.crit.Addresses, f.crit.Topics)
+		filter = api.sys.NewRangeFilter(begin, end, f.crit.Addresses, f.crit.Topics, api.rangeLimit)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)

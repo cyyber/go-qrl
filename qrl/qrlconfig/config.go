@@ -55,6 +55,7 @@ var Defaults = Config{
 	TrieTimeout:        60 * time.Minute,
 	SnapshotCache:      102,
 	FilterLogCacheSize: 32,
+	LogQueryLimit:      1000,
 	Miner:              miner.DefaultConfig,
 	TxPool:             legacypool.DefaultConfig,
 	RPCGasCap:          50000000,
@@ -136,6 +137,13 @@ type Config struct {
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transaction variants. The unit is quanta.
 	RPCTxFeeCap float64
+
+	// RangeLimit restricts the maximum range (end - start) for range queries.
+	RangeLimit uint64 `toml:",omitempty"`
+
+	// LogQueryLimit is the maximum number of addresses, or of topics at one
+	// position, in the filter criteria of a log query (0 = no limit).
+	LogQueryLimit int
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain config.
