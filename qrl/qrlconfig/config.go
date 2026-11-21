@@ -136,6 +136,9 @@ type Config struct {
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transaction variants. The unit is quanta.
 	RPCTxFeeCap float64
+
+	// RangeLimit restricts the maximum range (end - start) for range queries.
+	RangeLimit uint64 `toml:",omitempty"`
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain config.
