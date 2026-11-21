@@ -19,6 +19,7 @@ package conformance
 //   0x10 LT          0x11 GT          0x14 EQ          0x15 ISZERO
 //   0x16 AND         0x17 OR          0x18 XOR         0x19 NOT
 //   0x1a BYTE        0x1b SHL         0x1c SHR         0x1d SAR
+//   0x31 BALANCE     0x3b EXTCODESIZE
 //   0x50 POP         0x51 MLOAD       0x52 MSTORE      0x53 MSTORE8
 //   0x54 SLOAD       0x55 SSTORE
 //   0x56 JUMP        0x57 JUMPI       0x5b JUMPDEST
@@ -403,6 +404,71 @@ var Vectors = []Vector{
 			"1011121314151617" + "18191a1b1c1d1e1f" +
 			"2021222324252627" + "28292a2b2c2d2e2f" +
 			"3031323334353637" + "38393a3b3c3d3e3f",
+	},
+
+	// --- account access (EIP-2929 warm / cold) -------------------------
+	//
+	// The first access to an account costs 2600 gas and every later one 100.
+	// The accounts in the access list when the code starts are warm from the
+	// start. Other than the origin and the contract, these are the
+	// precompiles (vm.ActivePrecompiles: 0x01 to 0x07) and the coinbase, which
+	// the runner leaves as the zero address. The addresses after the last
+	// precompile are as cold as any other: a runtime or a test host that
+	// treats a different range as precompiles is off by 2500 gas here.
+	{
+		Name:              "BALANCE of the first precompile (0x01) -> warm",
+		BytecodeHex:       "6001" + "31" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   118,
+	},
+	{
+		Name:              "BALANCE of the last precompile (0x07) -> warm",
+		BytecodeHex:       "6007" + "31" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   118,
+	},
+	{
+		Name:              "BALANCE of 0x08, after the last precompile -> cold",
+		BytecodeHex:       "6008" + "31" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   2618,
+	},
+	{
+		Name:              "BALANCE of 0x09 -> cold",
+		BytecodeHex:       "6009" + "31" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   2618,
+	},
+	{
+		Name:              "BALANCE of 0x0a -> cold",
+		BytecodeHex:       "600a" + "31" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   2618,
+	},
+	{
+		// POP drops the first balance; the second access is warm.
+		Name:              "BALANCE of 0x08 twice -> cold, then warm",
+		BytecodeHex:       "6008" + "31" + "50" + "6008" + "31" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   2723,
+	},
+	{
+		Name:              "BALANCE of the coinbase (zero address) -> warm",
+		BytecodeHex:       "6000" + "31" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   118,
+	},
+	{
+		Name:              "EXTCODESIZE of the last precompile (0x07) -> warm",
+		BytecodeHex:       "6007" + "3b" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   118,
+	},
+	{
+		Name:              "EXTCODESIZE of 0x08, after the last precompile -> cold",
+		BytecodeHex:       "6008" + "3b" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   2618,
 	},
 
 	// --- error paths --------------------------------------------------
