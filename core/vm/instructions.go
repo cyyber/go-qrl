@@ -524,6 +524,26 @@ func opSstore(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]
 	return nil, nil
 }
 
+// opTload implements TLOAD opcode
+func opTload(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
+	loc := scope.Stack.peek()
+	hash := common.Hash(loc.Bytes32())
+	val := interpreter.qrvm.StateDB.GetTransientState(scope.Contract.Address(), hash)
+	loc.SetBytes(val.Bytes())
+	return nil, nil
+}
+
+// opTstore implements TSTORE opcode
+func opTstore(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
+	if interpreter.readOnly {
+		return nil, ErrWriteProtection
+	}
+	loc := scope.Stack.pop()
+	val := scope.Stack.pop()
+	interpreter.qrvm.StateDB.SetTransientState(scope.Contract.Address(), loc.Bytes32(), common.StorageValue64(val.Bytes64()))
+	return nil, nil
+}
+
 func opJump(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	if interpreter.qrvm.abort.Load() {
 		return nil, errStopToken

@@ -356,6 +356,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 
 	// Execute the preparatory steps for state transition which includes:
 	// - prepare accessList
+	// - reset transient storage(eip 1153)
 	st.state.Prepare(msg.From, st.qrvm.Context.Coinbase, msg.To, vm.ActivePrecompiles(), msg.AccessList)
 
 	var (

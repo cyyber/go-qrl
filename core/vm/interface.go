@@ -47,6 +47,9 @@ type StateDB interface {
 	GetState(common.Address, common.Hash) common.StorageValue64
 	SetState(common.Address, common.Hash, common.StorageValue64)
 
+	GetTransientState(addr common.Address, key common.Hash) common.StorageValue64
+	SetTransientState(addr common.Address, key common.Hash, value common.StorageValue64)
+
 	// Exist reports whether the given account exists in state.
 	Exist(common.Address) bool
 	// Empty returns whether the given account is empty. Empty

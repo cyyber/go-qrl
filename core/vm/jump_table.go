@@ -412,6 +412,18 @@ func newZondInstructionSet() JumpTable {
 			minStack:    minStack(0, 0),
 			maxStack:    maxStack(0, 0),
 		},
+		TLOAD: {
+			execute:     opTload,
+			constantGas: params.WarmStorageReadCostEIP2929,
+			minStack:    minStack(1, 1),
+			maxStack:    maxStack(1, 1),
+		},
+		TSTORE: {
+			execute:     opTstore,
+			constantGas: params.WarmStorageReadCostEIP2929,
+			minStack:    minStack(2, 0),
+			maxStack:    maxStack(2, 0),
+		},
 		PUSH1: {
 			execute:     opPush1,
 			constantGas: GasFastestStep,

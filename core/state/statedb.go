@@ -108,6 +108,9 @@ type StateDB struct {
 	// Per-transaction access list
 	accessList *accessList
 
+	// Transient storage
+	transientStorage transientStorage
+
 	// Journal of state modifications. This is the backbone of
 	// Snapshot and RevertToSnapshot.
 	journal        *journal
@@ -160,6 +163,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		preimages:            make(map[common.Hash][]byte),
 		journal:              newJournal(),
 		accessList:           newAccessList(),
+		transientStorage:     newTransientStorage(),
 		hasher:               crypto.NewKeccakState(),
 	}
 	if sdb.snaps != nil {
@@ -422,6 +426,33 @@ func (s *StateDB) SetStorage(addr common.Address, storage map[common.Hash]common
 	for k, v := range storage {
 		stateObject.SetState(k, v)
 	}
+}
+
+// SetTransientState sets transient storage for a given account. It
+// adds the change to the journal so that it can be rolled back
+// to its previous value if there is a revert.
+func (s *StateDB) SetTransientState(addr common.Address, key common.Hash, value common.StorageValue64) {
+	prev := s.GetTransientState(addr, key)
+	if prev == value {
+		return
+	}
+	s.journal.append(transientStorageChange{
+		account:  &addr,
+		key:      key,
+		prevalue: prev,
+	})
+	s.setTransientState(addr, key, value)
+}
+
+// setTransientState is a lower level setter for transient storage. It
+// is called during a revert to prevent modifications to the journal.
+func (s *StateDB) setTransientState(addr common.Address, key common.Hash, value common.StorageValue64) {
+	s.transientStorage.Set(addr, key, value)
+}
+
+// GetTransientState gets transient storage for a given account.
+func (s *StateDB) GetTransientState(addr common.Address, key common.Hash) common.StorageValue64 {
+	return s.transientStorage.Get(addr, key)
 }
 
 //
@@ -695,13 +726,14 @@ func (s *StateDB) Copy() *StateDB {
 	}
 	// Deep copy the preimages occurred in the scope of block
 	maps.Copy(state.preimages, s.preimages)
-	// Do we need to copy the access list?
+	// Do we need to copy the access list and transient storage?
 	// In practice: No. At the start of a transaction, these two lists are empty.
 	// In practice, we only ever copy state _between_ transactions/blocks, never
 	// in the middle of a transaction. However, it doesn't cost us much to copy
 	// empty lists, so we do it anyway to not blow up if we ever decide copy them
 	// in the middle of a transaction.
 	state.accessList = s.accessList.Copy()
+	state.transientStorage = s.transientStorage.Copy()
 
 	// If there's a prefetcher running, make an inactive copy of it that can
 	// only access data but does not actively preload (since the user will not
@@ -1240,6 +1272,9 @@ func (s *StateDB) Prepare(sender, coinbase common.Address, dst *common.Address, 
 		}
 	}
 	al.AddAddress(coinbase)
+
+	// Reset transient storage at the beginning of transaction execution
+	s.transientStorage = newTransientStorage()
 }
 
 // AddAddressToAccessList adds the given address to the access list

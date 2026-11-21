@@ -22,6 +22,7 @@ package conformance
 //   0x50 POP         0x51 MLOAD       0x52 MSTORE      0x53 MSTORE8
 //   0x54 SLOAD       0x55 SSTORE
 //   0x56 JUMP        0x57 JUMPI       0x5b JUMPDEST
+//   0x5c TLOAD       0x5d TSTORE
 //   0x5f PUSH0
 //   0x60..0x7f PUSH1..PUSH32
 //   0x80..0x9f PUSH33..PUSH64  (introduced when the VM word grew to 64 bytes)
@@ -74,6 +75,12 @@ const pushStorageKeyTopBit = "6001" + "6101ff" + "1b"
 // SSTORE pops the key first, so the value is pushed underneath it.
 func sstoreValue42(pushKey string) string {
 	return "602a" + pushKey + "55"
+}
+
+// tstoreValue42 stores 0x2a at the transient storage key currently on top of
+// the stack. Like SSTORE, TSTORE pops the key first.
+func tstoreValue42(pushKey string) string {
+	return "602a" + pushKey + "5d"
 }
 
 // Vectors is the complete corpus exposed to test runners.
@@ -343,6 +350,55 @@ var Vectors = []Vector{
 			"2021222324252627" + "28292a2b2c2d2e2f" +
 			"3031323334353637" + "38393a3b3c3d3e3f" +
 			"60" + storageKeyLow + "55" + "60" + storageKeyLow + "54" + storeAndReturn64,
+		ExpectedReturnHex: "0001020304050607" + "08090a0b0c0d0e0f" +
+			"1011121314151617" + "18191a1b1c1d1e1f" +
+			"2021222324252627" + "28292a2b2c2d2e2f" +
+			"3031323334353637" + "38393a3b3c3d3e3f",
+	},
+
+	// --- transient storage (TSTORE / TLOAD, EIP-1153) ------------------
+	//
+	// Transient storage mirrors persistent storage: 64-byte values under
+	// 32-byte keys taken from the low 256 bits of the stack operand. Both
+	// opcodes cost a flat 100 gas, and the two stores never overlap.
+	{
+		Name:              "TSTORE + TLOAD round-trip",
+		BytecodeHex:       tstoreValue42("60"+storageKeyLow) + "60" + storageKeyLow + "5c" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedGasUsed:   224,
+	},
+	{
+		Name:              "TLOAD of an unset key -> 0",
+		BytecodeHex:       "60" + storageKeyLow + "5c" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   118,
+	},
+	{
+		Name:              "TSTORE key 2^256+5, TLOAD key 5 -> same slot",
+		BytecodeHex:       tstoreValue42(pushStorageKeyHigh) + "60" + storageKeyLow + "5c" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedGasUsed:   224,
+	},
+	{
+		Name:              "TSTORE, then SLOAD -> persistent storage untouched",
+		BytecodeHex:       tstoreValue42("60"+storageKeyLow) + "60" + storageKeyLow + "54" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   2224,
+	},
+	{
+		Name:              "SSTORE, then TLOAD -> transient storage untouched",
+		BytecodeHex:       sstoreValue42("60"+storageKeyLow) + "60" + storageKeyLow + "5c" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   22224,
+	},
+	{
+		Name: "TSTORE + TLOAD keeps a full 64-byte value",
+		BytecodeHex: "9f" +
+			"0001020304050607" + "08090a0b0c0d0e0f" +
+			"1011121314151617" + "18191a1b1c1d1e1f" +
+			"2021222324252627" + "28292a2b2c2d2e2f" +
+			"3031323334353637" + "38393a3b3c3d3e3f" +
+			"60" + storageKeyLow + "5d" + "60" + storageKeyLow + "5c" + storeAndReturn64,
 		ExpectedReturnHex: "0001020304050607" + "08090a0b0c0d0e0f" +
 			"1011121314151617" + "18191a1b1c1d1e1f" +
 			"2021222324252627" + "28292a2b2c2d2e2f" +

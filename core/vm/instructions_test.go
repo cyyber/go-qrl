@@ -26,6 +26,8 @@ import (
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/uint512"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/params"
@@ -559,6 +561,61 @@ func TestOpMstore(t *testing.T) {
 		"0000000000000000000000000000000000000000000000000000000000000001"
 	if got := common.Bytes2Hex(mem.GetCopy(0, 64)); got != wantOverwrite {
 		t.Fatalf("Mstore failed to overwrite previous value, got %v", got)
+	}
+}
+
+func TestOpTstore(t *testing.T) {
+	var (
+		statedb, _      = state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
+		env             = NewQRVM(BlockContext{}, TxContext{}, statedb, params.TestChainConfig, Config{})
+		stack           = newstack()
+		mem             = NewMemory()
+		qrvmInterpreter = NewQRVMInterpreter(env)
+		caller          = common.Address{}
+		to              = common.Address{1}
+		contract        = NewContract(AccountRef(caller), AccountRef(to), new(big.Int), 0)
+		scopeContext    = ScopeContext{mem, stack, contract}
+		// A full 64-byte VM word, so both halves of the value are covered.
+		value = common.Hex2Bytes("abcdef00000000000000abba000000000deaf000000c0de00100000000133700" +
+			"00deadbeef00000000000000000000000000000000000000000000000000cafe")
+	)
+
+	// Add a stateObject for the caller and the contract being called
+	statedb.CreateAccount(caller)
+	statedb.CreateAccount(to)
+
+	env.interpreter = qrvmInterpreter
+	pc := uint64(0)
+	// push the value to the stack
+	stack.push(new(uint512.Int).SetBytes(value))
+	// push the location to the stack
+	stack.push(new(uint512.Int))
+	opTstore(&pc, qrvmInterpreter, &scopeContext)
+	// there should be no elements on the stack after TSTORE
+	if stack.len() != 0 {
+		t.Fatal("stack wrong size")
+	}
+	// push the location to the stack
+	stack.push(new(uint512.Int))
+	opTload(&pc, qrvmInterpreter, &scopeContext)
+	// there should be one element on the stack after TLOAD
+	if stack.len() != 1 {
+		t.Fatal("stack wrong size")
+	}
+	val := stack.peek()
+	if !bytes.Equal(val.Bytes(), value) {
+		t.Fatal("incorrect element read from transient storage")
+	}
+
+	// TSTORE must be rejected in a static call and leave the value untouched
+	qrvmInterpreter.readOnly = true
+	stack.push(new(uint512.Int).SetUint64(1))
+	stack.push(new(uint512.Int))
+	if _, err := opTstore(&pc, qrvmInterpreter, &scopeContext); err != ErrWriteProtection {
+		t.Fatalf("TSTORE in a static call: have error %v, want %v", err, ErrWriteProtection)
+	}
+	if got := statedb.GetTransientState(to, common.Hash{}); !bytes.Equal(got.Bytes(), value) {
+		t.Fatal("transient storage modified in a static call")
 	}
 }
 
