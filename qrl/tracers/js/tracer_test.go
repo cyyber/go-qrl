@@ -283,7 +283,7 @@ func expectedQRVMDisResultCount(op vm.OpCode) (int, bool) {
 	switch {
 	case op >= vm.ADD && op <= vm.SIGNEXTEND:
 		return 1, true
-	case op >= vm.LT && op <= vm.SAR:
+	case op >= vm.LT && op <= vm.CLZ:
 		return 1, true
 	case op >= vm.ADDRESS && op <= vm.CALLDATASIZE:
 		return 1, true

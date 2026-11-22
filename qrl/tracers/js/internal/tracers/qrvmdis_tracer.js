@@ -29,7 +29,7 @@
 			return 1;
 		}
 		// Comparison, bitwise, and shift.
-		if (op >= 0x10 && op <= 0x1d) {
+		if (op >= 0x10 && op <= 0x1e) {
 			return 1;
 		}
 		// Address and call data reads.

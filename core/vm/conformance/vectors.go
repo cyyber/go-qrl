@@ -19,6 +19,7 @@ package conformance
 //   0x10 LT          0x11 GT          0x14 EQ          0x15 ISZERO
 //   0x16 AND         0x17 OR          0x18 XOR         0x19 NOT
 //   0x1a BYTE        0x1b SHL         0x1c SHR         0x1d SAR
+//   0x1e CLZ
 //   0x31 BALANCE     0x3b EXTCODESIZE
 //   0x50 POP         0x51 MLOAD       0x52 MSTORE      0x53 MSTORE8
 //   0x54 SLOAD       0x55 SSTORE
@@ -239,6 +240,54 @@ var Vectors = []Vector{
 		Name:              "SHR (2^512 - 1) by 511 -> 1",
 		BytecodeHex:       "6000" + "19" + "6101ff" + "1c" + storeAndReturn64,
 		ExpectedReturnHex: expectedWord("01"),
+	},
+
+	// --- count leading zeros (CLZ, EIP-7939) --------------------------
+	//
+	// CLZ counts over the 512-bit word: zero gives 512, and a value below
+	// 2^256 gives 256 more than it would on a 256-bit word. CLZ costs 5 gas.
+	{
+		Name:              "CLZ 0 -> 512",
+		BytecodeHex:       "6000" + "1e" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("0200"),
+		ExpectedGasUsed:   23,
+	},
+	{
+		Name:              "CLZ 1 -> 511",
+		BytecodeHex:       "6001" + "1e" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("01ff"),
+		ExpectedGasUsed:   23,
+	},
+	{
+		// PUSH32 of 2^255: the top bit of a 256-bit word.
+		Name:              "CLZ 2^255 -> 256",
+		BytecodeHex:       "7f" + "8000000000000000000000000000000000000000000000000000000000000000" + "1e" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("0100"),
+		ExpectedGasUsed:   23,
+	},
+	{
+		// PUSH33 of 2^256: the first value that does not fit in 256 bits.
+		Name:              "CLZ 2^256 -> 255",
+		BytecodeHex:       "80" + "010000000000000000000000000000000000000000000000000000000000000000" + "1e" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("ff"),
+		ExpectedGasUsed:   23,
+	},
+	{
+		Name:              "CLZ 2^511 -> 0",
+		BytecodeHex:       "6001" + "6101ff" + "1b" + "1e" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   29,
+	},
+	{
+		Name:              "CLZ (2^512 - 1) -> 0",
+		BytecodeHex:       "6000" + "19" + "1e" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   26,
+	},
+	{
+		Name:          "CLZ with no operand",
+		BytecodeHex:   "1e",
+		ExpectedError: ErrStackUnderflow,
 	},
 
 	// --- PUSH0 / PUSH1 / PUSH32 / PUSH33 / PUSH64 ---------------------

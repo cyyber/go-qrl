@@ -432,6 +432,12 @@ func newZondInstructionSet() JumpTable {
 			maxStack:    maxStack(3, 0),
 			memorySize:  memoryMcopy,
 		},
+		PUSH0: {
+			execute:     opPush0,
+			constantGas: GasQuickStep,
+			minStack:    minStack(0, 1),
+			maxStack:    maxStack(0, 1),
+		},
 		PUSH1: {
 			execute:     opPush1,
 			constantGas: GasFastestStep,
@@ -1121,6 +1127,12 @@ func newZondInstructionSet() JumpTable {
 			minStack:    minStack(2, 1),
 			maxStack:    maxStack(2, 1),
 		},
+		CLZ: {
+			execute:     opCLZ,
+			constantGas: GasFastStep,
+			minStack:    minStack(1, 1),
+			maxStack:    maxStack(1, 1),
+		},
 		EXTCODEHASH: {
 			execute:     opExtCodeHash,
 			constantGas: params.WarmStorageReadCostEIP2929,
@@ -1156,12 +1168,6 @@ func newZondInstructionSet() JumpTable {
 		},
 		PREVRANDAO: {
 			execute:     opRandom,
-			constantGas: GasQuickStep,
-			minStack:    minStack(0, 1),
-			maxStack:    maxStack(0, 1),
-		},
-		PUSH0: {
-			execute:     opPush0,
 			constantGas: GasQuickStep,
 			minStack:    minStack(0, 1),
 			maxStack:    maxStack(0, 1),

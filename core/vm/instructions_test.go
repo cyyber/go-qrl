@@ -204,6 +204,52 @@ func TestSAR(t *testing.T) {
 	testTwoOperandOp(t, tests, opSAR, "sar")
 }
 
+func TestCLZ(t *testing.T) {
+	// CLZ counts the leading zero bits of the 512-bit VM word. A value below
+	// 2^256 therefore gives 256 more than the EIP-7939 result, and zero gives
+	// 512.
+	var (
+		env             = NewQRVM(BlockContext{}, TxContext{}, nil, params.TestChainConfig, Config{})
+		stack           = newstack()
+		pc              = uint64(0)
+		qrvmInterpreter = env.interpreter
+	)
+	check := func(x *uint512.Int, want uint64) {
+		t.Helper()
+		stack.push(x)
+		opCLZ(&pc, qrvmInterpreter, &ScopeContext{nil, stack, nil})
+		if len(stack.data) != 1 {
+			t.Fatalf("clz(%x): expected one item on stack, got %d", x, len(stack.data))
+		}
+		if have := stack.pop(); !have.IsUint64() || have.Uint64() != want {
+			t.Errorf("clz(%x): have %d, want %d", x, have, want)
+		}
+	}
+	for _, tc := range []struct {
+		x    string
+		want uint64
+	}{
+		{"00", 512},
+		{"01", 511},
+		{"80" + strings.Repeat("00", 31), 256}, // 2^255
+		{"01" + strings.Repeat("00", 32), 255}, // 2^256
+		{"80" + strings.Repeat("00", 63), 0},   // 2^511
+		{strings.Repeat("ff", 64), 0},          // 2^512 - 1
+	} {
+		check(new(uint512.Int).SetBytes(common.Hex2Bytes(tc.x)), tc.want)
+	}
+	// For every bit position i, 2^i is the smallest value whose top bit is i
+	// and 2^(i+1) - 1 is the largest.
+	one := uint512.NewInt(1)
+	for i := uint(0); i < WordBits; i++ {
+		want := uint64(WordBits - 1 - i)
+		low := new(uint512.Int).Lsh(one, i)
+		check(low, want)
+		high := new(uint512.Int).Lsh(one, i+1)
+		check(high.Sub(high, one), want)
+	}
+}
+
 func TestAddMod(t *testing.T) {
 	var (
 		env             = NewQRVM(BlockContext{}, TxContext{}, nil, params.TestChainConfig, Config{})

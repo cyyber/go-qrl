@@ -233,6 +233,14 @@ func opSAR(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byt
 	return nil, nil
 }
 
+// opCLZ implements the CLZ opcode (https://eips.ethereum.org/EIPS/eip-7939).
+// It counts the leading zero bits of the 512-bit VM word, so zero yields 512.
+func opCLZ(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
+	x := scope.Stack.peek()
+	x.SetUint64(uint64(WordBits - x.BitLen()))
+	return nil, nil
+}
+
 func opKeccak256(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	offset, size := scope.Stack.pop(), scope.Stack.peek()
 	data := scope.Memory.GetPtr(int64(offset.Uint64()), int64(size.Uint64()))
