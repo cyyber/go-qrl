@@ -424,6 +424,14 @@ func newZondInstructionSet() JumpTable {
 			minStack:    minStack(2, 0),
 			maxStack:    maxStack(2, 0),
 		},
+		MCOPY: {
+			execute:     opMcopy,
+			constantGas: GasFastestStep,
+			dynamicGas:  gasMcopy,
+			minStack:    minStack(3, 0),
+			maxStack:    maxStack(3, 0),
+			memorySize:  memoryMcopy,
+		},
 		PUSH1: {
 			execute:     opPush1,
 			constantGas: GasFastestStep,

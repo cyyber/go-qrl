@@ -22,9 +22,11 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
 	"github.com/theQRL/go-qrl/common/uint512"
 	"github.com/theQRL/go-qrl/core/rawdb"
 	"github.com/theQRL/go-qrl/core/state"
@@ -616,6 +618,158 @@ func TestOpTstore(t *testing.T) {
 	}
 	if got := statedb.GetTransientState(to, common.Hash{}); !bytes.Equal(got.Bytes(), value) {
 		t.Fatal("transient storage modified in a static call")
+	}
+}
+
+func TestOpMCopy(t *testing.T) {
+	// The cases follow https://eips.ethereum.org/EIPS/eip-5656#test-cases,
+	// rescaled to the 64-byte VM word: memory grows, and copy gas is charged,
+	// per 64 bytes.
+	var (
+		ascending = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f" +
+			"202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f"
+		zeroWord = strings.Repeat("00", 64)
+	)
+	for i, tc := range []struct {
+		dst, src, len string
+		pre           string
+		want          string
+		wantGas       uint64
+		wantOverflow  bool
+	}{
+		{ // MCOPY 0 64 64 - copy 64 bytes from offset 64 to offset 0.
+			dst: "0x0", src: "0x40", len: "0x40",
+			pre:     zeroWord + ascending,
+			want:    ascending + ascending,
+			wantGas: 6,
+		},
+		{ // MCOPY 0 0 64 - copy 64 bytes from offset 0 to offset 0.
+			dst: "0x0", src: "0x0", len: "0x40",
+			pre:     strings.Repeat("01", 64),
+			want:    strings.Repeat("01", 64),
+			wantGas: 6,
+		},
+		{ // MCOPY 0 1 8 - copy 8 bytes from offset 1 to offset 0 (overlapping).
+			dst: "0x0", src: "0x1", len: "0x8",
+			pre:     "000102030405060708" + strings.Repeat("00", 55),
+			want:    "010203040506070808" + strings.Repeat("00", 55),
+			wantGas: 6,
+		},
+		{ // MCOPY 1 0 8 - copy 8 bytes from offset 0 to offset 1 (overlapping).
+			dst: "0x1", src: "0x0", len: "0x8",
+			pre:     "000102030405060708" + strings.Repeat("00", 55),
+			want:    "000001020304050607" + strings.Repeat("00", 55),
+			wantGas: 6,
+		},
+		// The cases below are not in the EIP.
+		{ // MCOPY 0xFFFFFFFFFFFF 0xFFFFFFFFFFFF 0 - copy zero bytes from out-of-bounds index (overlapping).
+			dst: "0xFFFFFFFFFFFF", src: "0xFFFFFFFFFFFF", len: "0x0",
+			pre:     "11",
+			want:    "11",
+			wantGas: 3,
+		},
+		{ // MCOPY 0xFFFFFFFFFFFF 0 0 - copy zero bytes from start of mem to out-of-bounds.
+			dst: "0xFFFFFFFFFFFF", src: "0x0", len: "0x0",
+			pre:     "11",
+			want:    "11",
+			wantGas: 3,
+		},
+		{ // MCOPY 0 0xFFFFFFFFFFFF 0 - copy zero bytes from out-of-bounds to start of mem.
+			dst: "0x0", src: "0xFFFFFFFFFFFF", len: "0x0",
+			pre:     "11",
+			want:    "11",
+			wantGas: 3,
+		},
+		{ // MCOPY - copy 1 from space outside of uint64 space.
+			dst: "0x0", src: "0x10000000000000000", len: "0x1",
+			pre:          "00",
+			wantOverflow: true,
+		},
+		{ // MCOPY - copy 1 from 0 to space outside of uint64.
+			dst: "0x10000000000000000", src: "0x0", len: "0x1",
+			pre:          "00",
+			wantOverflow: true,
+		},
+		{ // MCOPY - copy a length outside of uint64.
+			dst: "0x0", src: "0x0", len: "0x10000000000000000",
+			pre:          "00",
+			wantOverflow: true,
+		},
+		{ // MCOPY - copy nothing from 0 to space outside of uint64.
+			dst: "0x10000000000000000", src: "0x0", len: "0x0",
+			pre:     "",
+			want:    "",
+			wantGas: 3,
+		},
+		{ // MCOPY - copy 1 from 0x40 to 0x10, with no prior allocated mem: the source needs two words.
+			dst: "0x10", src: "0x40", len: "0x1",
+			pre:     "",
+			want:    zeroWord + zeroWord,
+			wantGas: 12,
+		},
+		{ // MCOPY - copy 1 from 0x20 to 0x10, with no prior allocated mem: one word holds both.
+			dst: "0x10", src: "0x20", len: "0x1",
+			pre:     "",
+			want:    zeroWord,
+			wantGas: 9,
+		},
+		{ // MCOPY - copy 65 bytes, with no prior allocated mem: two words expanded, two words copied.
+			dst: "0x0", src: "0x0", len: "0x41",
+			pre:     "",
+			want:    zeroWord + zeroWord,
+			wantGas: 15,
+		},
+	} {
+		var (
+			env             = NewQRVM(BlockContext{}, TxContext{}, nil, params.TestChainConfig, Config{})
+			stack           = newstack()
+			pc              = uint64(0)
+			qrvmInterpreter = NewQRVMInterpreter(env)
+		)
+		data := common.FromHex(tc.pre)
+		// Set pre
+		mem := NewMemory()
+		mem.Resize(uint64(len(data)))
+		mem.Set(0, uint64(len(data)), data)
+		// Push stack args
+		stack.push(new(uint512.Int).SetBytes(common.FromHex(tc.len)))
+		stack.push(new(uint512.Int).SetBytes(common.FromHex(tc.src)))
+		stack.push(new(uint512.Int).SetBytes(common.FromHex(tc.dst)))
+		// Calc mem expansion
+		memSize, overflow := memoryMcopy(stack)
+		if overflow != tc.wantOverflow {
+			t.Errorf("case %d: memory size overflow: have %v want %v", i, overflow, tc.wantOverflow)
+		}
+		if overflow {
+			continue
+		}
+		memorySize, overflow := math.SafeMul(toWordSize(memSize), uint64(WordBytes))
+		if overflow {
+			t.Errorf("case %d: %v", i, ErrGasUintOverflow)
+		}
+		// and the dynamic cost
+		var haveGas uint64
+		if dynamicCost, err := gasMcopy(env, nil, stack, mem, memorySize); err != nil {
+			t.Errorf("case %d: %v", i, err)
+		} else {
+			haveGas = GasFastestStep + dynamicCost
+		}
+		// Expand mem
+		if memorySize > 0 {
+			mem.Resize(memorySize)
+		}
+		// Do the copy
+		opMcopy(&pc, qrvmInterpreter, &ScopeContext{mem, stack, nil})
+		want := common.FromHex(tc.want)
+		if have := mem.store; !bytes.Equal(want, have) {
+			t.Errorf("case %d: \nwant: %#x\nhave: %#x\n", i, want, have)
+		}
+		if haveGas != tc.wantGas {
+			t.Errorf("case %d: gas wrong, want %d have %d\n", i, tc.wantGas, haveGas)
+		}
+		if stack.len() != 0 {
+			t.Errorf("case %d: stack not empty after MCOPY, have %d items", i, stack.len())
+		}
 	}
 }
 

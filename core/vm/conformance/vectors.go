@@ -22,8 +22,8 @@ package conformance
 //   0x31 BALANCE     0x3b EXTCODESIZE
 //   0x50 POP         0x51 MLOAD       0x52 MSTORE      0x53 MSTORE8
 //   0x54 SLOAD       0x55 SSTORE
-//   0x56 JUMP        0x57 JUMPI       0x5b JUMPDEST
-//   0x5c TLOAD       0x5d TSTORE
+//   0x56 JUMP        0x57 JUMPI       0x59 MSIZE       0x5b JUMPDEST
+//   0x5c TLOAD       0x5d TSTORE      0x5e MCOPY
 //   0x5f PUSH0
 //   0x60..0x7f PUSH1..PUSH32
 //   0x80..0x9f PUSH33..PUSH64  (introduced when the VM word grew to 64 bytes)
@@ -82,6 +82,28 @@ func sstoreValue42(pushKey string) string {
 // the stack. Like SSTORE, TSTORE pops the key first.
 func tstoreValue42(pushKey string) string {
 	return "602a" + pushKey + "5d"
+}
+
+// ascendingWord is the 64-byte word 0x00, 0x01, ..., 0x3f. No two of its
+// bytes are equal, so a copy that lands one byte off shows in the result.
+const ascendingWord = "0001020304050607" + "08090a0b0c0d0e0f" +
+	"1011121314151617" + "18191a1b1c1d1e1f" +
+	"2021222324252627" + "28292a2b2c2d2e2f" +
+	"3031323334353637" + "38393a3b3c3d3e3f"
+
+// mstoreAscendingWord sets memory[0..64) to ascendingWord (PUSH64, PUSH1 0,
+// MSTORE), leaving memory one word long.
+const mstoreAscendingWord = "9f" + ascendingWord + "6000" + "52"
+
+// pushOffset2Pow64 pushes 2^64 (PUSH9), the first memory offset that does not
+// fit in 64 bits.
+const pushOffset2Pow64 = "68" + "010000000000000000"
+
+// mcopy copies memory[src..src+length) to memory[dst..dst+length). MCOPY pops
+// the destination first, then the source, then the length. Each argument is a
+// complete push instruction.
+func mcopy(pushDst, pushSrc, pushLength string) string {
+	return pushLength + pushSrc + pushDst + "5e"
 }
 
 // Vectors is the complete corpus exposed to test runners.
@@ -404,6 +426,74 @@ var Vectors = []Vector{
 			"1011121314151617" + "18191a1b1c1d1e1f" +
 			"2021222324252627" + "28292a2b2c2d2e2f" +
 			"3031323334353637" + "38393a3b3c3d3e3f",
+	},
+
+	// --- memory copy (MCOPY, EIP-5656) ---------------------------------
+	//
+	// MCOPY costs 3 gas, plus 3 gas for each 64-byte word copied, plus the
+	// expansion of memory to cover both the source and the destination range.
+	// Overlapping ranges are copied as if through an intermediate buffer.
+	{
+		Name:              "MCOPY a word to fresh memory",
+		BytecodeHex:       mstoreAscendingWord + mcopy("6040", "6000", "6040") + "6040" + "6040" + "f3",
+		ExpectedReturnHex: ascendingWord,
+		ExpectedGasUsed:   36,
+	},
+	{
+		Name:              "MCOPY overlapping, destination one byte after source",
+		BytecodeHex:       mstoreAscendingWord + mcopy("6001", "6000", "603f") + "6040" + "6000" + "f3",
+		ExpectedReturnHex: "00" + ascendingWord[:126],
+		ExpectedGasUsed:   33,
+	},
+	{
+		Name:              "MCOPY overlapping, destination one byte before source",
+		BytecodeHex:       mstoreAscendingWord + mcopy("6000", "6001", "603f") + "6040" + "6000" + "f3",
+		ExpectedReturnHex: ascendingWord[2:] + "3f",
+		ExpectedGasUsed:   33,
+	},
+	{
+		// The source range lies past the end of memory: memory grows to cover
+		// it and the destination receives zeros.
+		Name:              "MCOPY from past the end of memory -> zeros",
+		BytecodeHex:       mstoreAscendingWord + mcopy("6000", "6040", "6040") + "6040" + "6000" + "f3",
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   36,
+	},
+	{
+		// 65 bytes round up to two words, for copy gas and for MSIZE alike.
+		Name:              "MCOPY of 65 bytes -> two words",
+		BytecodeHex:       mcopy("6000", "6000", "6041") + "59" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("80"),
+		ExpectedGasUsed:   38,
+	},
+	{
+		// A zero length never touches memory, whatever the offsets: MSIZE is
+		// still 0 afterwards.
+		Name:              "MCOPY of zero bytes at offset 2^64 -> no expansion",
+		BytecodeHex:       mcopy(pushOffset2Pow64, pushOffset2Pow64, "6000") + "59" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   29,
+	},
+	{
+		Name:          "MCOPY to offset 2^64 -> out of gas",
+		BytecodeHex:   mcopy(pushOffset2Pow64, "6000", "6001"),
+		ExpectedError: ErrOutOfGas,
+	},
+	{
+		// The source is the larger offset here; it must bound memory too.
+		Name:          "MCOPY from offset 2^64 -> out of gas",
+		BytecodeHex:   mcopy("6000", pushOffset2Pow64, "6001"),
+		ExpectedError: ErrOutOfGas,
+	},
+	{
+		Name:          "MCOPY of 2^64 bytes -> out of gas",
+		BytecodeHex:   mcopy("6000", "6000", pushOffset2Pow64),
+		ExpectedError: ErrOutOfGas,
+	},
+	{
+		Name:          "MCOPY with two operands",
+		BytecodeHex:   "6000" + "6000" + "5e",
+		ExpectedError: ErrStackUnderflow,
 	},
 
 	// --- account access (EIP-2929 warm / cold) -------------------------
