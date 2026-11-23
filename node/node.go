@@ -391,6 +391,7 @@ func (n *Node) startRPC() error {
 	rpcConfig := rpcEndpointConfig{
 		batchItemLimit:         n.config.BatchRequestLimit,
 		batchResponseSizeLimit: n.config.BatchResponseMaxSize,
+		httpBodyLimit:          n.config.HTTPBodyLimit,
 	}
 
 	initHttp := func(server *httpServer, port int) error {
