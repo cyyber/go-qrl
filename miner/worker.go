@@ -36,6 +36,7 @@ import (
 
 var (
 	errBlockInterruptedByTimeout = errors.New("timeout while building block")
+	errStateReadFailure          = errors.New("state read failed while building block")
 )
 
 // environment is the worker's current environment and holds all
@@ -123,6 +124,11 @@ func (miner *Miner) generateWork(params *generateParams) *newPayloadResult {
 	block, err := miner.engine.FinalizeAndAssemble(miner.chain, work.header, work.state, &body, work.receipts)
 	if err != nil {
 		return &newPayloadResult{err: err}
+	}
+	// Check for db errors. If anything happened during the mining or IntermediateRoot, such as a
+	// weird flush or a trie node missing, we need to bail out and not create a block.
+	if dbErr := work.state.Error(); dbErr != nil {
+		return &newPayloadResult{err: fmt.Errorf("%w: %v", errStateReadFailure, dbErr)}
 	}
 	return &newPayloadResult{
 		block:    block,
