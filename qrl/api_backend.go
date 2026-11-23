@@ -34,6 +34,7 @@ import (
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
 	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/qrl/gasprice"
 	"github.com/theQRL/go-qrl/qrl/tracers"
@@ -77,14 +78,14 @@ func (b *QRLAPIBackend) HeaderByNumber(ctx context.Context, number rpc.BlockNumb
 	if number == rpc.FinalizedBlockNumber {
 		block := b.qrl.blockchain.CurrentFinalBlock()
 		if block == nil {
-			return nil, errors.New("finalized block not found")
+			return nil, qrlapi.ErrFinalizedBlockNotFound
 		}
 		return block, nil
 	}
 	if number == rpc.SafeBlockNumber {
 		block := b.qrl.blockchain.CurrentSafeBlock()
 		if block == nil {
-			return nil, errors.New("safe block not found")
+			return nil, qrlapi.ErrSafeBlockNotFound
 		}
 		return block, nil
 	}
@@ -129,14 +130,14 @@ func (b *QRLAPIBackend) BlockByNumber(ctx context.Context, number rpc.BlockNumbe
 	if number == rpc.FinalizedBlockNumber {
 		header := b.qrl.blockchain.CurrentFinalBlock()
 		if header == nil {
-			return nil, errors.New("finalized block not found")
+			return nil, qrlapi.ErrFinalizedBlockNotFound
 		}
 		return b.qrl.blockchain.GetBlock(header.Hash(), header.Number.Uint64()), nil
 	}
 	if number == rpc.SafeBlockNumber {
 		header := b.qrl.blockchain.CurrentSafeBlock()
 		if header == nil {
-			return nil, errors.New("safe block not found")
+			return nil, qrlapi.ErrSafeBlockNotFound
 		}
 		return b.qrl.blockchain.GetBlock(header.Hash(), header.Number.Uint64()), nil
 	}

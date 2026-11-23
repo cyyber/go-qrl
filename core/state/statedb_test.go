@@ -38,6 +38,7 @@ import (
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/rlp"
 	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/database"
 	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
 	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 	"github.com/theQRL/go-qrl/trie/trienode"
@@ -1151,5 +1152,26 @@ func TestDeleteStorage(t *testing.T) {
 	fastRes := check(fastNodes)
 	if slowRes != fastRes {
 		t.Fatalf("difference found:\nfast: %v\nslow: %v\n", fastRes, slowRes)
+	}
+}
+
+// Opening a state whose root is unknown reports ErrStateUnavailable under both
+// schemes.
+func TestStateUnavailable(t *testing.T) {
+	for _, scheme := range []string{rawdb.HashScheme, rawdb.PathScheme} {
+		t.Run(scheme, func(t *testing.T) {
+			disk := rawdb.NewMemoryDatabase()
+			config := trie.HashDefaults
+			if scheme == rawdb.PathScheme {
+				config = &trie.Config{PathDB: pathdb.Defaults}
+			}
+			tdb := trie.NewDatabase(disk, config)
+			defer tdb.Close()
+
+			root := common.Hash512{1}
+			if _, err := New(root, NewDatabaseWithNodeDB(disk, tdb), nil); !errors.Is(err, database.ErrStateUnavailable) {
+				t.Errorf("have %v, want %v", err, database.ErrStateUnavailable)
+			}
+		})
 	}
 }

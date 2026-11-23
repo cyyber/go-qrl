@@ -29,6 +29,7 @@ import (
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/trie/triedb/database"
 	"github.com/theQRL/go-qrl/trie/trienode"
 	"github.com/theQRL/go-qrl/trie/triestate"
 )
@@ -183,11 +184,13 @@ func New(diskdb qrldb.Database, config *Config) *Database {
 	return db
 }
 
-// Reader retrieves a layer belonging to the given state root.
+// Reader retrieves a layer belonging to the given state root. The returned
+// error wraps database.ErrStateUnavailable if the requested state is not
+// available.
 func (db *Database) Reader(root common.Hash512) (layer, error) {
 	l := db.tree.get(root)
 	if l == nil {
-		return nil, fmt.Errorf("state %#x is not available", root)
+		return nil, fmt.Errorf("%w: %#x", database.ErrStateUnavailable, root)
 	}
 	return l, nil
 }

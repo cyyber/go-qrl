@@ -113,7 +113,8 @@ func NewDatabase(diskdb qrldb.Database, config *Config) *Database {
 }
 
 // Reader returns a reader for accessing all trie nodes with provided state root.
-// An error will be returned if the requested state is not available.
+// The returned error wraps database.ErrStateUnavailable if the requested state
+// is not available.
 func (db *Database) Reader(blockRoot common.Hash512) (Reader, error) {
 	switch b := db.backend.(type) {
 	case *hashdb.Database:

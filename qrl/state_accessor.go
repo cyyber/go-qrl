@@ -31,6 +31,7 @@ import (
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/qrl/tracers"
 	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/database"
 )
 
 // noopReleaser is returned in case there is no operation expected
@@ -39,11 +40,11 @@ var noopReleaser = tracers.StateReleaseFunc(func() {})
 
 func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64, base *state.StateDB, readOnly bool, preferDisk bool) (statedb *state.StateDB, release tracers.StateReleaseFunc, err error) {
 	var (
-		current  *types.Block
-		database state.Database
-		triedb   *trie.Database
-		report   = true
-		origin   = block.NumberU64()
+		current *types.Block
+		db      state.Database
+		triedb  *trie.Database
+		report  = true
+		origin  = block.NumberU64()
 	)
 	// The state is only for reading purposes, check the state presence in
 	// live database.
@@ -67,14 +68,14 @@ func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64
 			// the internal junks created by tracing will be persisted into the disk.
 			// TODO(rjl493456442), clean cache is disabled to prevent memory leak,
 			// please re-enable it for better performance.
-			database = state.NewDatabaseWithConfig(qrl.chainDb, trie.HashDefaults)
-			if statedb, err = state.New(block.Root(), database, nil); err == nil {
+			db = state.NewDatabaseWithConfig(qrl.chainDb, trie.HashDefaults)
+			if statedb, err = state.New(block.Root(), db, nil); err == nil {
 				log.Info("Found disk backend for state trie", "root", block.Root(), "number", block.Number())
 				return statedb, noopReleaser, nil
 			}
 		}
 		// The optional base statedb is given, mark the start point as parent block
-		statedb, database, triedb, report = base, base.Database(), base.Database().TrieDB(), false
+		statedb, db, triedb, report = base, base.Database(), base.Database().TrieDB(), false
 		current = qrl.blockchain.GetBlock(block.ParentHash(), block.NumberU64()-1)
 	} else {
 		// Otherwise, try to reexec blocks until we find a state or reach our limit
@@ -85,13 +86,13 @@ func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64
 		// TODO(rjl493456442), clean cache is disabled to prevent memory leak,
 		// please re-enable it for better performance.
 		triedb = trie.NewDatabase(qrl.chainDb, trie.HashDefaults)
-		database = state.NewDatabaseWithNodeDB(qrl.chainDb, triedb)
+		db = state.NewDatabaseWithNodeDB(qrl.chainDb, triedb)
 
 		// If we didn't check the live database, do check state over ephemeral database,
 		// otherwise we would rewind past a persisted block (specific corner case is
 		// chain tracing from the genesis).
 		if !readOnly {
-			statedb, err = state.New(current.Root(), database, nil)
+			statedb, err = state.New(current.Root(), db, nil)
 			if err == nil {
 				return statedb, noopReleaser, nil
 			}
@@ -102,15 +103,15 @@ func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64
 				return nil, nil, err
 			}
 			if current.NumberU64() == 0 {
-				return nil, nil, errors.New("genesis state is missing")
+				return nil, nil, fmt.Errorf("%w: genesis state is missing", database.ErrStateUnavailable)
 			}
 			parent := qrl.blockchain.GetBlock(current.ParentHash(), current.NumberU64()-1)
 			if parent == nil {
-				return nil, nil, fmt.Errorf("missing block %v %d", current.ParentHash(), current.NumberU64()-1)
+				return nil, nil, fmt.Errorf("%w: missing block %v %d", database.ErrStateUnavailable, current.ParentHash(), current.NumberU64()-1)
 			}
 			current = parent
 
-			statedb, err = state.New(current.Root(), database, nil)
+			statedb, err = state.New(current.Root(), db, nil)
 			if err == nil {
 				break
 			}
@@ -118,7 +119,7 @@ func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64
 		if err != nil {
 			switch err.(type) {
 			case *trie.MissingNodeError:
-				return nil, nil, fmt.Errorf("required historical state unavailable (reexec=%d)", reexec)
+				return nil, nil, fmt.Errorf("%w (reexec=%d)", database.ErrStateUnavailable, reexec)
 			default:
 				return nil, nil, err
 			}
@@ -155,7 +156,7 @@ func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64
 			return nil, nil, fmt.Errorf("stateAtBlock commit failed, number %d root %v: %w",
 				current.NumberU64(), current.Root().Hex(), err)
 		}
-		statedb, err = state.New(root, database, nil)
+		statedb, err = state.New(root, db, nil)
 		if err != nil {
 			return nil, nil, fmt.Errorf("state reset after block %d failed: %v", current.NumberU64(), err)
 		}
@@ -183,7 +184,7 @@ func (qrl *QRL) pathState(block *types.Block) (*state.StateDB, func(), error) {
 	// TODO historic state is not supported in path-based scheme.
 	// Fully archive node in pbss will be implemented by relying
 	// on state history, but needs more work on top.
-	return nil, nil, errors.New("historical state not available in path scheme yet")
+	return nil, nil, fmt.Errorf("historical state not available in path scheme yet: %w", err)
 }
 
 // stateAtBlock retrieves the state database associated with a certain block.
@@ -216,7 +217,7 @@ func (qrl *QRL) stateAtBlock(ctx context.Context, block *types.Block, reexec uin
 }
 
 // stateAtTransaction returns the execution environment of a certain transaction.
-func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (*core.Message, vm.BlockContext, *state.StateDB, tracers.StateReleaseFunc, error) {
+func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (_ *core.Message, _ vm.BlockContext, _ *state.StateDB, _ tracers.StateReleaseFunc, err error) {
 	// Short circuit if it's genesis block.
 	if block.NumberU64() == 0 {
 		return nil, vm.BlockContext{}, nil, nil, errors.New("no transaction in genesis")
@@ -224,7 +225,7 @@ func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIn
 	// Create the parent state database
 	parent := qrl.blockchain.GetBlock(block.ParentHash(), block.NumberU64()-1)
 	if parent == nil {
-		return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("parent %#x not found", block.ParentHash())
+		return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("%w: parent %#x not found", database.ErrStateUnavailable, block.ParentHash())
 	}
 	// Lookup the statedb of parent block from the live database,
 	// otherwise regenerate it on the flight.
@@ -232,6 +233,11 @@ func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIn
 	if err != nil {
 		return nil, vm.BlockContext{}, nil, nil, err
 	}
+	defer func() {
+		if err != nil {
+			release()
+		}
+	}()
 	if txIndex == 0 && len(block.Transactions()) == 0 {
 		return nil, vm.BlockContext{}, statedb, release, nil
 	}
@@ -239,17 +245,33 @@ func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIn
 	signer := types.NewZondSigner(qrl.blockchain.Config().ChainID)
 	for idx, tx := range block.Transactions() {
 		// Assemble the transaction call message and return if the requested offset
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
+		msg, err := core.TransactionToMessage(tx, signer, block.BaseFee())
+		if err != nil {
+			return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("transaction %#x: %w", tx.Hash(), err)
+		}
 		txContext := core.NewQRVMTxContext(msg)
-		context := core.NewQRVMBlockContext(block.Header(), qrl.blockchain, nil)
+		vmctx := core.NewQRVMBlockContext(block.Header(), qrl.blockchain, nil)
 		if idx == txIndex {
-			return msg, context, statedb, release, nil
+			return msg, vmctx, statedb, release, nil
 		}
 		// Not yet the searched for transaction, execute on top of the current state
-		vmenv := vm.NewQRVM(context, txContext, statedb, qrl.blockchain.Config(), vm.Config{})
+		vmenv := vm.NewQRVM(vmctx, txContext, statedb, qrl.blockchain.Config(), vm.Config{})
 		statedb.SetTxContext(tx.Hash(), idx)
-		if _, err := core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
-			return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
+
+		// Abort the replay when the request is cancelled.
+		stop := context.AfterFunc(ctx, vmenv.Cancel)
+		_, err = core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas()))
+		stop()
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, vm.BlockContext{}, nil, nil, ctxErr
+		}
+		// A failed state read can cause the transaction to fail, so it takes
+		// precedence.
+		if stateErr := statedb.Error(); stateErr != nil {
+			return nil, vm.BlockContext{}, nil, nil, stateErr
+		}
+		if err != nil {
+			return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("transaction %#x failed: %w", tx.Hash(), err)
 		}
 		// Ensure any modifications are committed to the state
 		statedb.Finalise(true)
