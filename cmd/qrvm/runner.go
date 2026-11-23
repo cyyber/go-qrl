@@ -24,7 +24,6 @@ import (
 	"math/big"
 	"os"
 	goruntime "runtime"
-	"runtime/pprof"
 	"slices"
 	"testing"
 	"time"
@@ -221,19 +220,6 @@ func runCmd(ctx *cli.Context) error {
 		},
 	}
 
-	if cpuProfilePath := ctx.String(CPUProfileFlag.Name); cpuProfilePath != "" {
-		f, err := os.Create(cpuProfilePath)
-		if err != nil {
-			fmt.Println("could not create CPU profile: ", err)
-			os.Exit(1)
-		}
-		if err := pprof.StartCPUProfile(f); err != nil {
-			fmt.Println("could not start CPU profile: ", err)
-			os.Exit(1)
-		}
-		defer pprof.StopCPUProfile()
-	}
-
 	if chainConfig != nil {
 		runtimeConfig.ChainConfig = chainConfig
 	} else {
@@ -279,19 +265,6 @@ func runCmd(ctx *cli.Context) error {
 	if ctx.Bool(DumpFlag.Name) {
 		statedb.Commit(genesisConfig.Number, true)
 		fmt.Println(string(statedb.Dump(nil)))
-	}
-
-	if memProfilePath := ctx.String(MemProfileFlag.Name); memProfilePath != "" {
-		f, err := os.Create(memProfilePath)
-		if err != nil {
-			fmt.Println("could not create memory profile: ", err)
-			os.Exit(1)
-		}
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			fmt.Println("could not write memory profile: ", err)
-			os.Exit(1)
-		}
-		f.Close()
 	}
 
 	if ctx.Bool(DebugFlag.Name) {

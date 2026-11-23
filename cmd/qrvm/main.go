@@ -24,6 +24,7 @@ import (
 	"slices"
 
 	"github.com/theQRL/go-qrl/cmd/qrvm/internal/t8ntool"
+	"github.com/theQRL/go-qrl/internal/debug"
 	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/urfave/cli/v2"
 )
@@ -33,16 +34,6 @@ var (
 		Name:     "debug",
 		Usage:    "output full trace logs",
 		Category: flags.VMCategory,
-	}
-	MemProfileFlag = &cli.StringFlag{
-		Name:     "memprofile",
-		Usage:    "creates a memory profile at the given path",
-		Category: flags.LoggingCategory,
-	}
-	CPUProfileFlag = &cli.StringFlag{
-		Name:     "cpuprofile",
-		Usage:    "creates a CPU profile at the given path",
-		Category: flags.LoggingCategory,
 	}
 	StatDumpFlag = &cli.BoolFlag{
 		Name:     "statdump",
@@ -91,11 +82,6 @@ var (
 		Name:     "inputfile",
 		Usage:    "file containing input for the QRVM",
 		Category: flags.VMCategory,
-	}
-	VerbosityFlag = &cli.IntFlag{
-		Name:     "verbosity",
-		Usage:    "sets the verbosity level",
-		Category: flags.LoggingCategory,
 	}
 	BenchFlag = &cli.BoolFlag{
 		Name:     "bench",
@@ -233,11 +219,7 @@ var traceFlags = []cli.Flag{
 var app = flags.NewApp("the qrvm command line interface")
 
 func init() {
-	app.Flags = slices.Concat(vmFlags, traceFlags, []cli.Flag{
-		VerbosityFlag,
-		MemProfileFlag,
-		CPUProfileFlag,
-	})
+	app.Flags = slices.Concat(vmFlags, traceFlags, debug.Flags)
 	app.Commands = []*cli.Command{
 		runCommand,
 		blockTestCommand,
@@ -245,6 +227,14 @@ func init() {
 		stateTransitionCommand,
 		transactionCommand,
 		blockBuilderCommand,
+	}
+	app.Before = func(ctx *cli.Context) error {
+		flags.MigrateGlobalFlags(ctx)
+		return debug.Setup(ctx)
+	}
+	app.After = func(ctx *cli.Context) error {
+		debug.Exit()
+		return nil
 	}
 }
 
