@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"slices"
 
 	"github.com/theQRL/go-qrl/cmd/qrvm/internal/t8ntool"
 	"github.com/theQRL/go-qrl/internal/flags"
@@ -29,101 +30,124 @@ import (
 
 var (
 	DebugFlag = &cli.BoolFlag{
-		Name:  "debug",
-		Usage: "output full trace logs",
+		Name:     "debug",
+		Usage:    "output full trace logs",
+		Category: flags.VMCategory,
 	}
 	MemProfileFlag = &cli.StringFlag{
-		Name:  "memprofile",
-		Usage: "creates a memory profile at the given path",
+		Name:     "memprofile",
+		Usage:    "creates a memory profile at the given path",
+		Category: flags.LoggingCategory,
 	}
 	CPUProfileFlag = &cli.StringFlag{
-		Name:  "cpuprofile",
-		Usage: "creates a CPU profile at the given path",
+		Name:     "cpuprofile",
+		Usage:    "creates a CPU profile at the given path",
+		Category: flags.LoggingCategory,
 	}
 	StatDumpFlag = &cli.BoolFlag{
-		Name:  "statdump",
-		Usage: "displays stack and heap memory information",
+		Name:     "statdump",
+		Usage:    "displays stack and heap memory information",
+		Category: flags.VMCategory,
 	}
 	CodeFlag = &cli.StringFlag{
-		Name:  "code",
-		Usage: "QRVM code",
+		Name:     "code",
+		Usage:    "QRVM code",
+		Category: flags.VMCategory,
 	}
 	CodeFileFlag = &cli.StringFlag{
-		Name:  "codefile",
-		Usage: "File containing QRVM code. If '-' is specified, code is read from stdin ",
+		Name:     "codefile",
+		Usage:    "File containing QRVM code. If '-' is specified, code is read from stdin ",
+		Category: flags.VMCategory,
 	}
 	GasFlag = &cli.Uint64Flag{
-		Name:  "gas",
-		Usage: "gas limit for the qrvm",
-		Value: 10000000000,
+		Name:     "gas",
+		Usage:    "gas limit for the qrvm",
+		Value:    10000000000,
+		Category: flags.VMCategory,
 	}
 	PriceFlag = &flags.BigFlag{
-		Name:  "price",
-		Usage: "price set for the qrvm",
-		Value: new(big.Int),
+		Name:     "price",
+		Usage:    "price set for the qrvm",
+		Value:    new(big.Int),
+		Category: flags.VMCategory,
 	}
 	ValueFlag = &flags.BigFlag{
-		Name:  "value",
-		Usage: "value set for the qrvm",
-		Value: new(big.Int),
+		Name:     "value",
+		Usage:    "value set for the qrvm",
+		Value:    new(big.Int),
+		Category: flags.VMCategory,
 	}
 	DumpFlag = &cli.BoolFlag{
-		Name:  "dump",
-		Usage: "dumps the state after the run",
+		Name:     "dump",
+		Usage:    "dumps the state after the run",
+		Category: flags.VMCategory,
 	}
 	InputFlag = &cli.StringFlag{
-		Name:  "input",
-		Usage: "input for the QRVM",
+		Name:     "input",
+		Usage:    "input for the QRVM",
+		Category: flags.VMCategory,
 	}
 	InputFileFlag = &cli.StringFlag{
-		Name:  "inputfile",
-		Usage: "file containing input for the QRVM",
+		Name:     "inputfile",
+		Usage:    "file containing input for the QRVM",
+		Category: flags.VMCategory,
 	}
 	VerbosityFlag = &cli.IntFlag{
-		Name:  "verbosity",
-		Usage: "sets the verbosity level",
+		Name:     "verbosity",
+		Usage:    "sets the verbosity level",
+		Category: flags.LoggingCategory,
 	}
 	BenchFlag = &cli.BoolFlag{
-		Name:  "bench",
-		Usage: "benchmark the execution",
+		Name:     "bench",
+		Usage:    "benchmark the execution",
+		Category: flags.VMCategory,
 	}
 	CreateFlag = &cli.BoolFlag{
-		Name:  "create",
-		Usage: "indicates the action should be create rather than call",
+		Name:     "create",
+		Usage:    "indicates the action should be create rather than call",
+		Category: flags.VMCategory,
 	}
 	GenesisFlag = &cli.StringFlag{
-		Name:  "prestate",
-		Usage: "JSON file with prestate (genesis) config",
+		Name:     "prestate",
+		Usage:    "JSON file with prestate (genesis) config",
+		Category: flags.VMCategory,
 	}
 	MachineFlag = &cli.BoolFlag{
-		Name:  "json",
-		Usage: "output trace logs in machine readable format (json)",
+		Name:     "json",
+		Usage:    "output trace logs in machine readable format (json)",
+		Category: flags.VMCategory,
 	}
 	SenderFlag = &cli.StringFlag{
-		Name:  "sender",
-		Usage: "The transaction origin",
+		Name:     "sender",
+		Usage:    "The transaction origin",
+		Category: flags.VMCategory,
 	}
 	ReceiverFlag = &cli.StringFlag{
-		Name:  "receiver",
-		Usage: "The transaction receiver (execution context)",
+		Name:     "receiver",
+		Usage:    "The transaction receiver (execution context)",
+		Category: flags.VMCategory,
 	}
 	DisableMemoryFlag = &cli.BoolFlag{
-		Name:  "nomemory",
-		Value: true,
-		Usage: "disable memory output",
+		Name:     "nomemory",
+		Value:    true,
+		Usage:    "disable memory output",
+		Category: flags.VMCategory,
 	}
 	DisableStackFlag = &cli.BoolFlag{
-		Name:  "nostack",
-		Usage: "disable stack output",
+		Name:     "nostack",
+		Usage:    "disable stack output",
+		Category: flags.VMCategory,
 	}
 	DisableStorageFlag = &cli.BoolFlag{
-		Name:  "nostorage",
-		Usage: "disable storage output",
+		Name:     "nostorage",
+		Usage:    "disable storage output",
+		Category: flags.VMCategory,
 	}
 	DisableReturnDataFlag = &cli.BoolFlag{
-		Name:  "noreturndata",
-		Value: true,
-		Usage: "enable return data output",
+		Name:     "noreturndata",
+		Value:    true,
+		Usage:    "enable return data output",
+		Category: flags.VMCategory,
 	}
 )
 
@@ -178,34 +202,42 @@ var blockBuilderCommand = &cli.Command{
 	},
 }
 
+// vmFlags contains flags related to running the QRVM.
+var vmFlags = []cli.Flag{
+	CodeFlag,
+	CodeFileFlag,
+	CreateFlag,
+	GasFlag,
+	PriceFlag,
+	ValueFlag,
+	InputFlag,
+	InputFileFlag,
+	GenesisFlag,
+	SenderFlag,
+	ReceiverFlag,
+}
+
+// traceFlags contains flags that configure tracing output.
+var traceFlags = []cli.Flag{
+	BenchFlag,
+	DebugFlag,
+	DumpFlag,
+	MachineFlag,
+	StatDumpFlag,
+	DisableMemoryFlag,
+	DisableStackFlag,
+	DisableStorageFlag,
+	DisableReturnDataFlag,
+}
+
 var app = flags.NewApp("the qrvm command line interface")
 
 func init() {
-	app.Flags = []cli.Flag{
-		BenchFlag,
-		CreateFlag,
-		DebugFlag,
+	app.Flags = slices.Concat(vmFlags, traceFlags, []cli.Flag{
 		VerbosityFlag,
-		CodeFlag,
-		CodeFileFlag,
-		GasFlag,
-		PriceFlag,
-		ValueFlag,
-		DumpFlag,
-		InputFlag,
-		InputFileFlag,
 		MemProfileFlag,
 		CPUProfileFlag,
-		StatDumpFlag,
-		GenesisFlag,
-		MachineFlag,
-		SenderFlag,
-		ReceiverFlag,
-		DisableMemoryFlag,
-		DisableStackFlag,
-		DisableStorageFlag,
-		DisableReturnDataFlag,
-	}
+	})
 	app.Commands = []*cli.Command{
 		runCommand,
 		blockTestCommand,
