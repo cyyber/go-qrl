@@ -769,12 +769,6 @@ func (e *revertError) ErrorData() any {
 	return e.reason
 }
 
-// invalidParamsError is an API error for requests with invalid parameters.
-type invalidParamsError struct{ message string }
-
-func (e *invalidParamsError) Error() string  { return e.message }
-func (e *invalidParamsError) ErrorCode() int { return -32602 }
-
 // Call executes the given transaction on the state for the given block number.
 //
 // Additionally, the caller can specify a batch of contract for fields overriding.
