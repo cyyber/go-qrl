@@ -371,7 +371,7 @@ func TestTraceTransaction(t *testing.T) {
 		Gas:         params.TxGas,
 		Failed:      false,
 		ReturnValue: []byte{},
-		StructLogs:  []logger.StructLogRes{},
+		StructLogs:  []json.RawMessage{},
 	}) {
 		t.Error("Transaction tracing result is different")
 	}

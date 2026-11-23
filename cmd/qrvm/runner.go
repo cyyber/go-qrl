@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 	"github.com/theQRL/go-qrl/core"
 	"github.com/theQRL/go-qrl/core/rawdb"
 	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/core/vm/runtime"
 	"github.com/theQRL/go-qrl/internal/flags"
@@ -118,7 +120,6 @@ func runCmd(ctx *cli.Context) error {
 	var (
 		err         error
 		tracer      vm.QRVMLogger
-		debugLogger *logger.StructLogger
 		statedb     *state.StateDB
 		chainConfig *params.ChainConfig
 		sender      = common.BytesToAddress([]byte("sender"))
@@ -128,10 +129,7 @@ func runCmd(ctx *cli.Context) error {
 	if ctx.Bool(MachineFlag.Name) {
 		tracer = logger.NewJSONLogger(logconfig, os.Stdout)
 	} else if ctx.Bool(DebugFlag.Name) {
-		debugLogger = logger.NewStructLogger(logconfig)
-		tracer = debugLogger
-	} else {
-		debugLogger = logger.NewStructLogger(logconfig)
+		tracer = logger.NewStreamingStructLogger(logconfig, os.Stderr)
 	}
 
 	initialGas := ctx.Uint64(GasFlag.Name)
@@ -268,12 +266,10 @@ func runCmd(ctx *cli.Context) error {
 	}
 
 	if ctx.Bool(DebugFlag.Name) {
-		if debugLogger != nil {
-			fmt.Fprintln(os.Stderr, "#### TRACE ####")
-			logger.WriteTrace(os.Stderr, debugLogger.StructLogs())
+		if logs := statedb.Logs(); len(logs) > 0 {
+			fmt.Fprintln(os.Stderr, "### LOGS")
+			writeLogs(os.Stderr, logs)
 		}
-		fmt.Fprintln(os.Stderr, "#### LOGS ####")
-		logger.WriteLogs(os.Stderr, statedb.Logs())
 	}
 
 	if bench || ctx.Bool(StatDumpFlag.Name) {
@@ -291,4 +287,17 @@ allocated bytes: %d
 	}
 
 	return nil
+}
+
+// writeLogs writes vm logs in a readable format to the given writer
+func writeLogs(writer io.Writer, logs []*types.Log) {
+	for _, log := range logs {
+		fmt.Fprintf(writer, "LOG%d: %x bn=%d txi=%x\n", len(log.Topics), log.Address, log.BlockNumber, log.TxIndex)
+
+		for i, topic := range log.Topics {
+			fmt.Fprintf(writer, "%08d  %x\n", i, topic)
+		}
+		fmt.Fprint(writer, hex.Dump(log.Data))
+		fmt.Fprintln(writer)
+	}
 }

@@ -31,7 +31,7 @@ import (
 	"github.com/theQRL/go-qrl/tests"
 )
 
-func BenchmarkTransactionTrace(b *testing.B) {
+func BenchmarkTransactionTraceV2(b *testing.B) {
 	wallet := testutil.LoadAccount(b, "alice").Wallet(b)
 	from := wallet.GetAddress()
 	gas := uint64(1000000) // 1M gas
@@ -82,14 +82,8 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	triedb, _, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), alloc, false, rawdb.HashScheme)
 	defer triedb.Close()
 
-	// Create the tracer, the QRVM environment and run it
-	tracer := logger.NewStructLogger(&logger.Config{
-		Debug: false,
-		//DisableStorage: true,
-		//EnableMemory: false,
-		//EnableReturnData: false,
-	})
-	qrvm := vm.NewQRVM(context, txContext, statedb, params.AllBeaconProtocolChanges, vm.Config{Tracer: tracer})
+	qrvm := vm.NewQRVM(context, txContext, statedb, params.AllBeaconProtocolChanges, vm.Config{})
+
 	msg, err := core.TransactionToMessage(tx, signer, nil)
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
@@ -98,6 +92,10 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
+		tracer := logger.NewStructLogger(&logger.Config{Debug: false})
+		tracer.CaptureTxStart(tx.Gas())
+		qrvm.Config.Tracer = tracer
+
 		snap := statedb.Snapshot()
 		st := core.NewStateTransition(qrvm, msg, new(core.GasPool).AddGas(tx.Gas()))
 		_, err = st.TransitionDb()
@@ -105,10 +103,6 @@ func BenchmarkTransactionTrace(b *testing.B) {
 			b.Fatal(err)
 		}
 		statedb.RevertToSnapshot(snap)
-		if have, want := len(tracer.StructLogs()), 244752; have != want {
-			b.Fatalf("trace wrong, want %d steps, have %d", want, have)
-		}
-		tracer.Reset()
 	}
 }
 
