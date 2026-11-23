@@ -29,7 +29,7 @@ func newTransientStorage() transientStorage {
 }
 
 // Set sets the transient-storage `value` for `key` at the given `addr`.
-func (t transientStorage) Set(addr common.Address, key common.Hash, value common.StorageValue64) {
+func (t transientStorage) Set(addr common.Address, key common.Hash512, value common.StorageValue64) {
 	if _, ok := t[addr]; !ok {
 		t[addr] = make(Storage)
 	}
@@ -37,7 +37,7 @@ func (t transientStorage) Set(addr common.Address, key common.Hash, value common
 }
 
 // Get gets the transient storage for `key` at the given `addr`.
-func (t transientStorage) Get(addr common.Address, key common.Hash) common.StorageValue64 {
+func (t transientStorage) Get(addr common.Address, key common.Hash512) common.StorageValue64 {
 	val, ok := t[addr]
 	if !ok {
 		return common.StorageValue64{}

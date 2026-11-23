@@ -319,7 +319,7 @@ func expectedQRVMDisResultCount(op vm.OpCode) (int, bool) {
 		vm.REVERT,
 		vm.INVALID:
 		return 0, true
-	case vm.KECCAK256,
+	case vm.KECCAK256, vm.KECCAK512,
 		vm.CODESIZE,
 		vm.GASPRICE,
 		vm.EXTCODESIZE,

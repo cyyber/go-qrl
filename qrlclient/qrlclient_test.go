@@ -654,11 +654,11 @@ func testAtFunctions(t *testing.T, client *rpc.Client) {
 		t.Fatalf("unexpected nonce: %v %v", nonce, penNonce)
 	}
 	// StorageAt
-	storage, err := zc.StorageAt(t.Context(), testAddr, common.Hash{}, nil)
+	storage, err := zc.StorageAt(t.Context(), testAddr, common.StorageKey{}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	penStorage, err := zc.PendingStorageAt(t.Context(), testAddr, common.Hash{})
+	penStorage, err := zc.PendingStorageAt(t.Context(), testAddr, common.StorageKey{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

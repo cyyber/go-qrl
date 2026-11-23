@@ -131,7 +131,7 @@ func (a *Account) Code(ctx context.Context) (hexutil.Bytes, error) {
 	return state.GetCode(a.address), nil
 }
 
-func (a *Account) Storage(ctx context.Context, args struct{ Slot common.Hash }) (common.StorageValue64, error) {
+func (a *Account) Storage(ctx context.Context, args struct{ Slot common.StorageKey }) (common.StorageValue64, error) {
 	state, err := a.getState(ctx)
 	if err != nil {
 		return common.StorageValue64{}, err
@@ -172,14 +172,14 @@ func (l *Log) Data(ctx context.Context) hexutil.Bytes {
 
 type AccessTuple struct {
 	address     common.Address
-	storageKeys []common.Hash
+	storageKeys []common.StorageKey
 }
 
 func (at *AccessTuple) Address(ctx context.Context) common.Address {
 	return at.address
 }
 
-func (at *AccessTuple) StorageKeys(ctx context.Context) []common.Hash {
+func (at *AccessTuple) StorageKeys(ctx context.Context) []common.StorageKey {
 	return at.storageKeys
 }
 
@@ -718,26 +718,26 @@ func (b *Block) Random(ctx context.Context) (common.Hash, error) {
 	return header.Random, nil
 }
 
-func (b *Block) TransactionsRoot(ctx context.Context) (common.Hash, error) {
+func (b *Block) TransactionsRoot(ctx context.Context) (common.Hash512, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return common.Hash{}, err
+		return common.Hash512{}, err
 	}
 	return header.TxHash, nil
 }
 
-func (b *Block) StateRoot(ctx context.Context) (common.Hash, error) {
+func (b *Block) StateRoot(ctx context.Context) (common.Hash512, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return common.Hash{}, err
+		return common.Hash512{}, err
 	}
 	return header.Root, nil
 }
 
-func (b *Block) ReceiptsRoot(ctx context.Context) (common.Hash, error) {
+func (b *Block) ReceiptsRoot(ctx context.Context) (common.Hash512, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return common.Hash{}, err
+		return common.Hash512{}, err
 	}
 	return header.ReceiptHash, nil
 }
@@ -856,10 +856,10 @@ func (b *Block) TransactionAt(ctx context.Context, args struct{ Index Long }) (*
 	}, nil
 }
 
-func (b *Block) WithdrawalsRoot(ctx context.Context) (common.Hash, error) {
+func (b *Block) WithdrawalsRoot(ctx context.Context) (common.Hash512, error) {
 	header, err := b.resolveHeader(ctx)
 	if err != nil {
-		return common.Hash{}, err
+		return common.Hash512{}, err
 	}
 	return header.WithdrawalsHash, nil
 }

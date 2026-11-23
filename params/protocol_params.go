@@ -33,6 +33,8 @@ const (
 
 	Keccak256Gas     uint64 = 30 // Once per KECCAK256 operation.
 	Keccak256WordGas uint64 = 6  // Once per word of the KECCAK256 operation's data.
+	Keccak512Gas     uint64 = 60 // Once per KECCAK512 operation.
+	Keccak512WordGas uint64 = 12 // Per 64-byte VM word; accounts for Keccak-512's smaller sponge rate.
 	InitCodeWordGas  uint64 = 2  // Once per word of the init code when creating a contract.
 
 	SstoreSentryGasEIP2200 uint64 = 2300  // Minimum gas required to be present for an SSTORE call, not consumed

@@ -379,7 +379,7 @@ func (qc *Client) BalanceAt(ctx context.Context, account common.Address, blockNu
 
 // StorageAt returns the value of key in the contract storage of the given account.
 // The block number can be nil, in which case the value is taken from the latest known block.
-func (qc *Client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
+func (qc *Client) StorageAt(ctx context.Context, account common.Address, key common.StorageKey, blockNumber *big.Int) ([]byte, error) {
 	var result hexutil.Bytes
 	err := qc.c.CallContext(ctx, &result, "qrl_getStorageAt", account, key, toBlockNumArg(blockNumber))
 	return result, err
@@ -464,7 +464,7 @@ func (qc *Client) PendingBalanceAt(ctx context.Context, account common.Address) 
 }
 
 // PendingStorageAt returns the value of key in the contract storage of the given account in the pending state.
-func (qc *Client) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
+func (qc *Client) PendingStorageAt(ctx context.Context, account common.Address, key common.StorageKey) ([]byte, error) {
 	var result hexutil.Bytes
 	err := qc.c.CallContext(ctx, &result, "qrl_getStorageAt", account, key, "pending")
 	return result, err

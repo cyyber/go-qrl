@@ -87,11 +87,11 @@ type (
 		prev         *stateObject
 		prevdestruct bool
 		prevAccount  []byte
-		prevStorage  map[common.Hash][]byte
+		prevStorage  map[common.Hash512][]byte
 
 		prevAccountOriginExist bool
 		prevAccountOrigin      []byte
-		prevStorageOrigin      map[common.Hash][]byte
+		prevStorageOrigin      map[common.Hash512][]byte
 	}
 
 	// Changes to individual accounts.
@@ -105,7 +105,7 @@ type (
 	}
 	storageChange struct {
 		account  *common.Address
-		key      common.Hash
+		key      common.Hash512
 		prevalue common.StorageValue64
 	}
 	codeChange struct {
@@ -121,7 +121,7 @@ type (
 		txhash common.Hash
 	}
 	addPreimageChange struct {
-		hash common.Hash
+		hash common.Hash512
 	}
 	touchChange struct {
 		account *common.Address
@@ -132,12 +132,12 @@ type (
 	}
 	accessListAddSlotChange struct {
 		address *common.Address
-		slot    *common.Hash
+		slot    *common.Hash512
 	}
 
 	transientStorageChange struct {
 		account  *common.Address
-		key      common.Hash
+		key      common.Hash512
 		prevalue common.StorageValue64
 	}
 )
@@ -198,7 +198,7 @@ func (ch nonceChange) dirtied() *common.Address {
 }
 
 func (ch codeChange) revert(s *StateDB) {
-	s.getStateObject(*ch.account).setCode(common.BytesToHash(ch.prevhash), ch.prevcode)
+	s.getStateObject(*ch.account).setCode(common.BytesToHash512(ch.prevhash), ch.prevcode)
 }
 
 func (ch codeChange) dirtied() *common.Address {

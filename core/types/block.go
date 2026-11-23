@@ -36,9 +36,9 @@ import (
 type Header struct {
 	ParentHash      common.Hash    `json:"parentHash"       gencodec:"required"`
 	Coinbase        common.Address `json:"miner"`
-	Root            common.Hash    `json:"stateRoot"        gencodec:"required"`
-	TxHash          common.Hash    `json:"transactionsRoot" gencodec:"required"`
-	ReceiptHash     common.Hash    `json:"receiptsRoot"     gencodec:"required"`
+	Root            common.Hash512 `json:"stateRoot"        gencodec:"required"`
+	TxHash          common.Hash512 `json:"transactionsRoot" gencodec:"required"`
+	ReceiptHash     common.Hash512 `json:"receiptsRoot"     gencodec:"required"`
 	Bloom           Bloom          `json:"logsBloom"        gencodec:"required"`
 	Number          *big.Int       `json:"number"           gencodec:"required"`
 	GasLimit        uint64         `json:"gasLimit"         gencodec:"required"`
@@ -47,7 +47,7 @@ type Header struct {
 	Extra           []byte         `json:"extraData"        gencodec:"required"`
 	Random          common.Hash    `json:"prevRandao"       gencodec:"required"`
 	BaseFee         *big.Int       `json:"baseFeePerGas"    gencodec:"required"`
-	WithdrawalsHash common.Hash    `json:"withdrawalsRoot"  gencodec:"required"`
+	WithdrawalsHash common.Hash512 `json:"withdrawalsRoot"  gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -243,15 +243,15 @@ func (b *Block) GasLimit() uint64 { return b.header.GasLimit }
 func (b *Block) GasUsed() uint64  { return b.header.GasUsed }
 func (b *Block) Time() uint64     { return b.header.Time }
 
-func (b *Block) NumberU64() uint64        { return b.header.Number.Uint64() }
-func (b *Block) Random() common.Hash      { return b.header.Random }
-func (b *Block) Bloom() Bloom             { return b.header.Bloom }
-func (b *Block) Coinbase() common.Address { return b.header.Coinbase }
-func (b *Block) Root() common.Hash        { return b.header.Root }
-func (b *Block) ParentHash() common.Hash  { return b.header.ParentHash }
-func (b *Block) TxHash() common.Hash      { return b.header.TxHash }
-func (b *Block) ReceiptHash() common.Hash { return b.header.ReceiptHash }
-func (b *Block) Extra() []byte            { return common.CopyBytes(b.header.Extra) }
+func (b *Block) NumberU64() uint64           { return b.header.Number.Uint64() }
+func (b *Block) Random() common.Hash         { return b.header.Random }
+func (b *Block) Bloom() Bloom                { return b.header.Bloom }
+func (b *Block) Coinbase() common.Address    { return b.header.Coinbase }
+func (b *Block) Root() common.Hash512        { return b.header.Root }
+func (b *Block) ParentHash() common.Hash     { return b.header.ParentHash }
+func (b *Block) TxHash() common.Hash512      { return b.header.TxHash }
+func (b *Block) ReceiptHash() common.Hash512 { return b.header.ReceiptHash }
+func (b *Block) Extra() []byte               { return common.CopyBytes(b.header.Extra) }
 
 func (b *Block) BaseFee() *big.Int {
 	if b.header.BaseFee == nil {

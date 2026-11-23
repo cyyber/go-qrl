@@ -577,8 +577,8 @@ type blockStats struct {
 	GasUsed    uint64         `json:"gasUsed"`
 	GasLimit   uint64         `json:"gasLimit"`
 	Txs        []txStats      `json:"transactions"`
-	TxHash     common.Hash    `json:"transactionsRoot"`
-	Root       common.Hash    `json:"stateRoot"`
+	TxHash     common.Hash512 `json:"transactionsRoot"`
+	Root       common.Hash512 `json:"stateRoot"`
 }
 
 // txStats is the information to report about individual transactions.

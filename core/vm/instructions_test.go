@@ -662,7 +662,7 @@ func TestOpTstore(t *testing.T) {
 	if _, err := opTstore(&pc, qrvmInterpreter, &scopeContext); err != ErrWriteProtection {
 		t.Fatalf("TSTORE in a static call: have error %v, want %v", err, ErrWriteProtection)
 	}
-	if got := statedb.GetTransientState(to, common.Hash{}); !bytes.Equal(got.Bytes(), value) {
+	if got := statedb.GetTransientState(to, common.Hash512{}); !bytes.Equal(got.Bytes(), value) {
 		t.Fatal("transient storage modified in a static call")
 	}
 }
@@ -904,43 +904,43 @@ func TestCreate2Addresses(t *testing.T) {
 			origin:   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0x00",
-			expected: "Q8a2649715d9d1fd27f191cd37fc5749e97e8bbcf189d42e2e06dd8d4122ff0981585238ad588a42cf8867a8462e1a5a8016ed72ecf2b3e3472305cb2c7264fa3",
+			expected: "Q5aed9ff5130a68c3ef67d87c5c6caef10e0508e8f89f1a123fbff221e1b1f6f54d7015aa15407162599c1d67a8e6ff2f8c68c9a4d75126be0716c812e17d1246",
 		},
 		{
 			origin:   "deadbeef00000000000000000000000000000000deadbeef000000000000000000000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0x00",
-			expected: "Q2a39a6247e3eb969a0b147af5d8497a556985f9c16d78fd720c7c6edb5e347912fb2891b9aee842bec31b22cee8b190e34c372c61c1d6f13ca851dc70fb087f7",
+			expected: "Q1e1902257084d14390dbb1d77931e9567ffe253e148259554412d0ed99e886bb99ed4b97170401a76ef24f60151c35d37277ca267399264a4ded2eee3b9b21e1",
 		},
 		{
 			origin:   "deadbeef00000000000000000000000000000000deadbeef000000000000000000000000000000000000000000000000",
 			salt:     "0xfeed000000000000000000000000000000000000",
 			code:     "0x00",
-			expected: "Q6749a8bf893c7f50482f026e5d48dcca6aa36ddb78de550179a3ae843c3b6a0a3f53608a80e62de43bb32891745494fae5ff1761d4bb7a69eae1a0abbe154dad",
+			expected: "Q05e8f1cb9310a38664d80b00a992d5587b31c72b14f002cc69012fc11e4842bae40efcf4ea4b30017f25b4b2cde79eca39a720dc59fa512319de762c75d541ca",
 		},
 		{
 			origin:   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0xdeadbeef",
-			expected: "Qbe3c770d4b3321650860502344de7176b99de6e28cd6461a1031bebc7781a0dd154c7483e583d565a94196b2d7514814a18747b52a457d42aa840809c9f0b8ba",
+			expected: "Q3564a0c067c7db4aefc403b819c832f595de307c54b5e7c1f8c6d039407441f148a8595889e75d6ed588c6217dbc32d4d4c559938650762a0b43091ac6c9fbae",
 		},
 		{
 			origin:   "00000000000000000000000000000000deadbeef00000000000000000000000000000000deadbeef0000000000000000",
 			salt:     "0xcafebabe",
 			code:     "0xdeadbeef",
-			expected: "Q7f5986b8479fcfd7bce3168635266c9d4aef8001e00849eacef7f644ca13e9135e33f1b999ed9301b27a625ed8b13e0c06256499b6ad1d9a4f0a9cbde3d5a515",
+			expected: "Q2a6bbb2315bcf3cf74202245b4eab8a3df64f45605dde360a6a717bdcb06e197b73881c9c3b5255935b22cc4b0ed54a16894d94e6626b21d501bc2f350bd3352",
 		},
 		{
 			origin:   "00000000000000000000000000000000deadbeef00000000000000000000000000000000deadbeef0000000000000000",
 			salt:     "0xcafebabe",
 			code:     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-			expected: "Q27204fb9491481a20aac5db35fdeda1a9da694ce1383793b4a57b560c31c39fe776854f64882277762af258812a91c66ce0605be45bfbb395b2f09f797ad3214",
+			expected: "Q1a2c1f373f9d76f63e8d60f933848e4398f9c8ac2cb7826f5bad7e14d66a176b6f0e6576617f1bea5f0bcefb5fefc44e8f06351d05b53fd338dce6eee51ae2cf",
 		},
 		{
 			origin:   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0x",
-			expected: "Q129e945d73c2abba8dc13b37c613c63c128e80ea7940b8a0479390faf8772f0c7cdd53065842db816b5e7609f45a56ff4d2971e75ed1e835619d09452a66832c",
+			expected: "Q363a565ec52ae6a64188fa6f0988de8cd33d1e0fa8821c5ad6982533d6cd9a02a47a96bbfeb56bd7b71cc2c18b0fddf16df1afa73118e8020f92940ffcb0ade1",
 		},
 	} {
 		origin := common.BytesToAddress(common.FromHex(tt.origin))
@@ -953,7 +953,7 @@ func TestCreate2Addresses(t *testing.T) {
 		}
 		copy(salt[64-len(saltBytes):], saltBytes)
 		code := common.FromHex(tt.code)
-		codeHash := crypto.Keccak256(code)
+		codeHash := crypto.Keccak512Hash(code)
 		address := crypto.CreateAddress2(origin, salt, codeHash)
 		/*
 			stack          := newstack()
@@ -980,7 +980,7 @@ func TestRandom(t *testing.T) {
 	for _, tt := range []testcase{
 		{name: "empty hash", random: common.Hash{}},
 		{name: "1", random: common.Hash{0}},
-		{name: "emptyCodeHash", random: types.EmptyCodeHash},
+		{name: "emptyCodeHash", random: crypto.Keccak256Hash(nil)},
 		{name: "hash(0x010203)", random: crypto.Keccak256Hash([]byte{0x01, 0x02, 0x03})},
 	} {
 		var (

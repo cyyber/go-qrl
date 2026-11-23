@@ -19,8 +19,8 @@ func (e ExecutableData) MarshalJSON() ([]byte, error) {
 	type ExecutableData struct {
 		ParentHash    common.Hash         `json:"parentHash"    gencodec:"required"`
 		FeeRecipient  common.Address      `json:"feeRecipient"  gencodec:"required"`
-		StateRoot     common.Hash         `json:"stateRoot"     gencodec:"required"`
-		ReceiptsRoot  common.Hash         `json:"receiptsRoot"  gencodec:"required"`
+		StateRoot     common.Hash512      `json:"stateRoot"     gencodec:"required"`
+		ReceiptsRoot  common.Hash512      `json:"receiptsRoot"  gencodec:"required"`
 		LogsBloom     hexutil.Bytes       `json:"logsBloom"     gencodec:"required"`
 		Random        common.Hash         `json:"prevRandao"    gencodec:"required"`
 		Number        hexutil.Uint64      `json:"blockNumber"   gencodec:"required"`
@@ -62,8 +62,8 @@ func (e *ExecutableData) UnmarshalJSON(input []byte) error {
 	type ExecutableData struct {
 		ParentHash    *common.Hash        `json:"parentHash"    gencodec:"required"`
 		FeeRecipient  *common.Address     `json:"feeRecipient"  gencodec:"required"`
-		StateRoot     *common.Hash        `json:"stateRoot"     gencodec:"required"`
-		ReceiptsRoot  *common.Hash        `json:"receiptsRoot"  gencodec:"required"`
+		StateRoot     *common.Hash512     `json:"stateRoot"     gencodec:"required"`
+		ReceiptsRoot  *common.Hash512     `json:"receiptsRoot"  gencodec:"required"`
 		LogsBloom     *hexutil.Bytes      `json:"logsBloom"     gencodec:"required"`
 		Random        *common.Hash        `json:"prevRandao"    gencodec:"required"`
 		Number        *hexutil.Uint64     `json:"blockNumber"   gencodec:"required"`

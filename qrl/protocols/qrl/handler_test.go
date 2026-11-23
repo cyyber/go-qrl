@@ -120,7 +120,7 @@ func (b *testBackend) Handle(*Peer, Packet) error {
 }
 
 // Tests that block headers can be retrieved from a remote chain based on user queries.
-func TestGetBlockHeaders1(t *testing.T) { testGetBlockHeaders(t, QRL1) }
+func TestGetBlockHeaders1(t *testing.T) { testGetBlockHeaders(t, QRL2) }
 
 func testGetBlockHeaders(t *testing.T, protocol uint) {
 	t.Parallel()
@@ -326,7 +326,7 @@ func testGetBlockHeaders(t *testing.T, protocol uint) {
 }
 
 // Tests that block contents can be retrieved from a remote chain based on their hashes.
-func TestGetBlockBodies1(t *testing.T) { testGetBlockBodies(t, QRL1) }
+func TestGetBlockBodies1(t *testing.T) { testGetBlockBodies(t, QRL2) }
 
 func testGetBlockBodies(t *testing.T, protocol uint) {
 	t.Parallel()
@@ -423,7 +423,7 @@ func testGetBlockBodies(t *testing.T, protocol uint) {
 // (filled with transactions consuming the entire gas limit). This verifies
 // that the handler correctly respects softResponseLimit with large blocks.
 func TestGetBlockBodiesMaxBlockSize1(t *testing.T) {
-	testGetBlockBodiesMaxBlockSize(t, QRL1)
+	testGetBlockBodiesMaxBlockSize(t, QRL2)
 }
 
 func newTestBackendMaxBlocks(blocks int, gen func(int, *core.BlockGen)) *testBackend {
@@ -554,7 +554,7 @@ func testGetBlockBodiesMaxBlockSize(t *testing.T, protocol uint) {
 // With ~6.9 MB per block, the softResponseLimit (2 MB) should cap the
 // response to fewer bodies than requested.
 func TestGetBlockBodiesMaxServeMaxSize1(t *testing.T) {
-	testGetBlockBodiesMaxServeMaxSize(t, QRL1)
+	testGetBlockBodiesMaxServeMaxSize(t, QRL2)
 }
 
 func testGetBlockBodiesMaxServeMaxSize(t *testing.T, protocol uint) {
@@ -642,7 +642,7 @@ func testGetBlockBodiesMaxServeMaxSize(t *testing.T, protocol uint) {
 }
 
 // Tests that the transaction receipts can be retrieved based on hashes.
-func TestGetBlockReceipts1(t *testing.T) { testGetBlockReceipts(t, QRL1) }
+func TestGetBlockReceipts1(t *testing.T) { testGetBlockReceipts(t, QRL2) }
 
 func testGetBlockReceipts(t *testing.T, protocol uint) {
 	t.Parallel()

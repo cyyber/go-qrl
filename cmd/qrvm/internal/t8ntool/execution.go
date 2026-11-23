@@ -44,16 +44,16 @@ type Prestate struct {
 // ExecutionResult contains the execution status after running a state test, any
 // error that might have occurred and a dump of the final state if requested.
 type ExecutionResult struct {
-	StateRoot       common.Hash           `json:"stateRoot"`
-	TxRoot          common.Hash           `json:"txRoot"`
-	ReceiptRoot     common.Hash           `json:"receiptsRoot"`
+	StateRoot       common.Hash512        `json:"stateRoot"`
+	TxRoot          common.Hash512        `json:"txRoot"`
+	ReceiptRoot     common.Hash512        `json:"receiptsRoot"`
 	LogsHash        common.Hash           `json:"logsHash"`
 	Bloom           types.Bloom           `json:"logsBloom"        gencodec:"required"`
 	Receipts        types.Receipts        `json:"receipts"`
 	Rejected        []*rejectedTx         `json:"rejected,omitempty"`
 	GasUsed         math.HexOrDecimal64   `json:"gasUsed"`
 	BaseFee         *math.HexOrDecimal256 `json:"currentBaseFee,omitempty"`
-	WithdrawalsRoot *common.Hash          `json:"withdrawalsRoot,omitempty"`
+	WithdrawalsRoot *common.Hash512       `json:"withdrawalsRoot,omitempty"`
 }
 
 //go:generate go run github.com/fjl/gencodec -type stEnv -field-override stEnvMarshaling -out gen_stenv.go

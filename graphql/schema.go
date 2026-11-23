@@ -55,8 +55,8 @@ const schema string = `
         # is a (non-self-destructed) contract.
         code: Bytes!
         # Storage provides access to the storage of a contract account, indexed
-        # by its 32 byte slot identifier.
-        storage(slot: Bytes32!): Bytes64!
+        # by its 64 byte slot identifier.
+        storage(slot: Bytes64!): Bytes64!
     }
 
     # Log is a QRL event log.
@@ -76,7 +76,7 @@ const schema string = `
 
     type AccessTuple {
         address: Address!
-        storageKeys : [Bytes32!]!
+        storageKeys : [Bytes64!]!
     }
 
     type Withdrawal {
@@ -186,15 +186,15 @@ const schema string = `
         hash: Bytes32!
         # Parent is the parent block of this block.
         parent: Block
-        # TransactionsRoot is the keccak256 hash of the root of the trie of transactions in this block.
-        transactionsRoot: Bytes32!
+        # TransactionsRoot is the keccak512 hash of the root of the trie of transactions in this block.
+        transactionsRoot: Bytes64!
         # TransactionCount is the number of transactions in this block. if
         # transactions are not available for this block, this field will be null.
         transactionCount: Long
-        # StateRoot is the keccak256 hash of the state trie after this block was processed.
-        stateRoot: Bytes32!
-        # ReceiptsRoot is the keccak256 hash of the trie of transaction receipts in this block.
-        receiptsRoot: Bytes32!
+        # StateRoot is the keccak512 hash of the state trie after this block was processed.
+        stateRoot: Bytes64!
+        # ReceiptsRoot is the keccak512 hash of the trie of transaction receipts in this block.
+        receiptsRoot: Bytes64!
         # Miner is the account that mined this block.
         miner(block: Long): Account!
         # ExtraData is an arbitrary data field supplied by the miner.
@@ -235,7 +235,7 @@ const schema string = `
         # Raw is the RLP encoding of the block.
         raw: Bytes!
         # WithdrawalsRoot is the withdrawals trie root in this block.
-        withdrawalsRoot: Bytes32!
+        withdrawalsRoot: Bytes64!
         # Withdrawals is a list of withdrawals associated with this block. If
         # withdrawals are unavailable for this block, this field will be null.
         withdrawals: [Withdrawal!]

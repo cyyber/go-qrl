@@ -20,6 +20,7 @@ package conformance
 //   0x16 AND         0x17 OR          0x18 XOR         0x19 NOT
 //   0x1a BYTE        0x1b SHL         0x1c SHR         0x1d SAR
 //   0x1e CLZ
+//   0x20 KECCAK256   0x21 KECCAK512
 //   0x31 BALANCE     0x3b EXTCODESIZE
 //   0x50 POP         0x51 MLOAD       0x52 MSTORE      0x53 MSTORE8
 //   0x54 SLOAD       0x55 SSTORE
@@ -375,14 +376,28 @@ var Vectors = []Vector{
 		ExpectedReturnHex: expectedWord("7b"),
 	},
 
+	{
+		Name:              "KECCAK512 empty input",
+		BytecodeHex:       "6000600021" + storeAndReturn64,
+		ExpectedReturnHex: "0eab42de4c3ceb9235fc91acffe746b29c29a8c366b7c60e4e67c466f36a4304c00fa9caf9d87976ba469bcbe06713b435f091ef2769fb160cdab33d3670680e",
+		ExpectedGasUsed:   81,
+	},
+	{
+		Name:              "KECCAK512 abc",
+		BytecodeHex:       "626162636000526003603d21" + storeAndReturn64,
+		ExpectedReturnHex: "18587dc2ea106b9a1563e32b3312421ca164c7f1f07bc922a9c83d77cea3a1e5d0c69910739025372dc14ac9642629379540c17e2a65b19d77aa511a9d00bb96",
+		ExpectedGasUsed:   102,
+	},
+	{
+		Name:              "KECCAK512 crosses a VM word boundary",
+		BytecodeHex:       "6041600021" + storeAndReturn64,
+		ExpectedReturnHex: "a9cdba36670d15adea023e47166cfe67fdc1f94e96f99d5ddf35abeb29987ac77c70808f411a4c03f634f088d5eb858a9aae18af407007de69c3d6735e433902",
+		ExpectedGasUsed:   108,
+	},
 	// --- storage keys (SSTORE / SLOAD) ---------------------------------
 	//
-	// Storage values are full 64-byte words, but storage keys are 32 bytes:
-	// SSTORE and SLOAD key storage by the low 256 bits of the 64-byte stack
-	// operand (see cmd/qrvm/README.md, "32-byte hashes/storage keys"). Keys
-	// that differ only above bit 255 therefore address the same slot, and a
-	// read through the aliased key is warm. Every runtime must agree on this,
-	// including the gas charged, or the storage root diverges.
+	// Storage keys and values are full 64-byte words. Keys differing in
+	// their high 256 bits address distinct slots, each with its own warmth.
 	{
 		Name:              "SSTORE + SLOAD round-trip, key below 2^256",
 		BytecodeHex:       sstoreValue42("60"+storageKeyLow) + "60" + storageKeyLow + "54" + storeAndReturn64,
@@ -396,22 +411,22 @@ var Vectors = []Vector{
 		ExpectedGasUsed:   22224,
 	},
 	{
-		Name:              "SSTORE key 2^256+5, SLOAD key 5 -> same slot",
+		Name:              "SSTORE key 2^256+5, SLOAD key 5 -> distinct slots",
 		BytecodeHex:       sstoreValue42(pushStorageKeyHigh) + "60" + storageKeyLow + "54" + storeAndReturn64,
-		ExpectedReturnHex: expectedWord("2a"),
-		ExpectedGasUsed:   22224,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   24224,
 	},
 	{
-		Name:              "SSTORE key 5, SLOAD key 2^256+5 -> same slot",
+		Name:              "SSTORE key 5, SLOAD key 2^256+5 -> distinct slots",
 		BytecodeHex:       sstoreValue42("60"+storageKeyLow) + pushStorageKeyHigh + "54" + storeAndReturn64,
-		ExpectedReturnHex: expectedWord("2a"),
-		ExpectedGasUsed:   22224,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   24224,
 	},
 	{
-		Name:              "SSTORE key 2^511, SLOAD key 0 -> same slot",
+		Name:              "SSTORE key 2^511, SLOAD key 0 -> distinct slots",
 		BytecodeHex:       sstoreValue42(pushStorageKeyTopBit) + "6000" + "54" + storeAndReturn64,
-		ExpectedReturnHex: expectedWord("2a"),
-		ExpectedGasUsed:   22230,
+		ExpectedReturnHex: expectedWord("00"),
+		ExpectedGasUsed:   24230,
 	},
 	{
 		// The value side keeps the full 64-byte word.
@@ -431,7 +446,7 @@ var Vectors = []Vector{
 	// --- transient storage (TSTORE / TLOAD, EIP-1153) ------------------
 	//
 	// Transient storage mirrors persistent storage: 64-byte values under
-	// 32-byte keys taken from the low 256 bits of the stack operand. Both
+	// 64-byte keys taken from the full stack operand. Both
 	// opcodes cost a flat 100 gas, and the two stores never overlap.
 	{
 		Name:              "TSTORE + TLOAD round-trip",
@@ -446,9 +461,9 @@ var Vectors = []Vector{
 		ExpectedGasUsed:   118,
 	},
 	{
-		Name:              "TSTORE key 2^256+5, TLOAD key 5 -> same slot",
+		Name:              "TSTORE key 2^256+5, TLOAD key 5 -> distinct slots",
 		BytecodeHex:       tstoreValue42(pushStorageKeyHigh) + "60" + storageKeyLow + "5c" + storeAndReturn64,
-		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedReturnHex: expectedWord("00"),
 		ExpectedGasUsed:   224,
 	},
 	{

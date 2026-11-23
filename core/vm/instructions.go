@@ -255,12 +255,28 @@ func opKeccak256(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) 
 
 	qrvm := interpreter.qrvm
 	if qrvm.Config.EnablePreimageRecording {
-		qrvm.StateDB.AddPreimage(interpreter.hasherBuf, data)
+		qrvm.StateDB.AddPreimage(common.BytesToHash512(interpreter.hasherBuf[:]), data)
 	}
 
 	size.SetBytes(interpreter.hasherBuf[:])
 	return nil, nil
 }
+
+// opKeccak512 derives full-width hashes for mapping slots and other VM data.
+func opKeccak512(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
+	offset, size := scope.Stack.pop(), scope.Stack.peek()
+	data := scope.Memory.GetPtr(int64(offset.Uint64()), int64(size.Uint64()))
+	if interpreter.hasher512 == nil {
+		interpreter.hasher512 = crypto.NewKeccak512State()
+	}
+	interpreter.hasherBuf512 = crypto.HashData512(interpreter.hasher512, data)
+	if interpreter.qrvm.Config.EnablePreimageRecording {
+		interpreter.qrvm.StateDB.AddPreimage(interpreter.hasherBuf512, data)
+	}
+	size.SetBytes(interpreter.hasherBuf512[:])
+	return nil, nil
+}
+
 func opAddress(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	scope.Stack.push(new(uint512.Int).SetBytes(scope.Contract.Address().Bytes()))
 	return nil, nil
@@ -529,7 +545,7 @@ func opMcopy(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]b
 
 func opSload(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	loc := scope.Stack.peek()
-	hash := common.Hash(loc.Bytes32())
+	hash := common.StorageKey(loc.Bytes64())
 	val := interpreter.qrvm.StateDB.GetState(scope.Contract.Address(), hash)
 	loc.SetBytes(val.Bytes())
 	return nil, nil
@@ -541,14 +557,14 @@ func opSstore(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]
 	}
 	loc := scope.Stack.pop()
 	val := scope.Stack.pop()
-	interpreter.qrvm.StateDB.SetState(scope.Contract.Address(), loc.Bytes32(), common.StorageValue64(val.Bytes64()))
+	interpreter.qrvm.StateDB.SetState(scope.Contract.Address(), loc.Bytes64(), common.StorageValue64(val.Bytes64()))
 	return nil, nil
 }
 
 // opTload implements TLOAD opcode
 func opTload(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	loc := scope.Stack.peek()
-	hash := common.Hash(loc.Bytes32())
+	hash := common.StorageKey(loc.Bytes64())
 	val := interpreter.qrvm.StateDB.GetTransientState(scope.Contract.Address(), hash)
 	loc.SetBytes(val.Bytes())
 	return nil, nil
@@ -561,7 +577,7 @@ func opTstore(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]
 	}
 	loc := scope.Stack.pop()
 	val := scope.Stack.pop()
-	interpreter.qrvm.StateDB.SetTransientState(scope.Contract.Address(), loc.Bytes32(), common.StorageValue64(val.Bytes64()))
+	interpreter.qrvm.StateDB.SetTransientState(scope.Contract.Address(), loc.Bytes64(), common.StorageValue64(val.Bytes64()))
 	return nil, nil
 }
 

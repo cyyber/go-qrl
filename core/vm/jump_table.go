@@ -217,6 +217,14 @@ func newZondInstructionSet() JumpTable {
 			maxStack:    maxStack(2, 1),
 			memorySize:  memoryKeccak256,
 		},
+		KECCAK512: {
+			execute:     opKeccak512,
+			constantGas: params.Keccak512Gas,
+			dynamicGas:  gasKeccak512,
+			minStack:    minStack(2, 1),
+			maxStack:    maxStack(2, 1),
+			memorySize:  memoryKeccak256,
+		},
 		ADDRESS: {
 			execute:     opAddress,
 			constantGas: GasQuickStep,

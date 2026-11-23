@@ -2299,8 +2299,8 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 		byte(vm.CREATE2),
 	}...)
 
-	initHash := crypto.Keccak256Hash(initCode)
-	aa := crypto.CreateAddress2(bb, [64]byte{}, initHash[:])
+	initHash := crypto.Keccak512Hash(initCode)
+	aa := crypto.CreateAddress2(bb, [64]byte{}, initHash)
 	t.Logf("Destination address: %x\n", aa)
 
 	gspec := &Genesis{
@@ -2417,7 +2417,7 @@ func testAccessListGas(t *testing.T, scheme string) {
 			GasTipCap: big.NewInt(0),
 			AccessList: types.AccessList{{
 				Address:     aa,
-				StorageKeys: []common.Hash{{0}},
+				StorageKeys: []common.StorageKey{{0}},
 			}},
 		})
 		b.AddTx(tx)
@@ -2497,7 +2497,7 @@ func testDynamicFeeTxAccounting(t *testing.T, scheme string) {
 		// One transaction to 0xAAAA
 		accesses := types.AccessList{types.AccessTuple{
 			Address:     aa,
-			StorageKeys: []common.Hash{{0}},
+			StorageKeys: []common.StorageKey{{0}},
 		}}
 
 		txdata := &types.DynamicFeeTx{
@@ -3201,11 +3201,11 @@ func TestTransientStorageReset(t *testing.T) {
 		t.Fatalf("failed to load state: %v", err)
 	}
 	// The value written by TSTORE is readable within the same transaction.
-	if slot := state.GetState(aa, common.BytesToHash([]byte{2})); slot != common.BytesToStorageValue64([]byte{1}) {
+	if slot := state.GetState(aa, common.BytesToHash512([]byte{2})); slot != common.BytesToStorageValue64([]byte{1}) {
 		t.Fatalf("transient value not readable in the same transaction: have %v", slot)
 	}
 	// The second transaction must not see the first one's transient value.
-	if slot := state.GetState(aa, common.BytesToHash([]byte{1})); slot != (common.StorageValue64{}) {
+	if slot := state.GetState(aa, common.BytesToHash512([]byte{1})); slot != (common.StorageValue64{}) {
 		t.Fatalf("transient storage leaked between transactions: have %v", slot)
 	}
 }
