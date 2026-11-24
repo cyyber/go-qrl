@@ -37,13 +37,14 @@ type Filter struct {
 
 	block      *common.Hash // Block hash if filtering a single block
 	begin, end int64        // Range interval if filtering multiple blocks
+	rangeLimit uint64
 
 	matcher *bloombits.Matcher
 }
 
 // NewRangeFilter creates a new filter which uses a bloom filter on blocks to
 // figure out whether a particular block is interesting or not.
-func (sys *FilterSystem) NewRangeFilter(begin, end int64, addresses []common.Address, topics [][]common.LogTopic) *Filter {
+func (sys *FilterSystem) NewRangeFilter(begin, end int64, addresses []common.Address, topics [][]common.LogTopic, rangeLimit uint64) *Filter {
 	// Flatten the address and topic filter clauses into a single bloombits filter
 	// system. Since the bloombits are not positional, nil topics are permitted,
 	// which get flattened into a nil byte slice.
@@ -70,6 +71,7 @@ func (sys *FilterSystem) NewRangeFilter(begin, end int64, addresses []common.Add
 	filter.matcher = bloombits.NewMatcher(size, filters)
 	filter.begin = begin
 	filter.end = end
+	filter.rangeLimit = rangeLimit
 
 	return filter
 }
@@ -146,6 +148,9 @@ func (f *Filter) Logs(ctx context.Context) ([]*types.Log, error) {
 	}
 	if f.end, err = resolveSpecial(f.end); err != nil {
 		return nil, err
+	}
+	if f.rangeLimit != 0 && uint64(f.end-f.begin) > f.rangeLimit {
+		return nil, invalidParamsErr("exceed maximum block range %d", f.rangeLimit)
 	}
 
 	logChan, errChan := f.rangeLogsAsync(ctx)
@@ -315,7 +320,7 @@ func (f *Filter) checkMatches(ctx context.Context, header *types.Header) ([]*typ
 
 // filterLogs creates a slice of logs matching the given criteria.
 func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.LogTopic) []*types.Log {
-	var check = func(log *types.Log) bool {
+	check := func(log *types.Log) bool {
 		if fromBlock != nil && fromBlock.Int64() >= 0 && fromBlock.Uint64() > log.BlockNumber {
 			return false
 		}

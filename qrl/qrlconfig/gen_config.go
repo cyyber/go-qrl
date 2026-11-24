@@ -45,6 +45,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		RPCGasCap               uint64
 		RPCQRVMTimeout          time.Duration
 		RPCTxFeeCap             float64
+		RangeLimit              uint64 `toml:",omitempty"`
 	}
 	var enc Config
 	enc.Genesis = c.Genesis
@@ -76,6 +77,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.RPCGasCap = c.RPCGasCap
 	enc.RPCQRVMTimeout = c.RPCQRVMTimeout
 	enc.RPCTxFeeCap = c.RPCTxFeeCap
+	enc.RangeLimit = c.RangeLimit
 	return &enc, nil
 }
 
@@ -111,6 +113,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		RPCGasCap               *uint64
 		RPCQRVMTimeout          *time.Duration
 		RPCTxFeeCap             *float64
+		RangeLimit              *uint64 `toml:",omitempty"`
 	}
 	var dec Config
 	if err := unmarshal(&dec); err != nil {
@@ -202,6 +205,9 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.RPCTxFeeCap != nil {
 		c.RPCTxFeeCap = *dec.RPCTxFeeCap
+	}
+	if dec.RangeLimit != nil {
+		c.RangeLimit = *dec.RangeLimit
 	}
 	return nil
 }

@@ -61,6 +61,7 @@ var Defaults = Config{
 	RPCQRVMTimeout:     5 * time.Second,
 	GPO:                FullNodeGPO,
 	RPCTxFeeCap:        1, // 1 quanta
+	RangeLimit:         0,
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go
@@ -136,6 +137,9 @@ type Config struct {
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transaction variants. The unit is quanta.
 	RPCTxFeeCap float64
+
+	// RangeLimit restricts the maximum range (end - start) for range queries.
+	RangeLimit uint64 `toml:",omitempty"`
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain config.

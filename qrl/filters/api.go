@@ -41,6 +41,17 @@ var (
 	errExceedMaxTopics        = errors.New("exceed max topics")
 )
 
+type invalidParamsError struct {
+	err error
+}
+
+func (e invalidParamsError) Error() string  { return e.err.Error() }
+func (e invalidParamsError) ErrorCode() int { return -32602 }
+
+func invalidParamsErr(format string, args ...any) error {
+	return invalidParamsError{fmt.Errorf(format, args...)}
+}
+
 // The maximum number of topic criteria allowed, vm.LOG4 - vm.LOG0
 const maxTopics = 4
 
@@ -63,20 +74,22 @@ type filter struct {
 // FilterAPI offers support to create and manage filters. This will allow external clients to retrieve various
 // information related to the QRL protocol such as blocks, transactions and logs.
 type FilterAPI struct {
-	sys       *FilterSystem
-	events    *EventSystem
-	filtersMu sync.Mutex
-	filters   map[rpc.ID]*filter
-	timeout   time.Duration
+	sys        *FilterSystem
+	events     *EventSystem
+	filtersMu  sync.Mutex
+	filters    map[rpc.ID]*filter
+	timeout    time.Duration
+	rangeLimit uint64
 }
 
 // NewFilterAPI returns a new FilterAPI instance.
 func NewFilterAPI(system *FilterSystem) *FilterAPI {
 	api := &FilterAPI{
-		sys:     system,
-		events:  NewEventSystem(system),
-		filters: make(map[rpc.ID]*filter),
-		timeout: system.cfg.Timeout,
+		sys:        system,
+		events:     NewEventSystem(system),
+		filters:    make(map[rpc.ID]*filter),
+		timeout:    system.cfg.Timeout,
+		rangeLimit: system.cfg.RangeLimit,
 	}
 	go api.timeoutLoop(system.cfg.Timeout)
 
@@ -362,7 +375,7 @@ func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*type
 			return nil, errInvalidBlockRange
 		}
 		// Construct the range filter
-		filter = api.sys.NewRangeFilter(begin, end, crit.Addresses, crit.Topics)
+		filter = api.sys.NewRangeFilter(begin, end, crit.Addresses, crit.Topics, api.rangeLimit)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)
@@ -413,7 +426,7 @@ func (api *FilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*types.Lo
 			end = f.crit.ToBlock.Int64()
 		}
 		// Construct the range filter
-		filter = api.sys.NewRangeFilter(begin, end, f.crit.Addresses, f.crit.Topics)
+		filter = api.sys.NewRangeFilter(begin, end, f.crit.Addresses, f.crit.Topics, api.rangeLimit)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)
