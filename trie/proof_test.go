@@ -1175,5 +1175,26 @@ func TestRangeProofKeysOutsideEdges(t *testing.T) {
 		if _, err := VerifyRangeProof(root, first, last, k, v, proof); err == nil {
 			t.Fatalf("Case %d(%d->%d) genuine pair before the range accepted", i, start, end-1)
 		}
+
+		// The genuine successor of the range, with the last edge key being a
+		// non-existent key right in front of it.
+		next = entries[end]
+		first, last = keys[0], decreaseKey(common.CopyBytes(next.k))
+
+		proof = memorydb.New()
+		if err := trie.Prove(first, proof); err != nil {
+			t.Fatalf("Failed to prove the first node %v", err)
+		}
+		if err := trie.Prove(last, proof); err != nil {
+			t.Fatalf("Failed to prove the last node %v", err)
+		}
+		if _, err := VerifyRangeProof(root, first, last, keys, vals, proof); err != nil {
+			t.Fatalf("Case %d(%d->%d) expect no error, got %v", i, start, end-1, err)
+		}
+		k = append(keys[:len(keys):len(keys)], next.k)
+		v = append(vals[:len(vals):len(vals)], next.v)
+		if _, err := VerifyRangeProof(root, first, last, k, v, proof); err == nil {
+			t.Fatalf("Case %d(%d->%d) genuine pair after the range accepted", i, start, end-1)
+		}
 	}
 }
