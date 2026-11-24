@@ -24,7 +24,7 @@ import (
 	"math/big"
 	"os"
 	goruntime "runtime"
-	"runtime/pprof"
+	"slices"
 	"testing"
 	"time"
 
@@ -33,7 +33,6 @@ import (
 	"github.com/theQRL/go-qrl/core"
 	"github.com/theQRL/go-qrl/core/rawdb"
 	"github.com/theQRL/go-qrl/core/state"
-	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/core/vm/runtime"
 	"github.com/theQRL/go-qrl/internal/flags"
@@ -50,6 +49,7 @@ var runCommand = &cli.Command{
 	Usage:       "run arbitrary qrvm binary",
 	ArgsUsage:   "<code>",
 	Description: `The run command runs arbitrary QRVM code.`,
+	Flags:       slices.Concat(vmFlags, traceFlags),
 }
 
 // readGenesis will read the given JSON format genesis file and return
@@ -116,15 +116,14 @@ func runCmd(ctx *cli.Context) error {
 	}
 
 	var (
-		err           error
-		tracer        vm.QRVMLogger
-		debugLogger   *logger.StructLogger
-		statedb       *state.StateDB
-		chainConfig   *params.ChainConfig
-		sender        = common.BytesToAddress([]byte("sender"))
-		receiver      = common.BytesToAddress([]byte("receiver"))
-		genesisConfig *core.Genesis
-		preimages     = ctx.Bool(DumpFlag.Name)
+		err         error
+		tracer      vm.QRVMLogger
+		debugLogger *logger.StructLogger
+		statedb     *state.StateDB
+		chainConfig *params.ChainConfig
+		sender      = common.BytesToAddress([]byte("sender"))
+		receiver    = common.BytesToAddress([]byte("receiver"))
+		preimages   = ctx.Bool(DumpFlag.Name)
 	)
 	if ctx.Bool(MachineFlag.Name) {
 		tracer = logger.NewJSONLogger(logconfig, os.Stdout)
@@ -134,30 +133,30 @@ func runCmd(ctx *cli.Context) error {
 	} else {
 		debugLogger = logger.NewStructLogger(logconfig)
 	}
+
+	initialGas := ctx.Uint64(GasFlag.Name)
+	genesisConfig := new(core.Genesis)
+	genesisConfig.GasLimit = initialGas
 	if ctx.String(GenesisFlag.Name) != "" {
-		gen := readGenesis(ctx.String(GenesisFlag.Name))
-		genesisConfig = gen
-		db := rawdb.NewMemoryDatabase()
-		triedb := trie.NewDatabase(db, &trie.Config{
-			Preimages: preimages,
-			HashDB:    hashdb.Defaults,
-		})
-		defer triedb.Close()
-		genesis := gen.MustCommit(db, triedb)
-		sdb := state.NewDatabaseWithNodeDB(db, triedb)
-		statedb, _ = state.New(genesis.Root(), sdb, nil)
-		chainConfig = gen.Config
+		genesisConfig = readGenesis(ctx.String(GenesisFlag.Name))
+		if genesisConfig.GasLimit != 0 {
+			initialGas = genesisConfig.GasLimit
+		}
 	} else {
-		db := rawdb.NewMemoryDatabase()
-		triedb := trie.NewDatabase(db, &trie.Config{
-			Preimages: preimages,
-			HashDB:    hashdb.Defaults,
-		})
-		defer triedb.Close()
-		sdb := state.NewDatabaseWithNodeDB(db, triedb)
-		statedb, _ = state.New(types.EmptyRootHash, sdb, nil)
-		genesisConfig = new(core.Genesis)
+		genesisConfig.Config = params.AllBeaconProtocolChanges
 	}
+
+	db := rawdb.NewMemoryDatabase()
+	triedb := trie.NewDatabase(db, &trie.Config{
+		Preimages: preimages,
+		HashDB:    hashdb.Defaults,
+	})
+	defer triedb.Close()
+	genesis := genesisConfig.MustCommit(db, triedb)
+	sdb := state.NewDatabaseWithNodeDB(db, triedb)
+	statedb, _ = state.New(genesis.Root(), sdb, nil)
+	chainConfig = genesisConfig.Config
+
 	if ctx.String(SenderFlag.Name) != "" {
 		sender, err = common.NewAddressFromString(ctx.String(SenderFlag.Name))
 		if err != nil {
@@ -206,10 +205,6 @@ func runCmd(ctx *cli.Context) error {
 		}
 		code = common.FromHex(string(hexcode))
 	}
-	initialGas := ctx.Uint64(GasFlag.Name)
-	if genesisConfig.GasLimit != 0 {
-		initialGas = genesisConfig.GasLimit
-	}
 	runtimeConfig := runtime.Config{
 		Origin:      sender,
 		State:       statedb,
@@ -223,19 +218,6 @@ func runCmd(ctx *cli.Context) error {
 		QRVMConfig: vm.Config{
 			Tracer: tracer,
 		},
-	}
-
-	if cpuProfilePath := ctx.String(CPUProfileFlag.Name); cpuProfilePath != "" {
-		f, err := os.Create(cpuProfilePath)
-		if err != nil {
-			fmt.Println("could not create CPU profile: ", err)
-			os.Exit(1)
-		}
-		if err := pprof.StartCPUProfile(f); err != nil {
-			fmt.Println("could not start CPU profile: ", err)
-			os.Exit(1)
-		}
-		defer pprof.StopCPUProfile()
 	}
 
 	if chainConfig != nil {
@@ -283,19 +265,6 @@ func runCmd(ctx *cli.Context) error {
 	if ctx.Bool(DumpFlag.Name) {
 		statedb.Commit(genesisConfig.Number, true)
 		fmt.Println(string(statedb.Dump(nil)))
-	}
-
-	if memProfilePath := ctx.String(MemProfileFlag.Name); memProfilePath != "" {
-		f, err := os.Create(memProfilePath)
-		if err != nil {
-			fmt.Println("could not create memory profile: ", err)
-			os.Exit(1)
-		}
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			fmt.Println("could not write memory profile: ", err)
-			os.Exit(1)
-		}
-		f.Close()
 	}
 
 	if ctx.Bool(DebugFlag.Name) {
