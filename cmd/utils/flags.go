@@ -432,16 +432,16 @@ var (
 		Value:    qrlconfig.Defaults.RPCTxFeeCap,
 		Category: flags.APICategory,
 	}
+	RPCGlobalLogQueryLimit = &cli.IntFlag{
+		Name:     "rpc.logquerylimit",
+		Usage:    "Maximum number of alternative addresses or topics allowed per search position in qrl_getLogs filter criteria (0 = no cap)",
+		Value:    qrlconfig.Defaults.LogQueryLimit,
+		Category: flags.APICategory,
+	}
 	RPCGlobalRangeLimitFlag = &cli.Uint64Flag{
 		Name:     "rpc.rangelimit",
 		Usage:    "Maximum block range (end - begin) allowed for range queries (0 = unlimited)",
 		Value:    qrlconfig.Defaults.RangeLimit,
-		Category: flags.APICategory,
-	}
-	RPCGlobalLogQueryLimitFlag = &cli.IntFlag{
-		Name:     "rpc.logquerylimit",
-		Usage:    "Maximum number of alternative addresses or topics allowed per search position in qrl_getLogs filter criteria (0 = no cap)",
-		Value:    qrlconfig.Defaults.LogQueryLimit,
 		Category: flags.APICategory,
 	}
 	// Authenticated RPC HTTP settings
@@ -1503,6 +1503,9 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 	if ctx.IsSet(CacheLogSizeFlag.Name) {
 		cfg.FilterLogCacheSize = ctx.Int(CacheLogSizeFlag.Name)
 	}
+	if ctx.IsSet(RPCGlobalLogQueryLimit.Name) {
+		cfg.LogQueryLimit = ctx.Int(RPCGlobalLogQueryLimit.Name)
+	}
 	if !ctx.Bool(SnapshotFlag.Name) {
 		// If snap-sync is requested, this flag is also required
 		if cfg.SyncMode == downloader.SnapSync {
@@ -1533,9 +1536,6 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 	}
 	if ctx.IsSet(RPCGlobalRangeLimitFlag.Name) {
 		cfg.RangeLimit = ctx.Uint64(RPCGlobalRangeLimitFlag.Name)
-	}
-	if ctx.IsSet(RPCGlobalLogQueryLimitFlag.Name) {
-		cfg.LogQueryLimit = ctx.Int(RPCGlobalLogQueryLimitFlag.Name)
 	}
 	if ctx.IsSet(NoDiscoverFlag.Name) {
 		cfg.QRLDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
@@ -1676,8 +1676,8 @@ func RegisterGraphQLService(stack *node.Node, backend qrlapi.Backend, filterSyst
 func RegisterFilterAPI(stack *node.Node, backend qrlapi.Backend, qrlcfg *qrlconfig.Config) *filters.FilterSystem {
 	filterSystem := filters.NewFilterSystem(backend, filters.Config{
 		LogCacheSize:  qrlcfg.FilterLogCacheSize,
-		RangeLimit:    qrlcfg.RangeLimit,
 		LogQueryLimit: qrlcfg.LogQueryLimit,
+		RangeLimit:    qrlcfg.RangeLimit,
 	})
 	stack.RegisterAPIs([]rpc.API{{
 		Namespace: "qrl",

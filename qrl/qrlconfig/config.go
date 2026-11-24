@@ -114,6 +114,10 @@ type Config struct {
 	// This is the number of blocks for which logs will be cached in the filter system.
 	FilterLogCacheSize int
 
+	// This is the maximum number of addresses or topics allowed in filter criteria
+	// for qrl_getLogs.
+	LogQueryLimit int
+
 	// Mining options
 	Miner miner.Config
 
@@ -141,10 +145,6 @@ type Config struct {
 
 	// RangeLimit restricts the maximum range (end - start) for range queries.
 	RangeLimit uint64 `toml:",omitempty"`
-
-	// LogQueryLimit is the maximum number of addresses, or of topics at one
-	// position, in the filter criteria of a log query (0 = no limit).
-	LogQueryLimit int
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain config.
