@@ -304,6 +304,61 @@ func TestUDPv4_findnode(t *testing.T) {
 	waitNeighbors(want)
 }
 
+// This test checks that FINDNODE returns only table nodes which have passed a
+// liveness check if there are any, unless the check is turned off.
+func TestUDPv4_findnodeLivenessCheck(t *testing.T) {
+	t.Parallel()
+	test := newUDPTest(t)
+	defer test.close()
+
+	// Insert a few nodes, only half of them verified live.
+	var (
+		nodes []*node
+		live  = make(map[qnode.ID]bool)
+	)
+	for i := range 8 {
+		key := newkey()
+		n := wrapNode(qnode.NewV4(&key.PublicKey, net.IP{10, 13, 0, byte(i)}, 0, 2000))
+		if i%2 == 0 {
+			n.livenessChecks = 1
+			live[n.ID()] = true
+		}
+		nodes = append(nodes, n)
+	}
+	fillTable(test.table, nodes, false)
+
+	// ensure there's a bond with the test node,
+	// findnode won't be accepted otherwise.
+	remoteID := v4wire.EncodePubkey(&test.remotekey.PublicKey).ID()
+	test.table.db.UpdateLastPongReceived(remoteID, test.remoteaddr.IP, time.Now())
+
+	// findnode returns the number of verified and unverified nodes in the reply.
+	findnode := func() (verified, unverified int) {
+		test.packetIn(nil, &v4wire.Findnode{Target: testTarget, Expiration: futureExp})
+		test.waitPacketOut(func(p *v4wire.Neighbors, to *net.UDPAddr, hash []byte) {
+			for _, n := range p.Nodes {
+				if live[n.ID.ID()] {
+					verified++
+				} else {
+					unverified++
+				}
+			}
+		})
+		return verified, unverified
+	}
+
+	// By default, the unverified nodes are left out of the reply.
+	if verified, unverified := findnode(); verified != 4 || unverified != 0 {
+		t.Errorf("wrong results: got %d verified and %d unverified nodes, want 4 and 0", verified, unverified)
+	}
+
+	// With the liveness check turned off, all nodes are returned.
+	test.table.cfg.NoFindnodeLivenessCheck = true
+	if verified, unverified := findnode(); verified != 4 || unverified != 4 {
+		t.Errorf("wrong results: got %d verified and %d unverified nodes, want 4 and 4", verified, unverified)
+	}
+}
+
 func TestUDPv4_findnodeMultiReply(t *testing.T) {
 	test := newUDPTest(t)
 	defer test.close()
