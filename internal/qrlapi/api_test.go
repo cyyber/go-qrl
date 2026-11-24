@@ -144,6 +144,64 @@ func TestGetProofStorageValue64Quantity(t *testing.T) {
 	}
 }
 
+// Tests that getProof serves at most maxGetProofKeys storage keys per call and
+// rejects larger requests as invalid parameters.
+func TestGetProofKeyLimit(t *testing.T) {
+	t.Parallel()
+
+	var (
+		addr    = common.BytesToAddress(bytes.Repeat([]byte{0x11}, common.AddressLength))
+		genesis = &core.Genesis{
+			Config: params.TestChainConfig,
+			Alloc:  core.GenesisAlloc{addr: {Balance: big.NewInt(1)}},
+		}
+		api    = NewBlockChainAPI(newTestBackend(t, 1, genesis, beacon.NewFaker(), func(i int, b *core.BlockGen) {}))
+		latest = rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber)
+		keys   = make([]string, maxGetProofKeys+1)
+	)
+	for i := range keys {
+		keys[i] = hexutil.EncodeUint64(uint64(i))
+	}
+
+	result, err := api.GetProof(t.Context(), addr, keys[:maxGetProofKeys], latest)
+	if err != nil {
+		t.Fatalf("request at the key limit failed: %v", err)
+	}
+	if len(result.StorageProof) != maxGetProofKeys {
+		t.Fatalf("storage proof length mismatch: have %d, want %d", len(result.StorageProof), maxGetProofKeys)
+	}
+
+	_, err = api.GetProof(t.Context(), addr, keys, latest)
+	var rpcErr rpc.Error
+	if !errors.As(err, &rpcErr) {
+		t.Fatalf("request above the key limit: have error %v, want an rpc.Error", err)
+	}
+	if have, want := rpcErr.ErrorCode(), -32602; have != want { // invalid params
+		t.Fatalf("error code mismatch: have %d, want %d", have, want)
+	}
+}
+
+// Tests that getProof stops working on a request which has been canceled.
+func TestGetProofCanceled(t *testing.T) {
+	t.Parallel()
+
+	var (
+		addr    = common.BytesToAddress(bytes.Repeat([]byte{0x11}, common.AddressLength))
+		genesis = &core.Genesis{
+			Config: params.TestChainConfig,
+			Alloc:  core.GenesisAlloc{addr: {Balance: big.NewInt(1)}},
+		}
+		api    = NewBlockChainAPI(newTestBackend(t, 1, genesis, beacon.NewFaker(), func(i int, b *core.BlockGen) {}))
+		latest = rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber)
+	)
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	if _, err := api.GetProof(ctx, addr, []string{"0x0"}, latest); !errors.Is(err, context.Canceled) {
+		t.Fatalf("error mismatch: have %v, want %v", err, context.Canceled)
+	}
+}
+
 func TestRPCTransactionPreservesExtraParams(t *testing.T) {
 	t.Parallel()
 
