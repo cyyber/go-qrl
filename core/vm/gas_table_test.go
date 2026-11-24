@@ -18,12 +18,14 @@ package vm
 
 import (
 	"bytes"
+	"math"
 	"math/big"
 	"sort"
 	"testing"
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/uint512"
 	"github.com/theQRL/go-qrl/core/rawdb"
 	"github.com/theQRL/go-qrl/core/state"
 	"github.com/theQRL/go-qrl/core/types"
@@ -112,5 +114,62 @@ func TestCreateGas(t *testing.T) {
 				t.Errorf("test %d: gas used mismatch: have %v, want %v", i, gasUsed, tt.gasUsed)
 			}
 		}
+	}
+}
+
+// TestCallVariantColdAccessGas checks the cold account access surcharge that
+// makeCallVariantGasCallEIP2929 adds on top of the wrapped gas calculator, and
+// that the addition reports an overflow instead of wrapping around.
+func TestCallVariantColdAccessGas(t *testing.T) {
+	const (
+		coldCost = params.ColdAccountAccessCostEIP2929 - params.WarmStorageReadCostEIP2929
+		startGas = 100_000
+	)
+	tests := []struct {
+		name     string
+		warm     bool   // whether the call target is already in the access list
+		innerGas uint64 // gas returned by the wrapped calculator
+		wantGas  uint64
+		wantErr  error
+	}{
+		{"cold", false, 21000, 21000 + coldCost, nil},
+		{"cold, sum is max uint64", false, math.MaxUint64 - coldCost, math.MaxUint64, nil},
+		{"cold, sum overflows by one", false, math.MaxUint64 - coldCost + 1, 0, ErrGasUintOverflow},
+		{"cold, inner gas is max uint64", false, math.MaxUint64, 0, ErrGasUintOverflow},
+		{"warm, inner gas is max uint64", true, math.MaxUint64, math.MaxUint64, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
+			qrvm := NewQRVM(BlockContext{}, TxContext{}, statedb, params.AllBeaconProtocolChanges, Config{})
+			contract := NewContract(AccountRef(common.Address{}), AccountRef(common.Address{}), new(big.Int), startGas)
+
+			// The call variants take the target address as their second operand.
+			stack := newstack()
+			stack.push(uint512.NewInt(0xbeef)) // address
+			stack.push(uint512.NewInt(0))      // gas
+			target := stackToAddress(stack.Back(1))
+			if tt.warm {
+				statedb.AddAddressToAccessList(target)
+			}
+			inner := func(*QRVM, *Contract, *Stack, *Memory, uint64) (uint64, error) {
+				return tt.innerGas, nil
+			}
+			gas, err := makeCallVariantGasCallEIP2929(inner)(qrvm, contract, stack, NewMemory(), 0)
+			if err != tt.wantErr {
+				t.Fatalf("error mismatch: have %v, want %v", err, tt.wantErr)
+			}
+			if gas != tt.wantGas {
+				t.Errorf("gas mismatch: have %d, want %d", gas, tt.wantGas)
+			}
+			if !statedb.AddressInAccessList(target) {
+				t.Error("call target not in access list")
+			}
+			// The surcharge is charged through the returned gas, so the amount
+			// deducted up front has to be handed back to the contract.
+			if contract.Gas != startGas {
+				t.Errorf("contract gas mismatch: have %d, want %d", contract.Gas, startGas)
+			}
+		})
 	}
 }
