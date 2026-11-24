@@ -149,7 +149,7 @@ func (f *Filter) Logs(ctx context.Context) ([]*types.Log, error) {
 	if f.end, err = resolveSpecial(f.end); err != nil {
 		return nil, err
 	}
-	if f.rangeLimit != 0 && f.end > f.begin && uint64(f.end-f.begin) > f.rangeLimit {
+	if f.rangeLimit != 0 && uint64(f.end-f.begin) > f.rangeLimit {
 		return nil, invalidParamsErr("exceed maximum block range %d", f.rangeLimit)
 	}
 
