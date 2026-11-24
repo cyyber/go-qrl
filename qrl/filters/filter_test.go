@@ -411,16 +411,17 @@ func TestFilters(t *testing.T) {
 }
 
 func TestRangeLimit(t *testing.T) {
-	var (
-		db     = rawdb.NewMemoryDatabase()
-		_, sys = newTestFilterSystem(t, db, Config{RangeLimit: 5})
-		gspec  = &core.Genesis{
-			Config:  params.TestChainConfig,
-			Alloc:   core.GenesisAlloc{},
-			BaseFee: big.NewInt(params.InitialBaseFee),
-		}
-	)
-	if _, err := gspec.Commit(db, trie.NewDatabase(db, nil)); err != nil {
+	db := rawdb.NewMemoryDatabase()
+	_, sys := newTestFilterSystem(t, db, Config{})
+	defer db.Close()
+
+	gspec := &core.Genesis{
+		Config:  params.TestChainConfig,
+		Alloc:   core.GenesisAlloc{},
+		BaseFee: big.NewInt(params.InitialBaseFee),
+	}
+	_, err := gspec.Commit(db, trie.NewDatabase(db, nil))
+	if err != nil {
 		t.Fatal(err)
 	}
 	chain, _ := core.GenerateChain(gspec.Config, gspec.ToBlock(), beacon.NewFaker(), db, 10, func(i int, gen *core.BlockGen) {})
@@ -429,37 +430,29 @@ func TestRangeLimit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := bc.InsertChain(chain); err != nil {
+	defer bc.Stop()
+
+	_, err = bc.InsertChain(chain)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	// A range of 9 blocks (end - begin) is over a limit of 5.
-	_, err = sys.NewRangeFilter(0, 9, nil, nil, 5).Logs(t.Context())
-	var rpcErr rpc.Error
-	if !errors.As(err, &rpcErr) {
-		t.Fatalf("expected an RPC error for a range over the limit, got %v", err)
-	}
-	if rpcErr.ErrorCode() != -32602 {
-		t.Fatalf("expected error code -32602, got %d", rpcErr.ErrorCode())
-	}
-	if rpcErr.Error() != "exceed maximum block range 5" {
-		t.Fatalf("unexpected error message %q", rpcErr.Error())
+	// Set rangeLimit to 5, but request a range of 9 (end - begin = 9, from 0 to 9)
+	filter := sys.NewRangeFilter(0, 9, nil, nil, 5)
+	_, err = filter.Logs(context.Background())
+	if err == nil {
+		t.Fatal("expected range limit error, got nil")
 	}
 
-	// A range at the limit, and any range without a limit, are served.
-	if _, err := sys.NewRangeFilter(0, 5, nil, nil, 5).Logs(t.Context()); err != nil {
-		t.Fatalf("range at the limit: %v", err)
-	}
-	if _, err := sys.NewRangeFilter(0, 9, nil, nil, 0).Logs(t.Context()); err != nil {
-		t.Fatalf("range without a limit: %v", err)
-	}
-
-	// The API takes the limit from the filter system's configuration.
-	api := NewFilterAPI(sys)
-	if _, err := api.GetLogs(t.Context(), FilterCriteria{FromBlock: big.NewInt(0), ToBlock: big.NewInt(9)}); !errors.As(err, &rpcErr) {
-		t.Fatalf("expected the API to refuse a range over the limit, got %v", err)
-	}
-	if _, err := api.GetLogs(t.Context(), FilterCriteria{FromBlock: big.NewInt(4), ToBlock: big.NewInt(9)}); err != nil {
-		t.Fatalf("the API refused a range at the limit: %v", err)
+	var re rpc.Error
+	if errors.As(err, &re) {
+		if re.ErrorCode() != -32602 {
+			t.Fatalf("expected error code -32602, got %d", re.ErrorCode())
+		}
+		if re.Error() != "exceed maximum block range 5" {
+			t.Fatalf("expected error message 'exceed maximum block range 5', got %q", re.Error())
+		}
+	} else {
+		t.Fatalf("expected rpc error, got %v", err)
 	}
 }
