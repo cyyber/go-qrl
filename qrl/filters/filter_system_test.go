@@ -455,6 +455,7 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 	}
 }
 
+// TestExceedLogQueryLimit tests getLogs with too many addresses or topics
 func TestExceedLogQueryLimit(t *testing.T) {
 	t.Parallel()
 
