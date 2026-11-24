@@ -20,6 +20,7 @@ import (
 	crand "crypto/rand"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"math/rand"
 	"os"
@@ -373,6 +374,37 @@ func TestInvalidTransactions(t *testing.T) {
 	}
 	if err := pool.addLocal(tx); err != nil {
 		t.Error("expected", nil, "got", err)
+	}
+}
+
+// Tests that a transaction with the maximum nonce is rejected by the pool: it
+// could never be included in a block (EIP-2681), so it would never leave the
+// queue. The highest usable nonce is still accepted.
+func TestMaxNonceTransaction(t *testing.T) {
+	t.Parallel()
+
+	pool, key := setupPool()
+	defer pool.Close()
+
+	tx := transaction(math.MaxUint64, 100000, key)
+	from, _ := deriveSender(tx)
+	testAddBalance(pool, from, big.NewInt(0xffffffffffffff))
+
+	if err, want := pool.addRemoteSync(tx), core.ErrNonceMax; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
+	if err, want := pool.addLocal(tx), core.ErrNonceMax; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
+	if pending, queued := pool.Stats(); pending != 0 || queued != 0 {
+		t.Errorf("pool not empty: pending %d, queued %d", pending, queued)
+	}
+
+	if err := pool.addRemoteSync(transaction(math.MaxUint64-1, 100000, key)); err != nil {
+		t.Error("expected", nil, "got", err)
+	}
+	if pending, queued := pool.Stats(); pending != 0 || queued != 1 {
+		t.Errorf("pool content mismatch: pending %d, queued %d, want 0 and 1", pending, queued)
 	}
 }
 
