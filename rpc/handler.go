@@ -290,6 +290,9 @@ func (h *handler) handleNonBatchCall(cp *callProc, msg *jsonrpcMessage) {
 		timer = time.AfterFunc(timeout, func() {
 			cancel()
 			responded.Do(func() {
+				if msg.isNotification() {
+					return
+				}
 				resp := msg.errorResponse(&internalServerError{errcodeTimeout, errMsgTimeout})
 				h.conn.writeJSON(cp.ctx, resp, true)
 			})
