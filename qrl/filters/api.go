@@ -41,25 +41,22 @@ var (
 	errExceedMaxTopics        = errors.New("exceed max topics")
 )
 
+type invalidParamsError struct {
+	err error
+}
+
+func (e invalidParamsError) Error() string  { return e.err.Error() }
+func (e invalidParamsError) ErrorCode() int { return -32602 }
+
+func invalidParamsErr(format string, args ...any) error {
+	return invalidParamsError{fmt.Errorf(format, args...)}
+}
+
 // The maximum number of topic criteria allowed, vm.LOG4 - vm.LOG0
 const maxTopics = 4
 
 // The maximum number of allowed topics within a topic criteria
 const maxSubTopics = 1000
-
-// invalidParamsError is the error for criteria that the caller can correct.
-// It carries the JSON-RPC code for invalid parameters.
-type invalidParamsError struct {
-	message string
-}
-
-func invalidParamsErr(format string, args ...any) error {
-	return &invalidParamsError{message: fmt.Sprintf(format, args...)}
-}
-
-func (err *invalidParamsError) Error() string { return err.message }
-
-func (err *invalidParamsError) ErrorCode() int { return -32602 }
 
 // filter is a helper struct that holds meta information over the filter type
 // and associated subscription in the event system.
