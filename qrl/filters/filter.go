@@ -37,7 +37,7 @@ type Filter struct {
 
 	block      *common.Hash // Block hash if filtering a single block
 	begin, end int64        // Range interval if filtering multiple blocks
-	rangeLimit uint64       // Maximum block range of a range filter, 0 for no limit
+	rangeLimit uint64
 
 	matcher *bloombits.Matcher
 }
