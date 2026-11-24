@@ -244,6 +244,115 @@ func testRecvTransactions(t *testing.T, protocol uint) {
 	}
 }
 
+// This test checks that a peer is disconnected if it sends a message which
+// contains the same transaction more than once.
+func TestRecvDuplicateTransactions1(t *testing.T) { testRecvDuplicateTransactions(t, qrl.QRL2) }
+
+func testRecvDuplicateTransactions(t *testing.T, protocol uint) {
+	t.Parallel()
+
+	makeTx := func(nonce uint64) *types.Transaction {
+		tx := types.NewTx(&types.DynamicFeeTx{
+			Nonce:     nonce,
+			To:        &common.Address{},
+			Value:     big.NewInt(0),
+			Gas:       100000,
+			GasFeeCap: big.NewInt(0),
+			Data:      nil,
+		})
+		tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, testWallet)
+		return tx
+	}
+	txA, txB := makeTx(0), makeTx(1)
+
+	tests := []struct {
+		name string
+		code uint64
+		data any
+		drop bool
+	}{
+		{
+			name: "Transactions",
+			code: qrl.TransactionsMsg,
+			data: []*types.Transaction{txA, txB},
+		},
+		{
+			name: "TransactionsDuplicate",
+			code: qrl.TransactionsMsg,
+			data: []*types.Transaction{txA, txA},
+			drop: true,
+		},
+		{
+			name: "PooledTransactions",
+			code: qrl.PooledTransactionsMsg,
+			data: &qrl.PooledTransactionsPacket{RequestId: 1, PooledTransactionsResponse: []*types.Transaction{txA, txB}},
+		},
+		{
+			name: "PooledTransactionsDuplicate",
+			code: qrl.PooledTransactionsMsg,
+			data: &qrl.PooledTransactionsPacket{RequestId: 1, PooledTransactionsResponse: []*types.Transaction{txA, txB, txA}},
+			drop: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a message handler, configure it to accept transactions and watch them
+			handler := newTestHandler()
+			defer handler.close()
+
+			handler.handler.synced.Store(true) // mark synced to accept transactions
+
+			txs := make(chan core.NewTxsEvent, 1)
+			sub := handler.txpool.SubscribeTransactions(txs)
+			defer sub.Unsubscribe()
+
+			// Create a source peer to send messages through and a sink handler to receive them
+			p2pSrc, p2pSink := p2p.MsgPipe()
+			defer p2pSrc.Close()
+			defer p2pSink.Close()
+
+			src := qrl.NewPeer(protocol, p2p.NewPeerPipe(qnode.ID{1}, "", nil, p2pSrc), p2pSrc, handler.txpool)
+			sink := qrl.NewPeer(protocol, p2p.NewPeerPipe(qnode.ID{2}, "", nil, p2pSink), p2pSink, handler.txpool)
+			defer src.Close()
+			defer sink.Close()
+
+			dropped := make(chan error, 1)
+			go func() {
+				dropped <- handler.handler.runQRLPeer(sink, func(peer *qrl.Peer) error {
+					return qrl.Handle((*qrlHandler)(handler.handler), peer)
+				})
+			}()
+			// Run the handshake locally to avoid spinning up a source handler
+			var (
+				genesis = handler.chain.Genesis()
+				head    = handler.chain.CurrentBlock()
+			)
+			if err := src.Handshake(1, head.Hash(), genesis.Hash(), forkid.NewIDWithChain(handler.chain), forkid.NewFilter(handler.chain)); err != nil {
+				t.Fatalf("failed to run protocol handshake")
+			}
+			// Send the message to the sink, and check whether the transactions
+			// are added to the tx pool or the peer is dropped
+			if err := p2p.Send(p2pSrc, tt.code, tt.data); err != nil {
+				t.Fatalf("failed to send message: %v", err)
+			}
+			select {
+			case event := <-txs:
+				if tt.drop {
+					t.Errorf("peer not dropped, %d transactions added", len(event.Txs))
+				} else if len(event.Txs) != 2 {
+					t.Errorf("wrong number of added transactions: got %d, want 2", len(event.Txs))
+				}
+			case err := <-dropped:
+				if !tt.drop {
+					t.Errorf("peer dropped: %v", err)
+				}
+			case <-time.After(2 * time.Second):
+				t.Errorf("message not handled within 2 seconds")
+			}
+		})
+	}
+}
+
 // This test checks that pending transactions are sent.
 func TestSendTransactions1(t *testing.T) { testSendTransactions(t, qrl.QRL2) }
 
