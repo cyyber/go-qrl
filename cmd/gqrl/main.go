@@ -147,6 +147,7 @@ var (
 		utils.RPCGlobalTxFeeCapFlag,
 		utils.BatchRequestLimit,
 		utils.BatchResponseMaxSize,
+		utils.HTTPBodyLimitFlag,
 	}
 
 	metricsFlags = []cli.Flag{
