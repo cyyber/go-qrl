@@ -1099,3 +1099,81 @@ func TestRangeProofKeysWithSharedPrefix(t *testing.T) {
 		t.Error("expected more to be false")
 	}
 }
+
+// TestRangeProofKeysOutsideEdges tests that key-value pairs lying outside of
+// the two edge keys are rejected, even though they need not change the root
+// hash: a pair that belongs below an unresolved node cannot be inserted, and
+// the neighbour of a non-existent edge key is already part of the edge proof.
+func TestRangeProofKeysOutsideEdges(t *testing.T) {
+	trie, vals := randomTrie(4096)
+	var entries []*kv
+	for _, kv := range vals {
+		entries = append(entries, kv)
+	}
+	slices.SortFunc(entries, (*kv).cmp)
+
+	var (
+		root   = trie.Hash()
+		forged = []byte("forged")
+	)
+	for i := range 100 {
+		start := mrand.Intn(len(entries)-300) + 10
+		end := start + 2 + mrand.Intn(200)
+
+		var keys, vals [][]byte
+		for j := start; j < end; j++ {
+			keys = append(keys, entries[j].k)
+			vals = append(vals, entries[j].v)
+		}
+		first, last := keys[0], keys[len(keys)-1]
+
+		proof := memorydb.New()
+		if err := trie.Prove(first, proof); err != nil {
+			t.Fatalf("Failed to prove the first node %v", err)
+		}
+		if err := trie.Prove(last, proof); err != nil {
+			t.Fatalf("Failed to prove the last node %v", err)
+		}
+		if _, err := VerifyRangeProof(root, first, last, keys, vals, proof); err != nil {
+			t.Fatalf("Case %d(%d->%d) expect no error, got %v", i, start, end-1, err)
+		}
+
+		// A forged pair in front of the first edge key.
+		prev := entries[start-1-mrand.Intn(9)]
+		k := append([][]byte{prev.k}, keys...)
+		v := append([][]byte{forged}, vals...)
+		if _, err := VerifyRangeProof(root, first, last, k, v, proof); err == nil {
+			t.Fatalf("Case %d(%d->%d) forged pair before the range accepted", i, start, end-1)
+		}
+
+		// A forged pair behind the last edge key.
+		next := entries[end+mrand.Intn(9)]
+		k = append(keys[:len(keys):len(keys)], next.k)
+		v = append(vals[:len(vals):len(vals)], forged)
+		if _, err := VerifyRangeProof(root, first, last, k, v, proof); err == nil {
+			t.Fatalf("Case %d(%d->%d) forged pair after the range accepted", i, start, end-1)
+		}
+
+		// The genuine predecessor of the range, with the first edge key being
+		// a non-existent key right behind it. The edge proof contains the
+		// predecessor, so adding it leaves the root hash unchanged.
+		prev = entries[start-1]
+		first = increaseKey(common.CopyBytes(prev.k))
+
+		proof = memorydb.New()
+		if err := trie.Prove(first, proof); err != nil {
+			t.Fatalf("Failed to prove the first node %v", err)
+		}
+		if err := trie.Prove(last, proof); err != nil {
+			t.Fatalf("Failed to prove the last node %v", err)
+		}
+		if _, err := VerifyRangeProof(root, first, last, keys, vals, proof); err != nil {
+			t.Fatalf("Case %d(%d->%d) expect no error, got %v", i, start, end-1, err)
+		}
+		k = append([][]byte{prev.k}, keys...)
+		v = append([][]byte{prev.v}, vals...)
+		if _, err := VerifyRangeProof(root, first, last, k, v, proof); err == nil {
+			t.Fatalf("Case %d(%d->%d) genuine pair before the range accepted", i, start, end-1)
+		}
+	}
+}
