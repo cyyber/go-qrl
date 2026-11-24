@@ -19,6 +19,7 @@ package rlpx
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -27,6 +28,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
@@ -364,6 +366,38 @@ func TestHandshakeForwardCompatibility(t *testing.T) {
 	fooIngressHash := derived.IngressMAC.Sum(nil)
 	if !bytes.Equal(fooIngressHash, wantFooIngressHash) {
 		t.Errorf("ingress-mac('foo') mismatch:\ngot %x\nwant %x", fooIngressHash, wantFooIngressHash)
+	}
+}
+
+// TestHandshakeMessageSizeLimit tests that a handshake message which is larger
+// than the size limit is rejected based on its size prefix alone, without
+// reading the message itself.
+func TestHandshakeMessageSizeLimit(t *testing.T) {
+	const maxSize = 2048
+
+	tests := []struct {
+		size   uint16 // size announced by the prefix
+		unread int    // number of bytes expected to be left unread
+	}{
+		{maxSize, 0},
+		{maxSize + 1, maxSize + 1},
+		{0xffff, 0xffff},
+	}
+	for _, tt := range tests {
+		packet := make([]byte, 2+int(tt.size))
+		binary.BigEndian.PutUint16(packet, tt.size)
+		r := bytes.NewReader(packet)
+
+		// The message is not a valid ciphertext, so reading it fails either
+		// way. Hand out a single byte per read to keep the read buffer from
+		// taking more than what was asked for.
+		var h handshakeState
+		if _, err := h.readMsg(new(authMsgV4), keyB, iotest.OneByteReader(r)); err == nil {
+			t.Errorf("size %d: expected error, got nil", tt.size)
+		}
+		if have := r.Len(); have != tt.unread {
+			t.Errorf("size %d: unread bytes mismatch: have %d, want %d", tt.size, have, tt.unread)
+		}
 	}
 }
 
