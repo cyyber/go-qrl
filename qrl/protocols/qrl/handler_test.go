@@ -17,6 +17,8 @@
 package qrl
 
 import (
+	"bytes"
+	"errors"
 	"math"
 	"math/big"
 	"math/rand"
@@ -767,5 +769,30 @@ func TestGetPooledTransactionsLookupCap(t *testing.T) {
 	}
 	if hashes, _ := answerGetPooledTransactions(backend, request(maxPooledTxServe)); len(hashes) != 0 {
 		t.Errorf("transaction beyond lookup cap served: have %d, want 0", len(hashes))
+	}
+}
+
+// Tests that a message exceeding the size limit is rejected, and that its
+// payload is discarded nonetheless.
+func TestOversizedMessageDiscarded(t *testing.T) {
+	t.Parallel()
+
+	backend := newTestBackend(0)
+	defer backend.close()
+
+	app, net := p2p.MsgPipe()
+	defer app.Close()
+
+	peer := NewPeer(QRL2, p2p.NewPeer(qnode.ID{1}, "peer", nil), net, backend.TxPool())
+	defer peer.Close()
+
+	payload := bytes.NewReader(make([]byte, maxMessageSize+1))
+	go app.WriteMsg(p2p.Msg{Code: TransactionsMsg, Size: uint32(payload.Len()), Payload: payload})
+
+	if err := handleMessage(backend, peer); !errors.Is(err, errMsgTooLarge) {
+		t.Fatalf("error mismatch: have %v, want %v", err, errMsgTooLarge)
+	}
+	if unread := payload.Len(); unread != 0 {
+		t.Errorf("message payload not discarded: %d bytes unread", unread)
 	}
 }
