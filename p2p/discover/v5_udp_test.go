@@ -254,6 +254,29 @@ func TestUDPv5_findnodeHandling(t *testing.T) {
 	test.expectNodes([]byte{5}, 1, nodes)
 }
 
+// This test checks that FINDNODE only returns table nodes which have passed a
+// liveness check, unless the check is turned off.
+func TestUDPv5_findnodeLivenessCheck(t *testing.T) {
+	t.Parallel()
+	test := newUDPV5Test(t)
+	defer test.close()
+
+	// Insert nodes at the same distance, only half of them verified live.
+	nodes := nodesAtDistance(test.table.self().ID(), 253, 10)
+	live, unverified := nodes[:5], nodes[5:]
+	fillTable(test.table, wrapNodes(live), true)
+	fillTable(test.table, wrapNodes(unverified), false)
+
+	// By default, the unverified nodes are left out of the response.
+	test.packetIn(&v5wire.Findnode{ReqID: []byte{0}, Distances: []uint{253}})
+	test.expectNodes([]byte{0}, 1, live)
+
+	// With the liveness check turned off, all nodes are returned.
+	test.table.cfg.NoFindnodeLivenessCheck = true
+	test.packetIn(&v5wire.Findnode{ReqID: []byte{1}, Distances: []uint{253}})
+	test.expectNodes([]byte{1}, 1, nodes)
+}
+
 func (test *udpV5Test) expectNodes(wantReqID []byte, wantTotal uint8, wantNodes []*qnode.Node) {
 	nodeSet := make(map[qnode.ID]*qnr.Record, len(wantNodes))
 	for _, n := range wantNodes {
