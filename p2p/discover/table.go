@@ -459,8 +459,8 @@ func (tab *Table) findnodeByID(target qnode.ID, nresults int, preferLive bool) *
 	return nodes
 }
 
-// appendLiveNodes adds nodes at the given distance to the result slice.
-func (tab *Table) appendLiveNodes(dist uint, result []*qnode.Node) []*qnode.Node {
+// appendBucketNodes adds nodes at the given distance to the result slice.
+func (tab *Table) appendBucketNodes(dist uint, result []*qnode.Node, checkLive bool) []*qnode.Node {
 	if dist > 256 {
 		return result
 	}
@@ -471,7 +471,7 @@ func (tab *Table) appendLiveNodes(dist uint, result []*qnode.Node) []*qnode.Node
 	tab.mutex.Lock()
 	defer tab.mutex.Unlock()
 	for _, n := range tab.bucketAtDistance(int(dist)).entries {
-		if n.livenessChecks >= 1 {
+		if !checkLive || n.livenessChecks >= 1 {
 			node := n.Node // avoid handing out pointer to struct field
 			result = append(result, &node)
 		}

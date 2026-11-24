@@ -722,7 +722,8 @@ func (t *UDPv4) handleFindnode(h *packetHandlerV4, from *net.UDPAddr, fromID qno
 
 	// Determine closest nodes.
 	target := qnode.ID(crypto.Keccak256Hash(req.Target[:]))
-	closest := t.tab.findnodeByID(target, bucketSize, true).entries
+	preferLive := !t.tab.cfg.NoFindnodeLivenessCheck
+	closest := t.tab.findnodeByID(target, bucketSize, preferLive).entries
 
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the packet size limit.
