@@ -394,6 +394,67 @@ func TestDialSchedResolve(t *testing.T) {
 	})
 }
 
+// This test checks that the scheduler can inspect a static dial task while the
+// task is resolving its destination. Resolving replaces the destination, so
+// the two would race if access to it was not synchronized. The test is only
+// effective when run with the race detector.
+func TestDialSchedResolveRace(t *testing.T) {
+	t.Parallel()
+
+	var (
+		node      = newNode(uintID(0x01), "")
+		resolved  = newNode(uintID(0x01), "127.0.0.1:30303")
+		resolving = make(chan struct{}, 1)
+		release   = make(chan struct{})
+		dialed    = make(chan *qnode.Node, 1)
+	)
+	config := dialConfig{
+		maxActiveDials: 1,
+		maxDialPeers:   1,
+		resolver: dialTestResolverFunc(func(*qnode.Node) *qnode.Node {
+			select {
+			case resolving <- struct{}{}:
+			default:
+			}
+			<-release
+			return resolved
+		}),
+		dialer: dialTestDialerFunc(func(_ context.Context, n *qnode.Node) (net.Conn, error) {
+			select {
+			case dialed <- n:
+			default:
+			}
+			return nil, errors.New("dial failed")
+		}),
+	}
+	setup := func(net.Conn, connFlag, *qnode.Node) error { return nil }
+	d := newDialScheduler(config, newDialTestIterator(), setup)
+	defer d.stop()
+
+	// The static node has no IP, so its dial task starts by resolving it.
+	d.addStatic(node)
+	select {
+	case <-resolving:
+	case <-time.After(5 * time.Second):
+		t.Fatal("resolver not called")
+	}
+
+	// While the task is busy, removing a peer with the same ID makes the
+	// scheduler check whether the task can go back into the static pool.
+	d.peerRemoved(&conn{flags: inboundConn, node: resolved})
+	close(release)
+
+	// The task continues with the resolved destination.
+	select {
+	case n := <-dialed:
+		if n != resolved {
+			t.Fatalf("wrong dial destination: got %v, want %v", n, resolved)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("resolved node not dialed")
+	}
+}
+
 // -------
 // Code below here is the framework for the tests above.
 
@@ -669,4 +730,18 @@ func (t *dialTestResolver) Resolve(n *qnode.Node) *qnode.Node {
 
 	t.calls = append(t.calls, n.ID())
 	return t.answers[n.ID()]
+}
+
+// dialTestResolverFunc adapts a function to the nodeResolver interface.
+type dialTestResolverFunc func(*qnode.Node) *qnode.Node
+
+func (f dialTestResolverFunc) Resolve(n *qnode.Node) *qnode.Node {
+	return f(n)
+}
+
+// dialTestDialerFunc adapts a function to the NodeDialer interface.
+type dialTestDialerFunc func(context.Context, *qnode.Node) (net.Conn, error)
+
+func (f dialTestDialerFunc) Dial(ctx context.Context, n *qnode.Node) (net.Conn, error) {
+	return f(ctx, n)
 }
