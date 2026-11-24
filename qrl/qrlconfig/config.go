@@ -61,6 +61,7 @@ var Defaults = Config{
 	RPCQRVMTimeout:     5 * time.Second,
 	GPO:                FullNodeGPO,
 	RPCTxFeeCap:        1, // 1 quanta
+	RangeLimit:         0,
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go
