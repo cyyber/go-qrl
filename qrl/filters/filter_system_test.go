@@ -32,11 +32,13 @@ import (
 	"github.com/theQRL/go-qrl/core/bloombits"
 	"github.com/theQRL/go-qrl/core/rawdb"
 	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/event"
 	"github.com/theQRL/go-qrl/internal/qrlapi"
 	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/qrldb"
 	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 type testBackend struct {
@@ -405,7 +407,7 @@ func TestInvalidLogFilterCreation(t *testing.T) {
 
 	var (
 		db     = rawdb.NewMemoryDatabase()
-		_, sys = newTestFilterSystem(t, db, Config{})
+		_, sys = newTestFilterSystem(t, db, Config{LogQueryLimit: 1000})
 		api    = NewFilterAPI(sys)
 	)
 
@@ -416,6 +418,7 @@ func TestInvalidLogFilterCreation(t *testing.T) {
 		1: {FromBlock: big.NewInt(rpc.PendingBlockNumber.Int64()), ToBlock: big.NewInt(100)},
 		2: {FromBlock: big.NewInt(rpc.LatestBlockNumber.Int64()), ToBlock: big.NewInt(100)},
 		3: {Topics: [][]common.LogTopic{{}, {}, {}, {}, {}}},
+		4: {Addresses: make([]common.Address, api.logQueryLimit+1)},
 	}
 
 	for i, test := range testCases {
@@ -431,7 +434,7 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 
 	var (
 		db        = rawdb.NewMemoryDatabase()
-		_, sys    = newTestFilterSystem(t, db, Config{})
+		_, sys    = newTestFilterSystem(t, db, Config{LogQueryLimit: 10})
 		api       = NewFilterAPI(sys)
 		blockHash = common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
 	)
@@ -442,12 +445,95 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 		1: {BlockHash: &blockHash, ToBlock: big.NewInt(500)},
 		2: {BlockHash: &blockHash, FromBlock: big.NewInt(rpc.LatestBlockNumber.Int64())},
 		3: {BlockHash: &blockHash, Topics: [][]common.LogTopic{{}, {}, {}, {}, {}}},
+		4: {BlockHash: &blockHash, Addresses: make([]common.Address, api.logQueryLimit+1)},
 	}
 
 	for i, test := range testCases {
 		if _, err := api.GetLogs(t.Context(), test); err == nil {
 			t.Errorf("Expected Logs for case #%d to fail", i)
 		}
+	}
+}
+
+// TestExceedLogQueryLimit tests getLogs with too many addresses or topics
+func TestExceedLogQueryLimit(t *testing.T) {
+	t.Parallel()
+
+	// Test with custom config (LogQueryLimit = 5 for easier testing)
+	var (
+		db     = rawdb.NewMemoryDatabase()
+		_, sys = newTestFilterSystem(t, db, Config{LogQueryLimit: 5})
+		api    = NewFilterAPI(sys)
+		gspec  = &core.Genesis{
+			Config:  params.TestChainConfig,
+			Alloc:   core.GenesisAlloc{},
+			BaseFee: big.NewInt(params.InitialBaseFee),
+		}
+	)
+
+	_, err := gspec.Commit(db, trie.NewDatabase(db, nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	chain, _ := core.GenerateChain(gspec.Config, gspec.ToBlock(), beacon.NewFaker(), db, 1000, func(i int, gen *core.BlockGen) {})
+
+	var limit uint64 // index all txs
+	bc, err := core.NewBlockChain(db, nil, gspec, beacon.NewFaker(), vm.Config{}, &limit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = bc.InsertChain(chain[:600])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	addresses := make([]common.Address, 6)
+	for i := range addresses {
+		addresses[i] = common.BytesToAddress(common.FromHex("0x1234567890123456789012345678901234567890"))
+	}
+
+	topics := make([]common.LogTopic, 6)
+	for i := range topics {
+		topics[i] = common.BytesToRightAlignedLogTopic(common.FromHex("0x123456789012345678901234567890123456789001234567890012345678901234"))
+	}
+
+	// Test that 5 addresses do not result in error
+	// Add FromBlock and ToBlock to make it similar to other invalid tests
+	if _, err := api.GetLogs(context.Background(), FilterCriteria{
+		FromBlock: big.NewInt(0),
+		ToBlock:   big.NewInt(100),
+		Addresses: addresses[:5],
+	}); err != nil {
+		t.Errorf("Expected GetLogs with 5 addresses to return with no error, got: %v", err)
+	}
+
+	// Test that 6 addresses fails with correct error
+	if _, err := api.GetLogs(context.Background(), FilterCriteria{
+		FromBlock: big.NewInt(0),
+		ToBlock:   big.NewInt(100),
+		Addresses: addresses,
+	}); err != errExceedLogQueryLimit {
+		t.Errorf("Expected GetLogs with 6 addresses to return errExceedLogQueryLimit, got: %v", err)
+	}
+
+	// Test that 5 topics at one position do not result in error
+	if _, err := api.GetLogs(context.Background(), FilterCriteria{
+		FromBlock: big.NewInt(0),
+		ToBlock:   big.NewInt(100),
+		Addresses: addresses[:1],
+		Topics:    [][]common.LogTopic{topics[:5]},
+	}); err != nil {
+		t.Errorf("Expected GetLogs with 5 topics at one position to return with no error, got: %v", err)
+	}
+
+	// Test that 6 topics at one position fails with correct error
+	if _, err := api.GetLogs(context.Background(), FilterCriteria{
+		FromBlock: big.NewInt(0),
+		ToBlock:   big.NewInt(100),
+		Addresses: addresses[:1],
+		Topics:    [][]common.LogTopic{topics},
+	}); err != errExceedLogQueryLimit {
+		t.Errorf("Expected GetLogs with 6 topics at one position to return errExceedLogQueryLimit, got: %v", err)
 	}
 }
 
