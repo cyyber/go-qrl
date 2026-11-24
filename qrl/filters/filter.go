@@ -320,7 +320,7 @@ func (f *Filter) checkMatches(ctx context.Context, header *types.Header) ([]*typ
 
 // filterLogs creates a slice of logs matching the given criteria.
 func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.LogTopic) []*types.Log {
-	var check = func(log *types.Log) bool {
+	check := func(log *types.Log) bool {
 		if fromBlock != nil && fromBlock.Int64() >= 0 && fromBlock.Uint64() > log.BlockNumber {
 			return false
 		}
