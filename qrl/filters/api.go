@@ -129,6 +129,7 @@ func (api *FilterAPI) NewPendingTransactionFilter(fullTx *bool) rpc.ID {
 	api.filtersMu.Unlock()
 
 	go func() {
+		defer pendingTxSub.Unsubscribe()
 		for {
 			select {
 			case pTx := <-pendingTxs:
@@ -204,6 +205,7 @@ func (api *FilterAPI) NewBlockFilter() rpc.ID {
 	api.filtersMu.Unlock()
 
 	go func() {
+		defer headerSub.Unsubscribe()
 		for {
 			select {
 			case h := <-headers:
@@ -312,6 +314,7 @@ func (api *FilterAPI) NewFilter(crit FilterCriteria) (rpc.ID, error) {
 	api.filtersMu.Unlock()
 
 	go func() {
+		defer logsSub.Unsubscribe()
 		for {
 			select {
 			case l := <-logs:
