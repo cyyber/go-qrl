@@ -198,12 +198,11 @@ func TestStackTrieInsertAndHash(t *testing.T) {
 			{"000003", "XXXXXXXXXXXXXXXXXXXXXXXXXXXX", "ef58096aca42afeea2827c1d1d39fe8ed7b309a78178867cb040bfec0d96a25c0d7e9bc7fcd0a01261a41ef05b85ce72a53fe0bfc330fac8190e2df7a95a113d"},
 		},
 	}
-	st := NewStackTrie(nil)
 	for i, test := range tests {
 		// The StackTrie does not allow Insert(), Hash(), Insert(), ...
 		// so we will create new trie for every sequence length of inserts.
 		for l := 1; l <= len(test); l++ {
-			st.Reset()
+			st := NewStackTrie(nil)
 			for j := range l {
 				kv := &test[j]
 				if err := st.Update(common.FromHex(kv.K), []byte(kv.V)); err != nil {
@@ -382,7 +381,7 @@ func TestStacktrieNotModifyValues(t *testing.T) {
 // serialize/unserialize it a lot
 func TestStacktrieSerialization(t *testing.T) {
 	var (
-		st       = NewStackTrie(nil)
+		st       = NewStackTrieWithOwner(nil, common.Hash512{0x12})
 		nt       = NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 		keyB     = big.NewInt(1)
 		keyDelta = big.NewInt(1)
@@ -411,7 +410,7 @@ func TestStacktrieSerialization(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		newSt, err := NewFromBinary(blob, nil)
+		newSt, err := NewFromBinaryV2(blob)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -419,6 +418,9 @@ func TestStacktrieSerialization(t *testing.T) {
 		st.Update(k, common.CopyBytes(vals[i]))
 	}
 	if have, want := st.Hash(), nt.Hash(); have != want {
+		t.Fatalf("have %#x want %#x", have, want)
+	}
+	if have, want := st.owner, (common.Hash512{0x12}); have != want {
 		t.Fatalf("have %#x want %#x", have, want)
 	}
 }
