@@ -840,10 +840,15 @@ func testPivotMove(t *testing.T, scheme string, tiny bool) {
 		}
 		writeFn = func(key []byte, val []byte, tr *Trie, states map[string][]byte) {
 			if val == nil {
+				// Nodes smaller than common.Hash512Length are embedded in their
+				// parent. These sizes give the two shapes go-ethereum gets from
+				// 4 and 32 bytes with its 32-byte hashes: tiny values embed the
+				// leaves and the full node above them in a short node, large
+				// ones store every node separately.
 				if tiny {
-					val = randBytes(4)
+					val = randBytes(20)
 				} else {
-					val = randBytes(32)
+					val = randBytes(common.Hash512Length)
 				}
 			}
 			tr.Update(key, val)
