@@ -152,6 +152,7 @@ func newTable(path string, name string, readMeter metrics.Meter, writeMeter metr
 		}
 		meta, err = openFreezerFileForReadOnly(filepath.Join(path, fmt.Sprintf("%s.meta", name)))
 		if err != nil {
+			index.Close()
 			return nil, err
 		}
 	} else {
@@ -161,6 +162,7 @@ func newTable(path string, name string, readMeter metrics.Meter, writeMeter metr
 		}
 		meta, err = openFreezerFileForAppend(filepath.Join(path, fmt.Sprintf("%s.meta", name)))
 		if err != nil {
+			index.Close()
 			return nil, err
 		}
 	}
