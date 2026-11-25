@@ -360,11 +360,11 @@ func generateTrieRoot(db qrldb.KeyValueWriter, scheme string, it Iterator, accou
 func stackTrieGenerate(db qrldb.KeyValueWriter, scheme string, owner common.Hash512, in chan trieKV, out chan common.Hash512) {
 	var nodeWriter trie.NodeWriteFunc
 	if db != nil {
-		nodeWriter = func(owner common.Hash512, path []byte, hash common.Hash512, blob []byte) {
+		nodeWriter = func(path []byte, hash common.Hash512, blob []byte) {
 			rawdb.WriteTrieNode(db, owner, path, hash, blob, scheme)
 		}
 	}
-	t := trie.NewStackTrieWithOwner(nodeWriter, owner)
+	t := trie.NewStackTrie(nodeWriter)
 	for leaf := range in {
 		t.Update(leaf.key[:], leaf.value)
 	}

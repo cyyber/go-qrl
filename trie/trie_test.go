@@ -923,8 +923,8 @@ func TestCommitSequenceStackTrie(t *testing.T) {
 		trie := NewEmpty(db)
 		// Another sponge is used for the stacktrie commits
 		stackTrieSponge := &spongeDb{sponge: sha3.NewLegacyKeccak512(), id: "b"}
-		stTrie := NewStackTrie(func(owner common.Hash512, path []byte, hash common.Hash512, blob []byte) {
-			rawdb.WriteTrieNode(stackTrieSponge, owner, path, hash, blob, db.Scheme())
+		stTrie := NewStackTrie(func(path []byte, hash common.Hash512, blob []byte) {
+			rawdb.WriteTrieNode(stackTrieSponge, common.Hash512{}, path, hash, blob, db.Scheme())
 		})
 		// Fill the trie with elements
 		for i := range count {
@@ -982,8 +982,8 @@ func TestCommitSequenceSmallRoot(t *testing.T) {
 	trie := NewEmpty(db)
 	// Another sponge is used for the stacktrie commits
 	stackTrieSponge := &spongeDb{sponge: sha3.NewLegacyKeccak512(), id: "b"}
-	stTrie := NewStackTrie(func(owner common.Hash512, path []byte, hash common.Hash512, blob []byte) {
-		rawdb.WriteTrieNode(stackTrieSponge, owner, path, hash, blob, db.Scheme())
+	stTrie := NewStackTrie(func(path []byte, hash common.Hash512, blob []byte) {
+		rawdb.WriteTrieNode(stackTrieSponge, common.Hash512{}, path, hash, blob, db.Scheme())
 	})
 	// Add a single small-element to the trie(s)
 	key := make([]byte, 5)

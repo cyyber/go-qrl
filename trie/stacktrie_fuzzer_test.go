@@ -44,8 +44,8 @@ func fuzz(data []byte, debugging bool) {
 		trieA   = NewEmpty(dbA)
 		spongeB = &spongeDb{sponge: sha3.NewLegacyKeccak512()}
 		dbB     = NewDatabase(rawdb.NewDatabase(spongeB), nil)
-		trieB   = NewStackTrie(func(owner common.Hash512, path []byte, hash common.Hash512, blob []byte) {
-			rawdb.WriteTrieNode(spongeB, owner, path, hash, blob, dbB.Scheme())
+		trieB   = NewStackTrie(func(path []byte, hash common.Hash512, blob []byte) {
+			rawdb.WriteTrieNode(spongeB, common.Hash512{}, path, hash, blob, dbB.Scheme())
 		})
 		vals        []*kv
 		maxElements = 10000
@@ -110,12 +110,9 @@ func fuzz(data []byte, debugging bool) {
 	// Ensure all the nodes are persisted correctly
 	var (
 		nodeset = make(map[string][]byte) // path -> blob
-		trieC   = NewStackTrie(func(owner common.Hash512, path []byte, hash common.Hash512, blob []byte) {
+		trieC   = NewStackTrie(func(path []byte, hash common.Hash512, blob []byte) {
 			if crypto.Keccak512Hash(blob) != hash {
 				panic("invalid node blob")
-			}
-			if owner != (common.Hash512{}) {
-				panic("invalid node owner")
 			}
 			nodeset[string(path)] = common.CopyBytes(blob)
 		})
