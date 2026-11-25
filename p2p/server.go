@@ -574,6 +574,11 @@ func (srv *Server) setupDiscovery() error {
 		}
 		srv.DiscV5, err = discover.ListenV5(sconn, srv.localnode, cfg)
 		if err != nil {
+			// Clean up v4 if v5 setup fails.
+			if srv.ntab != nil {
+				srv.ntab.Close()
+				srv.ntab = nil
+			}
 			return err
 		}
 	}
