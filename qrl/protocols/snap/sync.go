@@ -718,6 +718,19 @@ func (s *Syncer) Sync(root common.Hash512, cancel chan struct{}) error {
 	}
 }
 
+// cleanPath is used to remove the dangling nodes in the stackTrie.
+func (s *Syncer) cleanPath(batch qrldb.Batch, owner common.Hash512, path []byte) {
+	if owner == (common.Hash512{}) && rawdb.ExistsAccountTrieNode(s.db, path) {
+		rawdb.DeleteAccountTrieNode(batch, path)
+		deletionGauge.Inc(1)
+	}
+	if owner != (common.Hash512{}) && rawdb.ExistsStorageTrieNode(s.db, owner, path) {
+		rawdb.DeleteStorageTrieNode(batch, owner, path)
+		deletionGauge.Inc(1)
+	}
+	lookupGauge.Inc(1)
+}
+
 // loadSyncStatus retrieves a previously aborted sync status from the database,
 // or generates a fresh one if none is available.
 func (s *Syncer) loadSyncStatus() {
@@ -742,6 +755,17 @@ func (s *Syncer) loadSyncStatus() {
 				options = options.WithWriter(func(path []byte, hash common.Hash512, blob []byte) {
 					rawdb.WriteTrieNode(task.genBatch, common.Hash512{}, path, hash, blob, s.scheme)
 				})
+				if s.scheme == rawdb.PathScheme {
+					// Configure the dangling node cleaner and also filter out boundary nodes
+					// only in the context of the path scheme. Deletion is forbidden in the
+					// hash scheme, as it can disrupt state completeness.
+					options = options.WithCleaner(func(path []byte) {
+						s.cleanPath(task.genBatch, common.Hash512{}, path)
+					})
+					// Skip the left boundary if it's not the first range.
+					// Skip the right boundary if it's not the last range.
+					options = options.WithSkipBoundary(task.Next != (common.Hash512{}), task.Last != common.MaxHash512, boundaryAccountNodesGauge)
+				}
 				task.genTrie = trie.NewStackTrie(options)
 				for accountHash, subtasks := range task.SubTasks {
 					for _, subtask := range subtasks {
@@ -756,6 +780,17 @@ func (s *Syncer) loadSyncStatus() {
 						options = options.WithWriter(func(path []byte, hash common.Hash512, blob []byte) {
 							rawdb.WriteTrieNode(subtask.genBatch, owner, path, hash, blob, s.scheme)
 						})
+						if s.scheme == rawdb.PathScheme {
+							// Configure the dangling node cleaner and also filter out boundary nodes
+							// only in the context of the path scheme. Deletion is forbidden in the
+							// hash scheme, as it can disrupt state completeness.
+							options = options.WithCleaner(func(path []byte) {
+								s.cleanPath(subtask.genBatch, owner, path)
+							})
+							// Skip the left boundary if it's not the first range.
+							// Skip the right boundary if it's not the last range.
+							options = options.WithSkipBoundary(subtask.Next != common.Hash512{}, subtask.Last != common.MaxHash512, boundaryStorageNodesGauge)
+						}
 						subtask.genTrie = trie.NewStackTrie(options)
 					}
 				}
@@ -812,6 +847,17 @@ func (s *Syncer) loadSyncStatus() {
 		options = options.WithWriter(func(path []byte, hash common.Hash512, blob []byte) {
 			rawdb.WriteTrieNode(batch, common.Hash512{}, path, hash, blob, s.scheme)
 		})
+		if s.scheme == rawdb.PathScheme {
+			// Configure the dangling node cleaner and also filter out boundary nodes
+			// only in the context of the path scheme. Deletion is forbidden in the
+			// hash scheme, as it can disrupt state completeness.
+			options = options.WithCleaner(func(path []byte) {
+				s.cleanPath(batch, common.Hash512{}, path)
+			})
+			// Skip the left boundary if it's not the first range.
+			// Skip the right boundary if it's not the last range.
+			options = options.WithSkipBoundary(next != common.Hash512{}, last != common.MaxHash512, boundaryAccountNodesGauge)
+		}
 		s.tasks = append(s.tasks, &accountTask{
 			Next:     next,
 			Last:     last,
@@ -1960,6 +2006,7 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 			if res.subTask == nil && res.mainTask.needState[j] && (i < len(res.hashes)-1 || !res.cont) {
 				res.mainTask.needState[j] = false
 				res.mainTask.pend--
+				smallStorageGauge.Inc(1)
 			}
 			// If the last contract was chunked, mark it as needing healing
 			// to avoid writing it out to disk prematurely.
@@ -1995,7 +2042,11 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 						log.Debug("Chunked large contract", "initiators", len(keys), "tail", lastKey, "chunks", chunks)
 					}
 					r := newHashRange(lastKey, chunks)
-
+					if chunks == 1 {
+						smallStorageGauge.Inc(1)
+					} else {
+						largeStorageGauge.Inc(1)
+					}
 					// Our first task is the one that was just filled by this response.
 					batch := qrldb.HookedBatch{
 						Batch: s.db.NewBatch(),
@@ -2008,6 +2059,14 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 					options = options.WithWriter(func(path []byte, hash common.Hash512, blob []byte) {
 						rawdb.WriteTrieNode(batch, owner, path, hash, blob, s.scheme)
 					})
+					if s.scheme == rawdb.PathScheme {
+						options = options.WithCleaner(func(path []byte) {
+							s.cleanPath(batch, owner, path)
+						})
+						// Keep the left boundary as it's the first range.
+						// Skip the right boundary if it's not the last range.
+						options = options.WithSkipBoundary(false, r.End() != common.MaxHash512, boundaryStorageNodesGauge)
+					}
 					tasks = append(tasks, &storageTask{
 						Next:     common.Hash512{},
 						Last:     r.End(),
@@ -2026,6 +2085,17 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 						options = options.WithWriter(func(path []byte, hash common.Hash512, blob []byte) {
 							rawdb.WriteTrieNode(batch, owner, path, hash, blob, s.scheme)
 						})
+						if s.scheme == rawdb.PathScheme {
+							// Configure the dangling node cleaner and also filter out boundary nodes
+							// only in the context of the path scheme. Deletion is forbidden in the
+							// hash scheme, as it can disrupt state completeness.
+							options = options.WithCleaner(func(path []byte) {
+								s.cleanPath(batch, owner, path)
+							})
+							// Skip the left boundary as it's not the first range
+							// Skip the right boundary if it's not the last range.
+							options = options.WithSkipBoundary(true, r.End() != common.MaxHash512, boundaryStorageNodesGauge)
+						}
 						tasks = append(tasks, &storageTask{
 							Next:     r.Start(),
 							Last:     r.End(),
@@ -2081,6 +2151,17 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 			options = options.WithWriter(func(path []byte, hash common.Hash512, blob []byte) {
 				rawdb.WriteTrieNode(batch, account, path, hash, blob, s.scheme)
 			})
+			if s.scheme == rawdb.PathScheme {
+				// Configure the dangling node cleaner only in the context of the
+				// path scheme. Deletion is forbidden in the hash scheme, as it can
+				// disrupt state completeness.
+				//
+				// Notably, boundary nodes can be also kept because the whole storage
+				// trie is complete.
+				options = options.WithCleaner(func(path []byte) {
+					s.cleanPath(batch, account, path)
+				})
+			}
 			tr := trie.NewStackTrie(options)
 			for j := 0; j < len(res.hashes[i]); j++ {
 				tr.Update(res.hashes[i][j][:], res.slots[i][j])
@@ -2104,16 +2185,24 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 	if res.subTask != nil {
 		if res.subTask.done {
 			root := res.subTask.genTrie.Commit()
-			if root == res.subTask.root {
-				// If the chunk's root is an overflown but full delivery, clear the heal request
+			if err := res.subTask.genBatch.Write(); err != nil {
+				log.Error("Failed to persist stack slots", "err", err)
+			}
+			res.subTask.genBatch.Reset()
+
+			// If the chunk's root is an overflown but full delivery,
+			// clear the heal request.
+			accountHash := res.accounts[len(res.accounts)-1]
+			if root == res.subTask.root && rawdb.HasStorageTrieNode(s.db, accountHash, nil, root) {
 				for i, account := range res.mainTask.res.hashes {
-					if account == res.accounts[len(res.accounts)-1] {
+					if account == accountHash {
 						res.mainTask.needHeal[i] = false
+						skipStorageHealingGauge.Inc(1)
 					}
 				}
 			}
 		}
-		if res.subTask.genBatch.ValueSize() > qrldb.IdealBatchSize || res.subTask.done {
+		if res.subTask.genBatch.ValueSize() > qrldb.IdealBatchSize {
 			if err := res.subTask.genBatch.Write(); err != nil {
 				log.Error("Failed to persist stack slots", "err", err)
 			}
