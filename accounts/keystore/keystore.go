@@ -23,7 +23,6 @@ package keystore
 import (
 	"errors"
 	"math/big"
-	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -241,15 +240,11 @@ func (ks *KeyStore) Delete(a accounts.Account, passphrase string) error {
 	if err != nil {
 		return err
 	}
-	// The order is crucial here. The key is dropped from the
-	// cache after the file is gone so that a reload happening in
-	// between won't insert it into the cache again.
-	err = os.Remove(a.URL.Path)
-	if err == nil {
-		ks.cache.delete(a)
-		ks.refreshWallets()
+	if err := ks.cache.deleteFile(a); err != nil {
+		return err
 	}
-	return err
+	ks.refreshWallets()
+	return nil
 }
 
 // SignHash returns the ML-DSA-87 signature for the given hash.
