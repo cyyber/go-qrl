@@ -460,8 +460,7 @@ func hasRightElement(node node, key []byte) bool {
 //
 // The firstKey is paired with firstProof, not necessarily the same as keys[0]
 // (unless firstProof is an existent proof). Similarly, lastKey and lastProof
-// are paired. The firstKey should be less than or equal to all keys in the list,
-// and the lastKey should be greater than or equal to all of them.
+// are paired. The firstKey should be less than or equal to all keys in the list.
 //
 // Expect the normal case, this function can also be used to verify the following
 // range proofs:
@@ -482,7 +481,7 @@ func hasRightElement(node node, key []byte) bool {
 // Note: This method does not verify that the proof is of minimal form. If the input
 // proofs are 'bloated' with neighbour leaves or random data, aside from the 'useful'
 // data, then the proof will still be accepted.
-func VerifyRangeProof(rootHash common.Hash512, firstKey []byte, lastKey []byte, keys [][]byte, values [][]byte, proof qrldb.KeyValueReader) (bool, error) {
+func VerifyRangeProof(rootHash common.Hash512, firstKey []byte, keys [][]byte, values [][]byte, proof qrldb.KeyValueReader) (bool, error) {
 	if len(keys) != len(values) {
 		return false, fmt.Errorf("inconsistent proof data, keys: %d, values: %d", len(keys), len(values))
 	}
@@ -524,12 +523,9 @@ func VerifyRangeProof(rootHash common.Hash512, firstKey []byte, lastKey []byte, 
 	if bytes.Compare(firstKey, keys[0]) > 0 {
 		return false, errors.New("unexpected key-value pairs preceding the requested range")
 	}
-	// Likewise, short circuit if the key of last element is greater than lastKey.
-	if bytes.Compare(keys[len(keys)-1], lastKey) > 0 {
-		return false, errors.New("unexpected key-value pairs following the requested range")
-	}
 	// Special case, there is only one element and two edge keys are same.
 	// In this case, we can't construct two edge paths. So handle it here.
+	var lastKey = keys[len(keys)-1]
 	if len(keys) == 1 && bytes.Equal(firstKey, lastKey) {
 		root, val, err := proofToPath(rootHash, nil, firstKey, proof, false)
 		if err != nil {
