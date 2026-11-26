@@ -199,7 +199,7 @@ func (dl *diskLayer) commit(bottom *diffLayer, force bool) (*diskLayer, error) {
 	// many nodes cached. The clean cache is inherited from the original
 	// disk layer for reusing.
 	ndl := newDiskLayer(bottom.root, bottom.stateID(), dl.db, dl.cleans, dl.buffer.commit(bottom.nodes))
-	err := ndl.buffer.flush(ndl.db.diskdb, ndl.cleans, ndl.id, force)
+	err := ndl.buffer.flush(ndl.db.diskdb, ndl.db.freezer, ndl.cleans, ndl.id, force)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (dl *diskLayer) setBufferSize(size int) error {
 	if dl.stale {
 		return errSnapshotStale
 	}
-	return dl.buffer.setSize(size, dl.db.diskdb, dl.cleans, dl.id)
+	return dl.buffer.setSize(size, dl.db.diskdb, dl.db.freezer, dl.cleans, dl.id)
 }
 
 // size returns the approximate size of cached nodes in the disk layer.
