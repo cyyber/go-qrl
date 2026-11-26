@@ -244,6 +244,9 @@ type BlockChain struct {
 	stopping      atomic.Bool    // false if chain is running, true when stopped
 	procInterrupt atomic.Bool    // interrupt signaler for block processing
 
+	prefetchLock sync.Mutex     // Orders prefetcher launches against shutdown
+	prefetchWg   sync.WaitGroup // Tracks running block prefetchers
+
 	engine     consensus.Engine
 	validator  Validator // Block and state validator interface
 	prefetcher Prefetcher
@@ -946,6 +949,11 @@ func (bc *BlockChain) stopWithoutSaving() {
 	// returned.
 	bc.chainmu.Close()
 	bc.wg.Wait()
+
+	// Wait for the block prefetchers
+	bc.prefetchLock.Lock()
+	bc.prefetchWg.Wait()
+	bc.prefetchLock.Unlock()
 }
 
 // Stop stops the blockchain service. If any imports are currently in progress
@@ -1623,14 +1631,18 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 			if followup, err := it.peek(); followup != nil && err == nil {
 				throwaway, _ := state.New(parent.Root, bc.stateCache, bc.snaps)
 
-				go func(start time.Time, followup *types.Block, throwaway *state.StateDB) {
-					bc.prefetcher.Prefetch(followup, throwaway, bc.vmConfig, &followupInterrupt)
+				if bc.trackPrefetch() {
+					go func(start time.Time, followup *types.Block, throwaway *state.StateDB) {
+						defer bc.prefetchWg.Done()
 
-					blockPrefetchExecuteTimer.Update(time.Since(start))
-					if followupInterrupt.Load() {
-						blockPrefetchInterruptMeter.Mark(1)
-					}
-				}(time.Now(), followup, throwaway)
+						bc.prefetcher.Prefetch(followup, throwaway, bc.vmConfig, &followupInterrupt)
+
+						blockPrefetchExecuteTimer.Update(time.Since(start))
+						if followupInterrupt.Load() {
+							blockPrefetchInterruptMeter.Mark(1)
+						}
+					}(time.Now(), followup, throwaway)
+				}
 			}
 		}
 
@@ -1736,6 +1748,19 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 	stats.ignored += it.remaining()
 
 	return it.index, err
+}
+
+// trackPrefetch registers a block prefetcher, or returns false if the
+// chain is stopping.
+func (bc *BlockChain) trackPrefetch() bool {
+	bc.prefetchLock.Lock()
+	defer bc.prefetchLock.Unlock()
+
+	if bc.stopping.Load() {
+		return false
+	}
+	bc.prefetchWg.Add(1)
+	return true
 }
 
 // recoverAncestors finds the closest ancestor with available state and re-execute
