@@ -206,3 +206,58 @@ func TestIndexTransactions(t *testing.T) {
 	verify(8, 11, true, 8)
 	verify(0, 8, false, 8)
 }
+
+func TestUnindexTransactionsMissingBody(t *testing.T) {
+	// Construct test chain db
+	chainDB := NewMemoryDatabase()
+
+	var blocks []*types.Block
+	to := common.BytesToAddress([]byte{0x11})
+
+	// Write empty genesis block
+	block := types.NewBlock(&types.Header{Number: big.NewInt(int64(0))}, nil, nil, newTestHasher())
+	WriteBlock(chainDB, block)
+	WriteCanonicalHash(chainDB, block.Hash(), block.NumberU64())
+	blocks = append(blocks, block)
+
+	// Create transactions.
+	for i := uint64(1); i <= 10; i++ {
+		tx := types.NewTx(&types.DynamicFeeTx{
+			ChainID:   big.NewInt(1337),
+			Nonce:     i,
+			GasFeeCap: big.NewInt(11111),
+			Gas:       1111,
+			To:        &to,
+			Value:     big.NewInt(111),
+			Data:      []byte{0x11, 0x11, 0x11},
+		})
+		block := types.NewBlock(&types.Header{Number: big.NewInt(int64(i))}, &types.Body{Transactions: types.Transactions{tx}}, nil, newTestHasher())
+		WriteBlock(chainDB, block)
+		WriteCanonicalHash(chainDB, block.Hash(), block.NumberU64())
+		blocks = append(blocks, block)
+	}
+
+	// Index the entire chain.
+	lastBlock := blocks[len(blocks)-1].NumberU64()
+	IndexTransactions(chainDB, 0, lastBlock+1, nil)
+
+	// Prove that block 2 body exists in the database.
+	if raw := ReadCanonicalBodyRLP(chainDB, 2); len(raw) == 0 {
+		t.Fatalf("Block 2 body does not exist in the database.")
+	}
+
+	// Delete body for block 2. This simulates a corrupted database.
+	key := blockBodyKey(2, blocks[2].Hash())
+	if err := chainDB.Delete(key); err != nil {
+		t.Fatalf("Failed to delete block body %v", err)
+	}
+
+	// Unindex blocks [0, 3)
+	UnindexTransactions(chainDB, 0, 3, nil)
+
+	// Verify that tx index tail is updated to 3.
+	tail := ReadTxIndexTail(chainDB)
+	if tail == nil || *tail != 3 {
+		t.Fatalf("The tx index tail is wrong: got %v want %d", *tail, 3)
+	}
+}
