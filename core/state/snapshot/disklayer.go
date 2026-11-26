@@ -74,6 +74,14 @@ func (dl *diskLayer) Stale() bool {
 	return dl.stale
 }
 
+// markStale sets the stale flag as true.
+func (dl *diskLayer) markStale() {
+	dl.lock.Lock()
+	defer dl.lock.Unlock()
+
+	dl.stale = true
+}
+
 // Account directly retrieves the account associated with a particular hash in
 // the snapshot slim data format.
 func (dl *diskLayer) Account(hash common.Hash512) (*types.SlimAccount, error) {
@@ -174,4 +182,19 @@ func (dl *diskLayer) Storage(accountHash, storageHash common.Hash512) ([]byte, e
 // copying everything.
 func (dl *diskLayer) Update(blockHash common.Hash512, destructs map[common.Hash512]struct{}, accounts map[common.Hash512][]byte, storage map[common.Hash512]map[common.Hash512][]byte) *diffLayer {
 	return newDiffLayer(dl, blockHash, destructs, accounts, storage)
+}
+
+// stopGeneration aborts the state snapshot generation if it is currently running.
+func (dl *diskLayer) stopGeneration() {
+	dl.lock.RLock()
+	generating := dl.genMarker != nil
+	dl.lock.RUnlock()
+	if !generating {
+		return
+	}
+	if dl.genAbort != nil {
+		abort := make(chan *generatorStats)
+		dl.genAbort <- abort
+		<-abort
+	}
 }
