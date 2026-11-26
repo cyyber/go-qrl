@@ -3209,3 +3209,58 @@ func TestTransientStorageReset(t *testing.T) {
 		t.Fatalf("transient storage leaked between transactions: have %v", slot)
 	}
 }
+
+// TestSetHeadBeyondRootFinalizedBug tests the issue where the finalized block
+// is not cleared when rewinding past it using setHeadBeyondRoot.
+func TestSetHeadBeyondRootFinalizedBug(t *testing.T) {
+	// Create a clean blockchain with 100 blocks using PathScheme (PBSS).
+	// There are no block rewards, so credit a withdrawal in every block to
+	// give each block a distinct state root.
+	genesis := &Genesis{
+		BaseFee: big.NewInt(params.InitialBaseFee),
+		Config:  params.AllBeaconProtocolChanges,
+	}
+	_, blocks, _ := GenerateChainWithGenesis(genesis, beacon.NewFaker(), 100, func(i int, b *BlockGen) {
+		b.AddWithdrawal(&types.Withdrawal{Validator: uint64(i), Address: common.Address{0xee}, Amount: 1})
+	})
+	blockchain, err := NewBlockChain(rawdb.NewMemoryDatabase(), DefaultCacheConfigWithScheme(rawdb.PathScheme), genesis, beacon.NewFaker(), vm.Config{}, nil)
+	if err != nil {
+		t.Fatalf("failed to create pristine chain: %v", err)
+	}
+	defer blockchain.Stop()
+
+	if _, err := blockchain.InsertChain(blocks); err != nil {
+		t.Fatalf("failed to create pristine chain: %v", err)
+	}
+
+	//  Set the "Finalized" marker to the current Head (Block 100)
+	headBlock := blockchain.CurrentBlock()
+	if headBlock.Number.Uint64() != 100 {
+		t.Fatalf("Setup failed: expected head 100, got %d", headBlock.Number.Uint64())
+	}
+	blockchain.SetFinalized(headBlock)
+
+	// Verify setup
+	if blockchain.CurrentFinalBlock().Number.Uint64() != 100 {
+		t.Fatalf("Setup failed: Finalized block should be 100")
+	}
+	targetBlock := blockchain.GetBlockByNumber(50)
+
+	// Call setHeadBeyondRoot with:
+	// head = 100
+	// repair = true
+	if _, err := blockchain.setHeadBeyondRoot(100, 0, targetBlock.Root(), true); err != nil {
+		t.Fatalf("Failed to rewind: %v", err)
+	}
+
+	currentFinal := blockchain.CurrentFinalBlock()
+	currentHead := blockchain.CurrentBlock().Number.Uint64()
+
+	// The previous finalized block (100) is now invalid because we rewound to 50.
+	// The function should have cleared the finalized marker (set to nil).
+	if currentFinal != nil && currentFinal.Number.Uint64() > currentHead {
+		t.Errorf("Chain Head: %d , Finalized Block: %d , Finalized block was >= head block.",
+			currentHead,
+			currentFinal.Number.Uint64())
+	}
+}
