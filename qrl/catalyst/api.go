@@ -156,13 +156,20 @@ func newConsensusAPIWithoutHeartbeat(qrl *qrl.QRL) *ConsensusAPI {
 // and return its payloadID.
 // ForkchoiceUpdatedV2 is equivalent to V1 with the addition of withdrawals in the payload attributes.
 func (api *ConsensusAPI) ForkchoiceUpdatedV2(update engine.ForkchoiceStateV1, params *engine.PayloadAttributes) (engine.ForkChoiceResponse, error) {
-	if params != nil && params.Withdrawals == nil {
-		return engine.STATUS_INVALID, engine.InvalidPayloadAttributes.With(errors.New("missing withdrawals"))
-	}
-	return api.forkchoiceUpdated(update, params, false)
+	return api.forkchoiceUpdated(update, params, api.verifyAttributesV2, false)
 }
 
-func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payloadAttributes *engine.PayloadAttributes, simulatorMode bool) (engine.ForkChoiceResponse, error) {
+// verifyAttributesV2 checks the payload attributes given to forkchoiceUpdatedV2.
+func (api *ConsensusAPI) verifyAttributesV2(params *engine.PayloadAttributes) error {
+	if params.Withdrawals == nil {
+		return engine.InvalidPayloadAttributes.With(errors.New("missing withdrawals"))
+	}
+	return nil
+}
+
+// forkchoiceUpdated applies the forkchoice state, then checks the payload
+// attributes with verify (if set) and starts building a payload.
+func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payloadAttributes *engine.PayloadAttributes, verify func(*engine.PayloadAttributes) error, simulatorMode bool) (engine.ForkChoiceResponse, error) {
 	api.forkchoiceLock.Lock()
 	defer api.forkchoiceLock.Unlock()
 
@@ -270,6 +277,13 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 	// sealed by the beacon client. The payload will be requested later, and we
 	// will replace it arbitrarily many times in between.
 	if payloadAttributes != nil {
+		// The spec checks attributes only after the forkchoice state is
+		// applied, so a rejected request still moves the head.
+		if verify != nil {
+			if err := verify(payloadAttributes); err != nil {
+				return valid(nil), err
+			}
+		}
 		args := &miner.BuildPayloadArgs{
 			Parent:       update.HeadBlockHash,
 			Timestamp:    payloadAttributes.Timestamp,

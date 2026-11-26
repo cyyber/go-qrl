@@ -19,6 +19,7 @@ package catalyst
 import (
 	"bytes"
 	crand "crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -1352,4 +1353,55 @@ func equalBody(a *types.Body, b *engine.ExecutionPayloadBodyV1) bool {
 		}
 	}
 	return reflect.DeepEqual(a.Withdrawals, b.Withdrawals)
+}
+
+// TestForkchoiceAppliedOnBadAttributes checks that a forkchoice update whose
+// payload attributes are rejected still moves the head, as the spec requires.
+func TestForkchoiceAppliedOnBadAttributes(t *testing.T) {
+	tests := []struct {
+		name string
+		want *engine.EngineAPIError
+	}{
+		{name: "v2 no withdrawals", want: engine.InvalidPayloadAttributes},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			genesis, blocks := generateChain(10)
+
+			n, qrlservice := startQRLService(t, genesis, blocks[:9])
+			defer n.Close()
+			api := newConsensusAPIWithoutHeartbeat(qrlservice)
+
+			// Build and import a block without making it the head.
+			parent := blocks[8]
+			resp, err := api.ForkchoiceUpdatedV2(engine.ForkchoiceStateV1{HeadBlockHash: parent.Hash()}, &engine.PayloadAttributes{
+				Timestamp:   parent.Time() + 5,
+				Withdrawals: []*types.Withdrawal{},
+			})
+			if err != nil || resp.PayloadID == nil {
+				t.Fatalf("forkchoiceUpdated (build): %v", err)
+			}
+			envelope, err := api.GetPayloadV2(*resp.PayloadID)
+			if err != nil {
+				t.Fatalf("getPayload: %v", err)
+			}
+			if status, err := api.NewPayloadV2(*envelope.ExecutionPayload); err != nil || status.Status != engine.VALID {
+				t.Fatalf("newPayload: status %q, err %v", status.Status, err)
+			}
+			block := envelope.ExecutionPayload.BlockHash
+
+			// Make it the head with attributes the method must reject.
+			attrs := &engine.PayloadAttributes{
+				Timestamp: parent.Time() + 6,
+			}
+			_, err = api.ForkchoiceUpdatedV2(engine.ForkchoiceStateV1{HeadBlockHash: block}, attrs)
+			var apiErr *engine.EngineAPIError
+			if !errors.As(err, &apiErr) || apiErr.ErrorCode() != tt.want.ErrorCode() {
+				t.Fatalf("have error %v, want %v", err, tt.want)
+			}
+			if head := qrlservice.BlockChain().CurrentBlock().Hash(); head != block {
+				t.Fatalf("head = %x, want %x", head, block)
+			}
+		})
+	}
 }
