@@ -562,6 +562,6 @@ func (dl *diffLayer) StorageList(accountHash common.Hash512) ([]common.Hash512, 
 	}
 	slices.SortFunc(storageList, common.Hash512.Cmp)
 	dl.storageList[accountHash] = storageList
-	dl.memory += uint64(len(dl.storageList)*common.Hash512Length + common.Hash512Length)
+	dl.memory += uint64(len(storageList)*common.Hash512Length + common.Hash512Length)
 	return storageList, destructed
 }
