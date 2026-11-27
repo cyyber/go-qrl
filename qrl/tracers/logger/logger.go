@@ -30,20 +30,12 @@ import (
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/go-qrl/common/math"
 	"github.com/theQRL/go-qrl/common/uint512"
-	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/params"
 )
 
 // Storage represents a contract's storage.
 type Storage map[common.Hash512]common.StorageValue64
-
-// Copy duplicates the current storage.
-func (s Storage) Copy() Storage {
-	cpy := make(Storage, len(s))
-	maps.Copy(cpy, s)
-	return cpy
-}
 
 // Config are the configuration options for structured logger the QRVM
 type Config struct {
@@ -52,15 +44,29 @@ type Config struct {
 	DisableStorage   bool // disable storage capture
 	EnableReturnData bool // enable return data capture
 	Debug            bool // print output during capture end
-	Limit            int  // maximum length of output, but zero means unlimited
+	Limit            int  // maximum size of output, but zero means unlimited
+
 	// Chain overrides, can be used to execute a trace using future fork rules
 	Overrides *params.ChainConfig `json:"overrides,omitempty"`
 }
 
+// countingWriter wraps an io.Writer and records how many bytes have been
+// written through it.
+type countingWriter struct {
+	w io.Writer
+	n int
+}
+
+func (c *countingWriter) Write(p []byte) (int, error) {
+	n, err := c.w.Write(p)
+	c.n += n
+	return n, err
+}
+
 //go:generate go run github.com/fjl/gencodec -type StructLog -field-override structLogMarshaling -out gen_structlog.go
 
-// StructLog is emitted to the QRVM each cycle and lists information about the current internal state
-// prior to the execution of the statement.
+// StructLog is emitted to the QRVM each cycle and lists information about the
+// current internal state prior to the execution of the statement.
 type StructLog struct {
 	Pc            uint64                                   `json:"pc"`
 	Op            vm.OpCode                                `json:"op"`
@@ -99,43 +105,150 @@ func (s *StructLog) ErrorString() string {
 	return ""
 }
 
+// Write writes the human-readable log data into the supplied writer.
+func (s *StructLog) Write(writer io.Writer) {
+	fmt.Fprintf(writer, "%-16spc=%08d gas=%v cost=%v", s.Op, s.Pc, s.Gas, s.GasCost)
+	if s.Err != nil {
+		fmt.Fprintf(writer, " ERROR: %v", s.Err)
+	}
+	fmt.Fprintln(writer)
+
+	if len(s.Stack) > 0 {
+		fmt.Fprintln(writer, "Stack:")
+		for i := len(s.Stack) - 1; i >= 0; i-- {
+			fmt.Fprintf(writer, "%08d  %s\n", len(s.Stack)-i-1, s.Stack[i].Hex())
+		}
+	}
+	if len(s.Memory) > 0 {
+		fmt.Fprintln(writer, "Memory:")
+		fmt.Fprint(writer, hex.Dump(s.Memory))
+	}
+	if len(s.Storage) > 0 {
+		fmt.Fprintln(writer, "Storage:")
+		for h, item := range s.Storage {
+			fmt.Fprintf(writer, "%x: %x\n", h, item)
+		}
+	}
+	if len(s.ReturnData) > 0 {
+		fmt.Fprintln(writer, "ReturnData:")
+		fmt.Fprint(writer, hex.Dump(s.ReturnData))
+	}
+	fmt.Fprintln(writer)
+}
+
+// structLogLegacy stores a structured log emitted by the QRVM while replaying a
+// transaction in debug mode. It's the legacy format used in tracer. The differences
+// between the structLog json and the 'legacy' json are:
+//
+// op:
+// Legacy uses string (e.g. "SSTORE"), non-legacy uses a byte.
+// non-legacy has an 'opName' field containing the op name.
+//
+// gas, gasCost:
+// Legacy uses integers, non-legacy hex-strings
+//
+// memory:
+// Legacy uses a list of 128-char strings, each representing 64-byte chunks
+// of qrvm memory. Non-legacy just uses a string of hexdata, no chunking.
+//
+// storage:
+// Legacy has a storage field while non-legacy doesn't.
+type structLogLegacy struct {
+	Pc            uint64             `json:"pc"`
+	Op            string             `json:"op"`
+	Gas           uint64             `json:"gas"`
+	GasCost       uint64             `json:"gasCost"`
+	Depth         int                `json:"depth"`
+	Error         string             `json:"error,omitempty"`
+	Stack         *[]string          `json:"stack,omitempty"`
+	ReturnData    string             `json:"returnData,omitempty"`
+	Memory        *[]string          `json:"memory,omitempty"`
+	Storage       *map[string]string `json:"storage,omitempty"`
+	RefundCounter uint64             `json:"refund,omitempty"`
+}
+
+// toLegacyJSON converts the structLog to legacy json-encoded legacy form.
+func (s *StructLog) toLegacyJSON() json.RawMessage {
+	msg := structLogLegacy{
+		Pc:            s.Pc,
+		Op:            s.Op.String(),
+		Gas:           s.Gas,
+		GasCost:       s.GasCost,
+		Depth:         s.Depth,
+		Error:         s.ErrorString(),
+		RefundCounter: s.RefundCounter,
+	}
+	if s.Stack != nil {
+		stack := make([]string, len(s.Stack))
+		for i, stackValue := range s.Stack {
+			stack[i] = stackValue.Hex()
+		}
+		msg.Stack = &stack
+	}
+	if len(s.ReturnData) > 0 {
+		msg.ReturnData = hexutil.Bytes(s.ReturnData).String()
+	}
+	if s.Memory != nil {
+		memory := make([]string, 0, (len(s.Memory)+63)/64)
+		for i := 0; i+64 <= len(s.Memory); i += 64 {
+			memory = append(memory, fmt.Sprintf("%x", s.Memory[i:i+64]))
+		}
+		msg.Memory = &memory
+	}
+	if s.Storage != nil {
+		storage := make(map[string]string)
+		for i, storageValue := range s.Storage {
+			storage[fmt.Sprintf("%x", i)] = fmt.Sprintf("%x", storageValue)
+		}
+		msg.Storage = &storage
+	}
+	element, _ := json.Marshal(msg)
+	return element
+}
+
 // StructLogger is a QRVM state logger and implements QRVMLogger.
 //
 // StructLogger can capture state based on the given Log configuration and also keeps
 // a track record of modified storage which is used in reporting snapshots of the
 // contract their storage.
+//
+// A StructLogger can either yield it's output immediately (streaming) or store for
+// later output.
 type StructLogger struct {
 	cfg Config
 	env *vm.QRVM
 
 	storage  map[common.Address]Storage
-	logs     []StructLog
 	output   []byte
 	err      error
 	gasLimit uint64
 	usedGas  uint64
 
+	writer     io.Writer         // If set, the logger will stream instead of store logs
+	logs       []json.RawMessage // buffer of json-encoded logs
+	resultSize int               // total bytes of trace output
+
 	interrupt atomic.Bool // Atomic flag to signal execution interruption
 	reason    error       // Textual reason for the interruption
 }
 
-// NewStructLogger returns a new logger
+// NewStreamingStructLogger returns a new streaming logger.
+func NewStreamingStructLogger(cfg *Config, writer io.Writer) *StructLogger {
+	l := NewStructLogger(cfg)
+	l.writer = &countingWriter{w: writer}
+	return l
+}
+
+// NewStructLogger construct a new (non-streaming) struct logger.
 func NewStructLogger(cfg *Config) *StructLogger {
 	logger := &StructLogger{
 		storage: make(map[common.Address]Storage),
+		logs:    make([]json.RawMessage, 0),
 	}
 	if cfg != nil {
 		logger.cfg = *cfg
 	}
 	return logger
-}
-
-// Reset clears the data held by the logger.
-func (l *StructLogger) Reset() {
-	l.storage = make(map[common.Address]Storage)
-	l.output = make([]byte, 0)
-	l.logs = l.logs[:0]
-	l.err = nil
 }
 
 // CaptureStart implements the QRVMLogger interface to initialize the tracing operation.
@@ -147,68 +260,68 @@ func (l *StructLogger) CaptureStart(env *vm.QRVM, from common.Address, to common
 //
 // CaptureState also tracks SLOAD/SSTORE ops to track storage change.
 func (l *StructLogger) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	// If tracing was interrupted, set the error and stop
+	// If tracing was interrupted, exit
 	if l.interrupt.Load() {
 		return
 	}
-	// check if already accumulated the specified number of logs
-	if l.cfg.Limit != 0 && l.cfg.Limit <= len(l.logs) {
+	// check if already accumulated the size of the response.
+	if l.cfg.Limit != 0 && l.resultSize > l.cfg.Limit {
 		return
 	}
-
-	memory := scope.Memory
-	stack := scope.Stack
-	contract := scope.Contract
-	// Copy a snapshot of the current memory state to a new buffer
-	var mem []byte
+	var (
+		memory       = scope.Memory
+		contractAddr = scope.Contract.Address()
+		stack        = scope.Stack.Data()
+		stackLen     = len(stack)
+	)
+	log := StructLog{pc, op, gas, cost, nil, memory.Len(), nil, nil, nil, depth, l.env.StateDB.GetRefund(), err}
 	if l.cfg.EnableMemory {
-		mem = make([]byte, len(memory.Data()))
-		copy(mem, memory.Data())
+		log.Memory = memory.Data()
 	}
-	// Copy a snapshot of the current stack state to a new buffer
-	var stck []uint512.Int
 	if !l.cfg.DisableStack {
-		stck = make([]uint512.Int, len(stack.Data()))
-		for i, item := range stack.Data() {
-			stck[i] = item
-		}
+		log.Stack = stack
 	}
-	stackData := stack.Data()
-	stackLen := len(stackData)
+	if l.cfg.EnableReturnData {
+		log.ReturnData = rData
+	}
+
 	// Copy a snapshot of the current storage to a new container
 	var storage Storage
 	if !l.cfg.DisableStorage && (op == vm.SLOAD || op == vm.SSTORE) {
 		// initialise new changed values storage container for this contract
 		// if not present.
-		if l.storage[contract.Address()] == nil {
-			l.storage[contract.Address()] = make(Storage)
+		if l.storage[contractAddr] == nil {
+			l.storage[contractAddr] = make(Storage)
 		}
 		// capture SLOAD opcodes and record the read entry in the local storage
 		if op == vm.SLOAD && stackLen >= 1 {
 			var (
-				address = common.Hash512(stackData[stackLen-1].Bytes64())
-				value   = l.env.StateDB.GetState(contract.Address(), address)
+				address = common.Hash512(stack[stackLen-1].Bytes64())
+				value   = l.env.StateDB.GetState(contractAddr, address)
 			)
-			l.storage[contract.Address()][address] = value
-			storage = l.storage[contract.Address()].Copy()
+			l.storage[contractAddr][address] = value
+			storage = maps.Clone(l.storage[contractAddr])
 		} else if op == vm.SSTORE && stackLen >= 2 {
 			// capture SSTORE opcodes and record the written entry in the local storage.
 			var (
-				value   = common.StorageValue64(stackData[stackLen-2].Bytes64())
-				address = common.Hash512(stackData[stackLen-1].Bytes64())
+				value   = common.StorageValue64(stack[stackLen-2].Bytes64())
+				address = common.Hash512(stack[stackLen-1].Bytes64())
 			)
-			l.storage[contract.Address()][address] = value
-			storage = l.storage[contract.Address()].Copy()
+			l.storage[contractAddr][address] = value
+			storage = maps.Clone(l.storage[contractAddr])
 		}
 	}
-	var rdata []byte
-	if l.cfg.EnableReturnData {
-		rdata = make([]byte, len(rData))
-		copy(rdata, rData)
+	log.Storage = storage
+
+	// create a log
+	if l.writer == nil {
+		entry := log.toLegacyJSON()
+		l.resultSize += len(entry)
+		l.logs = append(l.logs, entry)
+		return
 	}
-	// create a new snapshot of the QRVM.
-	log := StructLog{pc, op, gas, cost, mem, memory.Len(), stck, rdata, storage, depth, l.env.StateDB.GetRefund(), err}
-	l.logs = append(l.logs, log)
+	log.Write(l.writer)
+	l.resultSize = l.writer.(*countingWriter).n
 }
 
 // CaptureFault implements the QRVMLogger interface to trace an execution fault
@@ -249,7 +362,7 @@ func (l *StructLogger) GetResult() (json.RawMessage, error) {
 		Gas:         l.usedGas,
 		Failed:      failed,
 		ReturnValue: returnData,
-		StructLogs:  formatLogs(l.StructLogs()),
+		StructLogs:  l.logs,
 	})
 }
 
@@ -267,9 +380,6 @@ func (l *StructLogger) CaptureTxEnd(restGas uint64) {
 	l.usedGas = l.gasLimit - restGas
 }
 
-// StructLogs returns the captured log entries.
-func (l *StructLogger) StructLogs() []StructLog { return l.logs }
-
 // Error returns the VM error captured by the trace.
 func (l *StructLogger) Error() error { return l.err }
 
@@ -277,49 +387,10 @@ func (l *StructLogger) Error() error { return l.err }
 func (l *StructLogger) Output() []byte { return l.output }
 
 // WriteTrace writes a formatted trace to the given writer
+// @deprecated
 func WriteTrace(writer io.Writer, logs []StructLog) {
 	for _, log := range logs {
-		fmt.Fprintf(writer, "%-16spc=%08d gas=%v cost=%v", log.Op, log.Pc, log.Gas, log.GasCost)
-		if log.Err != nil {
-			fmt.Fprintf(writer, " ERROR: %v", log.Err)
-		}
-		fmt.Fprintln(writer)
-
-		if len(log.Stack) > 0 {
-			fmt.Fprintln(writer, "Stack:")
-			for i := len(log.Stack) - 1; i >= 0; i-- {
-				fmt.Fprintf(writer, "%08d  %s\n", len(log.Stack)-i-1, log.Stack[i].Hex())
-			}
-		}
-		if len(log.Memory) > 0 {
-			fmt.Fprintln(writer, "Memory:")
-			fmt.Fprint(writer, hex.Dump(log.Memory))
-		}
-		if len(log.Storage) > 0 {
-			fmt.Fprintln(writer, "Storage:")
-			for h, item := range log.Storage {
-				fmt.Fprintf(writer, "%x: %x\n", h, item)
-			}
-		}
-		if len(log.ReturnData) > 0 {
-			fmt.Fprintln(writer, "ReturnData:")
-			fmt.Fprint(writer, hex.Dump(log.ReturnData))
-		}
-		fmt.Fprintln(writer)
-	}
-}
-
-// WriteLogs writes vm logs in a readable format to the given writer
-func WriteLogs(writer io.Writer, logs []*types.Log) {
-	for _, log := range logs {
-		fmt.Fprintf(writer, "LOG%d: %x bn=%d txi=%x\n", len(log.Topics), log.Address, log.BlockNumber, log.TxIndex)
-
-		for i, topic := range log.Topics {
-			fmt.Fprintf(writer, "%08d  %x\n", i, topic)
-		}
-
-		fmt.Fprint(writer, hex.Dump(log.Data))
-		fmt.Fprintln(writer)
+		log.Write(writer)
 	}
 }
 
@@ -400,65 +471,8 @@ func (*mdLogger) CaptureTxEnd(restGas uint64) {}
 // while replaying a transaction in debug mode as well as transaction
 // execution status, the amount of gas used and the return value
 type ExecutionResult struct {
-	Gas         uint64         `json:"gas"`
-	Failed      bool           `json:"failed"`
-	ReturnValue hexutil.Bytes  `json:"returnValue"`
-	StructLogs  []StructLogRes `json:"structLogs"`
-}
-
-// StructLogRes stores a structured log emitted by the QRVM while replaying a
-// transaction in debug mode
-type StructLogRes struct {
-	Pc            uint64             `json:"pc"`
-	Op            string             `json:"op"`
-	Gas           uint64             `json:"gas"`
-	GasCost       uint64             `json:"gasCost"`
-	Depth         int                `json:"depth"`
-	Error         string             `json:"error,omitempty"`
-	Stack         *[]string          `json:"stack,omitempty"`
-	ReturnData    string             `json:"returnData,omitempty"`
-	Memory        *[]string          `json:"memory,omitempty"`
-	Storage       *map[string]string `json:"storage,omitempty"`
-	RefundCounter uint64             `json:"refund,omitempty"`
-}
-
-// formatLogs formats QRVM returned structured logs for json output
-func formatLogs(logs []StructLog) []StructLogRes {
-	formatted := make([]StructLogRes, len(logs))
-	for index, trace := range logs {
-		formatted[index] = StructLogRes{
-			Pc:            trace.Pc,
-			Op:            trace.Op.String(),
-			Gas:           trace.Gas,
-			GasCost:       trace.GasCost,
-			Depth:         trace.Depth,
-			Error:         trace.ErrorString(),
-			RefundCounter: trace.RefundCounter,
-		}
-		if trace.Stack != nil {
-			stack := make([]string, len(trace.Stack))
-			for i, stackValue := range trace.Stack {
-				stack[i] = stackValue.Hex()
-			}
-			formatted[index].Stack = &stack
-		}
-		if trace.ReturnData != nil && len(trace.ReturnData) > 0 {
-			formatted[index].ReturnData = hexutil.Bytes(trace.ReturnData).String()
-		}
-		if trace.Memory != nil {
-			memory := make([]string, 0, (len(trace.Memory)+63)/64)
-			for i := 0; i+64 <= len(trace.Memory); i += 64 {
-				memory = append(memory, fmt.Sprintf("%x", trace.Memory[i:i+64]))
-			}
-			formatted[index].Memory = &memory
-		}
-		if trace.Storage != nil {
-			storage := make(map[string]string)
-			for i, storageValue := range trace.Storage {
-				storage[fmt.Sprintf("%x", i)] = fmt.Sprintf("%x", storageValue)
-			}
-			formatted[index].Storage = &storage
-		}
-	}
-	return formatted
+	Gas         uint64            `json:"gas"`
+	Failed      bool              `json:"failed"`
+	ReturnValue hexutil.Bytes     `json:"returnValue"`
+	StructLogs  []json.RawMessage `json:"structLogs"`
 }
