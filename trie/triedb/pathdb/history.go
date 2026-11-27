@@ -531,8 +531,9 @@ func writeHistory(db qrldb.KeyValueStore, freezer *rawdb.ResettableFreezer, dl *
 	indexSize := common.StorageSize(len(accountIndex) + len(storageIndex))
 
 	// Write history data into five freezer table respectively.
-	rawdb.WriteStateHistory(freezer, dl.stateID(), h.meta.encode(), accountIndex, storageIndex, accountData, storageData)
-
+	if err := rawdb.WriteStateHistory(freezer, dl.stateID(), h.meta.encode(), accountIndex, storageIndex, accountData, storageData); err != nil {
+		return err
+	}
 	// Prune stale state histories based on the config.
 	if limit != 0 && dl.stateID() > limit {
 		n, err = truncateFromTail(db, freezer, dl.stateID()-limit)

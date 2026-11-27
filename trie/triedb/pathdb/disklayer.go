@@ -177,6 +177,8 @@ func (dl *diskLayer) commit(bottom *diffLayer, force bool) (*diskLayer, error) {
 	// corresponding states(journal), the stored state history will
 	// be truncated in the next restart.
 	if dl.db.freezer != nil {
+		// Bail out with an error if writing the state history fails.
+		// This can happen, for example, if the device is full.
 		err := writeHistory(dl.db.diskdb, dl.db.freezer, bottom, dl.db.config.StateHistory)
 		if err != nil {
 			return nil, err
