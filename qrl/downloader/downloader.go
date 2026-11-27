@@ -208,7 +208,7 @@ func New(stateDb qrldb.Database, mux *event.TypeMux, chain BlockChain, dropPeer 
 		syncStartBlock: chain.CurrentSnapBlock().Number.Uint64(),
 	}
 	// Create the skeleton syncer and start the process
-	dl.skeleton = newSkeleton(stateDb, dl.peers, dropPeer, newBeaconBackfiller(dl, success))
+	dl.skeleton = newSkeleton(stateDb, dl.peers, dropPeer, newBeaconBackfiller(dl, success), chain)
 
 	go dl.stateFetcher()
 	return dl

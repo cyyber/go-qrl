@@ -36,7 +36,6 @@ type beaconBackfiller struct {
 	syncMode   SyncMode      // Sync mode to use for backfilling the skeleton chains
 	success    func()        // Callback to run on successful sync cycle completion
 	filling    bool          // Flag whether the downloader is backfilling or not
-	filled     *types.Header // Last header filled by the last terminated sync loop
 	started    chan struct{} // Notification channel whether the downloader inited
 	lock       sync.Mutex    // Mutex protecting the sync lock
 }
@@ -56,13 +55,15 @@ func (b *beaconBackfiller) suspend() *types.Header {
 	// If no filling is running, don't waste cycles
 	b.lock.Lock()
 	filling := b.filling
-	filled := b.filled
 	started := b.started
 	b.lock.Unlock()
 
 	if !filling {
+		// Sync cycle was inactive, retrieve and return the latest snap block
+		// as the filled header.
 		log.Debug("Backfiller was inactive")
-		return filled // Return the filled header on the previous sync completion
+
+		return b.downloader.blockchain.CurrentSnapBlock()
 	}
 	// A previous filling should be running, though it may happen that it hasn't
 	// yet started (being done on a new goroutine). Many concurrent beacon head
@@ -77,7 +78,6 @@ func (b *beaconBackfiller) suspend() *types.Header {
 	log.Debug("Backfiller has been suspended")
 
 	// Sync cycle was just terminated, retrieve and return the last filled header.
-	// Can't use `filled` as that contains a stale value from before cancellation.
 	return b.downloader.blockchain.CurrentSnapBlock()
 }
 
@@ -92,7 +92,6 @@ func (b *beaconBackfiller) resume() {
 		return
 	}
 	b.filling = true
-	b.filled = nil
 	b.started = make(chan struct{})
 	mode := b.syncMode
 	b.lock.Unlock()
@@ -104,7 +103,6 @@ func (b *beaconBackfiller) resume() {
 		defer func() {
 			b.lock.Lock()
 			b.filling = false
-			b.filled = b.downloader.blockchain.CurrentSnapBlock()
 			b.lock.Unlock()
 		}()
 		// If the downloader fails, report an error as in beacon chain mode there
@@ -220,6 +218,8 @@ func (d *Downloader) findBeaconAncestor() (uint64, error) {
 		log.Error("Failed to retrieve beacon bounds", "err", err)
 		return 0, err
 	}
+	log.Debug("Searching beacon ancestor", "local", number, "beaconhead", beaconHead.Number, "beacontail", beaconTail.Number)
+
 	var linked bool
 	switch d.getMode() {
 	case FullSync:
@@ -270,6 +270,7 @@ func (d *Downloader) findBeaconAncestor() (uint64, error) {
 		}
 		start = check
 	}
+	log.Debug("Found beacon ancestor", "number", start)
 	return start, nil
 }
 
