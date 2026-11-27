@@ -145,6 +145,7 @@ var (
 		utils.RPCGlobalQRVMTimeoutFlag,
 		utils.RPCGlobalTxFeeCapFlag,
 		utils.RPCGlobalLogQueryLimit,
+		utils.EngineMaxReorgDepthFlag,
 		utils.RPCGlobalRangeLimitFlag,
 		utils.BatchRequestLimit,
 		utils.BatchResponseMaxSize,
