@@ -77,6 +77,7 @@ var (
 	errSelf             = errors.New("is self")
 	errAlreadyDialing   = errors.New("already dialing")
 	errAlreadyConnected = errors.New("already connected")
+	errPendingInbound   = errors.New("peer has pending inbound connection")
 	errRecentlyDialed   = errors.New("recently dialed")
 	errNetRestrict      = errors.New("not contained in netrestrict list")
 	errNoPort           = errors.New("node does not provide TCP port")
@@ -93,22 +94,25 @@ var (
 //     to create peer connections to nodes arriving through the iterator.
 type dialScheduler struct {
 	dialConfig
-	setupFunc   dialSetupFunc
-	wg          sync.WaitGroup
-	cancel      context.CancelFunc
-	ctx         context.Context
-	nodesIn     chan *qnode.Node
-	doneCh      chan *dialTask
-	addStaticCh chan *qnode.Node
-	remStaticCh chan *qnode.Node
-	addPeerCh   chan *conn
-	remPeerCh   chan *conn
+	setupFunc    dialSetupFunc
+	wg           sync.WaitGroup
+	cancel       context.CancelFunc
+	ctx          context.Context
+	nodesIn      chan *qnode.Node
+	doneCh       chan *dialTask
+	addStaticCh  chan *qnode.Node
+	remStaticCh  chan *qnode.Node
+	addPeerCh    chan *conn
+	remPeerCh    chan *conn
+	addPendingCh chan qnode.ID
+	remPendingCh chan qnode.ID
 
 	// Everything below here belongs to loop and
 	// should only be accessed by code on the loop goroutine.
-	dialing   map[qnode.ID]*dialTask // active tasks
-	peers     map[qnode.ID]struct{}  // all connected peers
-	dialPeers int                    // current number of dialed peers
+	dialing        map[qnode.ID]*dialTask // active tasks
+	peers          map[qnode.ID]struct{}  // all connected peers
+	pendingInbound map[qnode.ID]struct{}  // in-progress inbound connections
+	dialPeers      int                    // current number of dialed peers
 
 	// The static map tracks all static dial tasks. The subset of usable static dial tasks
 	// (i.e. those passing checkDial) is kept in staticPool. The scheduler prefers
@@ -162,18 +166,21 @@ func (cfg dialConfig) withDefaults() dialConfig {
 func newDialScheduler(config dialConfig, it qnode.Iterator, setupFunc dialSetupFunc) *dialScheduler {
 	cfg := config.withDefaults()
 	d := &dialScheduler{
-		dialConfig:   cfg,
-		historyTimer: mclock.NewAlarm(cfg.clock),
-		setupFunc:    setupFunc,
-		dialing:      make(map[qnode.ID]*dialTask),
-		static:       make(map[qnode.ID]*dialTask),
-		peers:        make(map[qnode.ID]struct{}),
-		doneCh:       make(chan *dialTask),
-		nodesIn:      make(chan *qnode.Node),
-		addStaticCh:  make(chan *qnode.Node),
-		remStaticCh:  make(chan *qnode.Node),
-		addPeerCh:    make(chan *conn),
-		remPeerCh:    make(chan *conn),
+		dialConfig:     cfg,
+		historyTimer:   mclock.NewAlarm(cfg.clock),
+		setupFunc:      setupFunc,
+		dialing:        make(map[qnode.ID]*dialTask),
+		static:         make(map[qnode.ID]*dialTask),
+		peers:          make(map[qnode.ID]struct{}),
+		pendingInbound: make(map[qnode.ID]struct{}),
+		doneCh:         make(chan *dialTask),
+		nodesIn:        make(chan *qnode.Node),
+		addStaticCh:    make(chan *qnode.Node),
+		remStaticCh:    make(chan *qnode.Node),
+		addPeerCh:      make(chan *conn),
+		remPeerCh:      make(chan *conn),
+		addPendingCh:   make(chan qnode.ID),
+		remPendingCh:   make(chan qnode.ID),
 	}
 	d.lastStatsLog = d.clock.Now()
 	d.ctx, d.cancel = context.WithCancel(context.Background())
@@ -217,6 +224,22 @@ func (d *dialScheduler) peerAdded(c *conn) {
 func (d *dialScheduler) peerRemoved(c *conn) {
 	select {
 	case d.remPeerCh <- c:
+	case <-d.ctx.Done():
+	}
+}
+
+// inboundPending notifies the scheduler about a pending inbound connection.
+func (d *dialScheduler) inboundPending(id qnode.ID) {
+	select {
+	case d.addPendingCh <- id:
+	case <-d.ctx.Done():
+	}
+}
+
+// inboundCompleted notifies the scheduler that an inbound connection completed or failed.
+func (d *dialScheduler) inboundCompleted(id qnode.ID) {
+	select {
+	case d.remPendingCh <- id:
 	case <-d.ctx.Done():
 	}
 }
@@ -273,6 +296,15 @@ loop:
 			}
 			delete(d.peers, c.node.ID())
 			d.updateStaticPool(c.node.ID())
+
+		case id := <-d.addPendingCh:
+			d.pendingInbound[id] = struct{}{}
+			d.log.Trace("Marked node as pending inbound", "id", id)
+
+		case id := <-d.remPendingCh:
+			delete(d.pendingInbound, id)
+			d.updateStaticPool(id)
+			d.log.Trace("Unmarked node as pending inbound", "id", id)
 
 		case node := <-d.addStaticCh:
 			id := node.ID()
@@ -384,6 +416,9 @@ func (d *dialScheduler) checkDial(n *qnode.Node) error {
 	}
 	if _, ok := d.peers[n.ID()]; ok {
 		return errAlreadyConnected
+	}
+	if _, ok := d.pendingInbound[n.ID()]; ok {
+		return errPendingInbound
 	}
 	if d.netRestrict != nil && !d.netRestrict.Contains(n.IP()) {
 		return errNetRestrict
