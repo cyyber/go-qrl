@@ -242,16 +242,6 @@ func (db *Database) Dereference(root common.Hash512) error {
 	return nil
 }
 
-// Node retrieves the rlp-encoded node blob with provided node hash. It's
-// only supported by hash-based database and will return an error for others.
-func (db *Database) Node(hash common.Hash512) ([]byte, error) {
-	hdb, ok := db.backend.(*hashdb.Database)
-	if !ok {
-		return nil, errors.New("not supported")
-	}
-	return hdb.Node(hash)
-}
-
 // Recover rollbacks the database to a specified historical point. The state is
 // supported as the rollback destination only if it's canonical state and the
 // corresponding trie histories are existent. It's only supported by path-based
