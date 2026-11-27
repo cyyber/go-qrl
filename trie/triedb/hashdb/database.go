@@ -31,6 +31,7 @@ import (
 	"github.com/theQRL/go-qrl/metrics"
 	"github.com/theQRL/go-qrl/qrldb"
 	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie/triedb/database"
 	"github.com/theQRL/go-qrl/trie/trienode"
 	"github.com/theQRL/go-qrl/trie/triestate"
 )
@@ -630,10 +631,11 @@ func (db *Database) Scheme() string {
 }
 
 // Reader retrieves a node reader belonging to the given state root.
-// An error will be returned if the requested state is not available.
+// The returned error wraps database.ErrStateUnavailable if the requested state
+// is not available.
 func (db *Database) Reader(root common.Hash512) (*reader, error) {
 	if _, err := db.node(root); err != nil {
-		return nil, fmt.Errorf("state %#x is not available, %v", root, err)
+		return nil, fmt.Errorf("%w: %#x, %v", database.ErrStateUnavailable, root, err)
 	}
 	return &reader{db: db}, nil
 }
