@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/qrldb"
 )
 
@@ -224,6 +225,7 @@ func cleanup(path string) error {
 	}
 	for _, name := range names {
 		if name == filepath.Base(path)+tmpSuffix {
+			log.Info("Removed leftover freezer directory", "name", name)
 			return os.RemoveAll(filepath.Join(parent, name))
 		}
 	}
