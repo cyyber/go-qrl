@@ -84,6 +84,10 @@ var caps = []string{
 type ConsensusAPI struct {
 	qrl *qrl.QRL
 
+	// maxReorgDepth is the maximum reorg depth accepted via forkchoiceUpdated
+	// (0 = no limit). Configured via qrlconfig.Config.EngineMaxReorgDepth.
+	maxReorgDepth uint64
+
 	remoteBlocks *headerQueue  // Cache of remote payloads received
 	localBlocks  *payloadQueue // Cache of local payloads generated
 
@@ -133,6 +137,7 @@ func NewConsensusAPI(qrl *qrl.QRL) *ConsensusAPI {
 func newConsensusAPIWithoutHeartbeat(qrl *qrl.QRL) *ConsensusAPI {
 	api := &ConsensusAPI{
 		qrl:               qrl,
+		maxReorgDepth:     qrl.EngineMaxReorgDepth(),
 		remoteBlocks:      newHeaderQueue(),
 		localBlocks:       newPayloadQueue(),
 		invalidBlocksHits: make(map[common.Hash]int),
@@ -236,10 +241,27 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		// generating the payload. It's a special corner case that a few slots are
 		// missing and we are requested to generate the payload in slot.
 	} else {
-		// If the head block is already in our canonical chain, the beacon client is
-		// probably resyncing. Ignore the update.
-		log.Info("Ignoring beacon update to old head", "number", block.NumberU64(), "hash", update.HeadBlockHash, "age", common.PrettyAge(time.Unix(int64(block.Time()), 0)), "have", api.qrl.BlockChain().CurrentBlock().Number)
-		return valid(nil), nil
+		if finalized := api.qrl.BlockChain().CurrentFinalBlock(); finalized != nil && block.NumberU64() < finalized.Number.Uint64() {
+			log.Info("Skipping beacon update to finalized ancestor", "number", block.NumberU64(), "hash", update.HeadBlockHash)
+			return valid(nil), nil
+		}
+		// A canonical block above the current head (the index outlived a head
+		// rewind, e.g. after an unclean shutdown) is a forward move, not a reorg.
+		if current := api.qrl.BlockChain().CurrentBlock().Number.Uint64(); block.NumberU64() < current {
+			depth := current - block.NumberU64()
+			if api.maxReorgDepth > 0 && depth >= api.maxReorgDepth {
+				log.Warn("Refusing too deep reorg", "depth", depth, "head", update.HeadBlockHash)
+				return engine.STATUS_INVALID, engine.TooDeepReorg.With(fmt.Errorf("reorg depth %d exceeds limit %d", depth, api.maxReorgDepth))
+			}
+		}
+		if !api.qrl.Synced() {
+			log.Info("Ignoring beacon update to old head while syncing", "number", block.NumberU64(), "hash", update.HeadBlockHash)
+			return valid(nil), nil
+		}
+		if latestValid, err := api.qrl.BlockChain().SetCanonical(block); err != nil {
+			log.Error("Error setting canonical", "number", block.NumberU64(), "hash", update.HeadBlockHash, "error", err)
+			return engine.ForkChoiceResponse{PayloadStatus: engine.PayloadStatusV1{Status: engine.INVALID, LatestValidHash: &latestValid}}, err
+		}
 	}
 	api.qrl.SetSynced()
 
