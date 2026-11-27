@@ -986,7 +986,9 @@ func (d *Downloader) commitPivotBlock(result *fetchResult) error {
 	if err := d.blockchain.SnapSyncCommitHead(block.Hash()); err != nil {
 		return err
 	}
+	d.pivotLock.Lock()
 	d.committed.Store(true)
+	d.pivotLock.Unlock()
 	return nil
 }
 
