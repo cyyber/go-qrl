@@ -70,9 +70,6 @@ const (
 	// beaconUpdateWarnFrequency is the frequency at which to warn the user that
 	// the beacon client is offline.
 	beaconUpdateWarnFrequency = 5 * time.Minute
-
-	// maxReorgDepth is the maximum reorg depth accepted via forkchoiceUpdated.
-	maxReorgDepth = 32
 )
 
 // All methods provided over the engine endpoint.
@@ -86,6 +83,10 @@ var caps = []string{
 
 type ConsensusAPI struct {
 	qrl *qrl.QRL
+
+	// maxReorgDepth is the maximum reorg depth accepted via forkchoiceUpdated
+	// (0 = no limit). Configured via qrlconfig.Config.EngineMaxReorgDepth.
+	maxReorgDepth uint64
 
 	remoteBlocks *headerQueue  // Cache of remote payloads received
 	localBlocks  *payloadQueue // Cache of local payloads generated
@@ -136,6 +137,7 @@ func NewConsensusAPI(qrl *qrl.QRL) *ConsensusAPI {
 func newConsensusAPIWithoutHeartbeat(qrl *qrl.QRL) *ConsensusAPI {
 	api := &ConsensusAPI{
 		qrl:               qrl,
+		maxReorgDepth:     qrl.EngineMaxReorgDepth(),
 		remoteBlocks:      newHeaderQueue(),
 		localBlocks:       newPayloadQueue(),
 		invalidBlocksHits: make(map[common.Hash]int),
@@ -247,9 +249,9 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		// rewind, e.g. after an unclean shutdown) is a forward move, not a reorg.
 		if current := api.qrl.BlockChain().CurrentBlock().Number.Uint64(); block.NumberU64() < current {
 			depth := current - block.NumberU64()
-			if depth >= maxReorgDepth {
+			if api.maxReorgDepth > 0 && depth >= api.maxReorgDepth {
 				log.Warn("Refusing too deep reorg", "depth", depth, "head", update.HeadBlockHash)
-				return engine.STATUS_INVALID, engine.TooDeepReorg.With(fmt.Errorf("reorg depth %d exceeds limit %d", depth, maxReorgDepth))
+				return engine.STATUS_INVALID, engine.TooDeepReorg.With(fmt.Errorf("reorg depth %d exceeds limit %d", depth, api.maxReorgDepth))
 			}
 		}
 		if !api.qrl.Synced() {

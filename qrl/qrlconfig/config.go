@@ -44,25 +44,26 @@ var FullNodeGPO = gasprice.Config{
 
 // Defaults contains default settings for use on the QRL main net.
 var Defaults = Config{
-	SyncMode:           downloader.SnapSync,
-	NetworkId:          1,
-	TransactionHistory: 2350000,
-	StateHistory:       params.FullImmutabilityThreshold,
-	StateScheme:        rawdb.HashScheme,
-	DatabaseCache:      512,
-	TrieCleanCache:     154,
-	TrieDirtyCache:     256,
-	TrieTimeout:        60 * time.Minute,
-	SnapshotCache:      102,
-	FilterLogCacheSize: 32,
-	LogQueryLimit:      1000,
-	Miner:              miner.DefaultConfig,
-	TxPool:             legacypool.DefaultConfig,
-	RPCGasCap:          50000000,
-	RPCQRVMTimeout:     5 * time.Second,
-	GPO:                FullNodeGPO,
-	RPCTxFeeCap:        1, // 1 quanta
-	RangeLimit:         0,
+	SyncMode:            downloader.SnapSync,
+	NetworkId:           1,
+	TransactionHistory:  2350000,
+	StateHistory:        params.FullImmutabilityThreshold,
+	StateScheme:         rawdb.HashScheme,
+	DatabaseCache:       512,
+	TrieCleanCache:      154,
+	TrieDirtyCache:      256,
+	TrieTimeout:         60 * time.Minute,
+	SnapshotCache:       102,
+	FilterLogCacheSize:  32,
+	LogQueryLimit:       1000,
+	Miner:               miner.DefaultConfig,
+	TxPool:              legacypool.DefaultConfig,
+	RPCGasCap:           50000000,
+	RPCQRVMTimeout:      5 * time.Second,
+	GPO:                 FullNodeGPO,
+	RPCTxFeeCap:         1, // 1 quanta
+	EngineMaxReorgDepth: 32,
+	RangeLimit:          0,
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go
@@ -142,6 +143,11 @@ type Config struct {
 	// RPCTxFeeCap is the global transaction fee(price * gaslimit) cap for
 	// send-transaction variants. The unit is quanta.
 	RPCTxFeeCap float64
+
+	// EngineMaxReorgDepth is the maximum depth the chain head can be rewound
+	// to an already-canonical ancestor by engine API forkchoiceUpdated calls
+	// (0 = no limit).
+	EngineMaxReorgDepth uint64 `toml:",omitempty"`
 
 	// RangeLimit restricts the maximum range (end - start) for range queries.
 	RangeLimit uint64 `toml:",omitempty"`

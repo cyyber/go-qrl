@@ -19,6 +19,7 @@ package catalyst
 import (
 	"bytes"
 	crand "crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -412,8 +413,9 @@ func TestDeepReorg(t *testing.T) {
 	*/
 }
 
-// startQRLService creates a full node instance for testing.
-func startQRLService(t *testing.T, genesis *core.Genesis, blocks []*types.Block) (*node.Node, *qrl.QRL) {
+// startQRLService creates a full node instance for testing. The default test
+// configuration can be adjusted through optional modifier functions.
+func startQRLService(t *testing.T, genesis *core.Genesis, blocks []*types.Block, mods ...func(*qrlconfig.Config)) (*node.Node, *qrl.QRL) {
 	t.Helper()
 
 	n, err := node.New(&node.Config{
@@ -429,6 +431,9 @@ func startQRLService(t *testing.T, genesis *core.Genesis, blocks []*types.Block)
 	mcfg := miner.DefaultConfig
 	mcfg.PendingFeeRecipient = testAddr
 	qrlcfg := &qrlconfig.Config{Genesis: genesis, SyncMode: downloader.FullSync, TrieTimeout: time.Minute, TrieDirtyCache: 256, TrieCleanCache: 256, Miner: mcfg}
+	for _, mod := range mods {
+		mod(qrlcfg)
+	}
 	qrlservice, err := qrl.New(n, qrlcfg)
 	if err != nil {
 		t.Fatal("can't create qrl service:", err)
@@ -448,13 +453,63 @@ func startQRLService(t *testing.T, genesis *core.Genesis, blocks []*types.Block)
 	return n, qrlservice
 }
 
+// TestForkchoiceUpdatedReorgDepthLimit tests that forkchoiceUpdated refuses to
+// rewind the chain head to a canonical ancestor deeper than the configured
+// EngineMaxReorgDepth, and that the limit can be lifted via the configuration.
+func TestForkchoiceUpdatedReorgDepthLimit(t *testing.T) {
+	genesis, blocks := generateChain(10)
+
+	t.Run("limited", func(t *testing.T) {
+		n, qrlservice := startQRLService(t, genesis, blocks, func(cfg *qrlconfig.Config) {
+			cfg.EngineMaxReorgDepth = 5
+		})
+		defer n.Close()
+
+		api := newConsensusAPIWithoutHeartbeat(qrlservice)
+
+		// Rewinding the head a few blocks within the limit is accepted.
+		shallow := engine.ForkchoiceStateV1{HeadBlockHash: blocks[6].Hash()}
+		if _, err := api.ForkchoiceUpdatedV2(shallow, nil); err != nil {
+			t.Fatalf("rewind within reorg depth limit failed: %v", err)
+		}
+		if head := qrlservice.BlockChain().CurrentBlock().Number.Uint64(); head != blocks[6].NumberU64() {
+			t.Fatalf("chain head not rewound: have %d, want %d", head, blocks[6].NumberU64())
+		}
+		// Rewinding beyond the limit is refused.
+		deep := engine.ForkchoiceStateV1{HeadBlockHash: genesis.ToBlock().Hash()}
+		_, err := api.ForkchoiceUpdatedV2(deep, nil)
+		var apiErr *engine.EngineAPIError
+		if !errors.As(err, &apiErr) || apiErr.ErrorCode() != engine.TooDeepReorg.ErrorCode() {
+			t.Fatalf("rewind beyond reorg depth limit: have error %v, want %v", err, engine.TooDeepReorg)
+		}
+	})
+	t.Run("unlimited", func(t *testing.T) {
+		n, qrlservice := startQRLService(t, genesis, blocks, func(cfg *qrlconfig.Config) {
+			cfg.EngineMaxReorgDepth = 0 // no limit
+		})
+		defer n.Close()
+
+		api := newConsensusAPIWithoutHeartbeat(qrlservice)
+
+		update := engine.ForkchoiceStateV1{HeadBlockHash: genesis.ToBlock().Hash()}
+		if _, err := api.ForkchoiceUpdatedV2(update, nil); err != nil {
+			t.Fatalf("rewind with disabled reorg depth limit failed: %v", err)
+		}
+		if head := qrlservice.BlockChain().CurrentBlock().Number.Uint64(); head != 0 {
+			t.Fatalf("chain head not rewound to genesis: have %d, want 0", head)
+		}
+	})
+}
+
 // TestForkchoiceUpdatedCanonicalAboveHead tests that forkchoiceUpdated moves the
 // head forward onto a block that the canonical index already holds above the
 // current head, the state an unclean shutdown leaves behind when the unpersisted
 // state is dropped. Such a move is not a reorg and must not trip the depth limit.
 func TestForkchoiceUpdatedCanonicalAboveHead(t *testing.T) {
 	genesis, blocks := generateChain(10)
-	n, qrlservice := startQRLService(t, genesis, blocks)
+	n, qrlservice := startQRLService(t, genesis, blocks, func(cfg *qrlconfig.Config) {
+		cfg.EngineMaxReorgDepth = 5
+	})
 	defer n.Close()
 
 	api := newConsensusAPIWithoutHeartbeat(qrlservice)
