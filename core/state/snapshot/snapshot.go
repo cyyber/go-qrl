@@ -656,6 +656,16 @@ func diffToDisk(bottom *diffLayer) *diskLayer {
 	return res
 }
 
+// Release releases resources
+func (t *Tree) Release() {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+
+	if dl := t.disklayer(); dl != nil {
+		dl.Release()
+	}
+}
+
 // Journal commits an entire diff hierarchy to disk into a single journal entry.
 // This is meant to be used during shutdown to persist the snapshot without
 // flattening everything down (bad for reorgs).
@@ -814,6 +824,8 @@ func (t *Tree) disklayer() *diskLayer {
 	case *diskLayer:
 		return layer
 	case *diffLayer:
+		layer.lock.RLock()
+		defer layer.lock.RUnlock()
 		return layer.origin
 	default:
 		panic(fmt.Sprintf("%T: undefined layer", snap))
@@ -833,8 +845,8 @@ func (t *Tree) diskRoot() common.Hash512 {
 // generating is an internal helper function which reports whether the snapshot
 // is still under the construction.
 func (t *Tree) generating() (bool, error) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.lock.RLock()
+	defer t.lock.RUnlock()
 
 	layer := t.disklayer()
 	if layer == nil {
@@ -845,10 +857,10 @@ func (t *Tree) generating() (bool, error) {
 	return layer.genMarker != nil, nil
 }
 
-// DiskRoot is a external helper function to return the disk layer root.
+// DiskRoot is an external helper function to return the disk layer root.
 func (t *Tree) DiskRoot() common.Hash512 {
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.lock.RLock()
+	defer t.lock.RUnlock()
 
 	return t.diskRoot()
 }

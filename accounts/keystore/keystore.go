@@ -23,7 +23,6 @@ package keystore
 import (
 	"errors"
 	"math/big"
-	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -68,6 +67,7 @@ type KeyStore struct {
 	updateFeed  event.Feed              // Event feed to notify wallet additions/removals
 	updateScope event.SubscriptionScope // Subscription scope tracking current live listeners
 	updating    bool                    // Whether the event notification loop is running
+	eventsSent  chan struct{}           // Closed once the last computed wallet events are sent
 
 	mu       sync.RWMutex
 	importMu sync.Mutex // Import Mutex locks the import to prevent two insertions from racing
@@ -93,6 +93,8 @@ func (ks *KeyStore) init(keydir string) {
 
 	// Initialize the set of unlocked keys and the account cache
 	ks.unlocked = make(map[common.Address]*unlocked)
+	ks.eventsSent = make(chan struct{})
+	close(ks.eventsSent)
 	ks.cache, ks.changes = newAccountCache(keydir)
 
 	// TODO: In order for this finalizer to work, there must be no references
@@ -163,7 +165,18 @@ func (ks *KeyStore) refreshWallets() {
 		events = append(events, accounts.WalletEvent{Wallet: wallet, Kind: accounts.WalletDropped})
 	}
 	ks.wallets = wallets
+	if len(events) == 0 {
+		ks.mu.Unlock()
+		return
+	}
+	// Concurrent refreshes must deliver their events in the order they computed
+	// them, so wait for the previous refresh's events to be sent first.
+	prev, done := ks.eventsSent, make(chan struct{})
+	ks.eventsSent = done
 	ks.mu.Unlock()
+
+	<-prev
+	defer close(done)
 
 	// Fire all wallet events and return
 	for _, event := range events {
@@ -241,15 +254,11 @@ func (ks *KeyStore) Delete(a accounts.Account, passphrase string) error {
 	if err != nil {
 		return err
 	}
-	// The order is crucial here. The key is dropped from the
-	// cache after the file is gone so that a reload happening in
-	// between won't insert it into the cache again.
-	err = os.Remove(a.URL.Path)
-	if err == nil {
-		ks.cache.delete(a)
-		ks.refreshWallets()
+	if err := ks.cache.deleteFile(a); err != nil {
+		return err
 	}
-	return err
+	ks.refreshWallets()
+	return nil
 }
 
 // SignHash returns the ML-DSA-87 signature for the given hash.
