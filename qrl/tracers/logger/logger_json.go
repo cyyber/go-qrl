@@ -30,12 +30,14 @@ type JSONLogger struct {
 	encoder *json.Encoder
 	cfg     *Config
 	env     *vm.QRVM
+	written *countingWriter
 }
 
 // NewJSONLogger creates a new QRVM tracer that prints execution steps as JSON objects
 // into the provided stream.
 func NewJSONLogger(cfg *Config, writer io.Writer) *JSONLogger {
-	l := &JSONLogger{encoder: json.NewEncoder(writer), cfg: cfg}
+	cw := &countingWriter{w: writer}
+	l := &JSONLogger{encoder: json.NewEncoder(cw), cfg: cfg, written: cw}
 	if l.cfg == nil {
 		l.cfg = &Config{}
 	}
@@ -53,6 +55,9 @@ func (l *JSONLogger) CaptureFault(pc uint64, op vm.OpCode, gas uint64, cost uint
 
 // CaptureState outputs state information on the logger.
 func (l *JSONLogger) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
+	if l.cfg.Limit != 0 && l.written.n > l.cfg.Limit {
+		return
+	}
 	memory := scope.Memory
 	stack := scope.Stack
 
