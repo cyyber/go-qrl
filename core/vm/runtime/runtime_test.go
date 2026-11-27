@@ -598,20 +598,33 @@ func TestColdAccountAccessCost(t *testing.T) {
 			want: 2855,
 		},
 	} {
-		tracer := logger.NewStructLogger(nil)
+		tracer := &stepCostTracer{StructLogger: logger.NewStructLogger(nil), target: tc.step}
 		Execute(tc.code, nil, &Config{
 			QRVMConfig: vm.Config{
 				Tracer: tracer,
 			},
 		})
-		have := tracer.StructLogs()[tc.step].GasCost
+		have := tracer.cost
 		if want := tc.want; have != want {
-			for ii, op := range tracer.StructLogs() {
-				t.Logf("%d: %v %d", ii, op.OpName(), op.GasCost)
-			}
 			t.Fatalf("testcase %d, gas report wrong, step %d, have %d want %d", i, tc.step, have, want)
 		}
 	}
+}
+
+// stepCostTracer records the gas cost of the opcode executed at the target
+// step. The embedded StructLogger only serves the other QRVMLogger hooks.
+type stepCostTracer struct {
+	*logger.StructLogger
+	step   int
+	target int
+	cost   uint64
+}
+
+func (t *stepCostTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
+	if t.step == t.target {
+		t.cost = cost
+	}
+	t.step++
 }
 
 func TestRuntimeJSTracer(t *testing.T) {
