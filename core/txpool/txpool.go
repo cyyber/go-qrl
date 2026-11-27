@@ -226,7 +226,10 @@ func (p *TxPool) loop(head *types.Header) {
 					for _, subpool := range p.subpools {
 						subpool.Reset(oldHead, newHead)
 					}
-					resetDone <- newHead
+					select {
+					case resetDone <- newHead:
+					case <-p.term:
+					}
 				}(oldHead, newHead)
 
 				// If the reset operation was explicitly requested, consider it
